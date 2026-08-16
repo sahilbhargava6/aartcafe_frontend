@@ -24,7 +24,7 @@ export default function ProductDetails() {
 
   // Fetch product customization options and reviews from API
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/products")
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -51,7 +51,7 @@ export default function ProductDetails() {
       })
       .catch((err) => console.error("Error loading product details:", err));
 
-    fetch("http://127.0.0.1:8000/api/reviews")
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {

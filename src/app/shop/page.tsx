@@ -42,7 +42,7 @@ export default function Shop() {
 
   // Fetch categories and products from Laravel API
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/categories")
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/categories")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -51,7 +51,7 @@ export default function Shop() {
       })
       .catch((err) => console.error("Error loading categories:", err));
 
-    fetch("http://127.0.0.1:8000/api/products")
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {

@@ -9,7 +9,7 @@ export default function WebsiteAnalytics() {
   const [chartData, setChartData] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/analytics/website")
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/analytics/website")
       .then((res) => res.json())
       .then((payload) => {
         if (payload.status === "success" && payload.data) {
