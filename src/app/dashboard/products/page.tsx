@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, X } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Plus, Edit2, Trash2, X, Upload, Check, Loader2 } from "lucide-react";
 
 export default function ProductsDashboard() {
   const [products, setProducts] = useState<any[]>([]);
@@ -21,6 +21,14 @@ export default function ProductsDashboard() {
   const [image, setImage] = useState("");
   const [isNewDiscovery, setIsNewDiscovery] = useState(false);
   const [isWeddingSpecial, setIsWeddingSpecial] = useState(false);
+
+  // Attribute Form Fields (Optional)
+  // attributes: Array of { name: string, values: Array<{ value: string, price_modifier: number }> }
+  const [attributes, setAttributes] = useState<any[]>([]);
+
+  // File Upload State
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = () => {
     setLoading(true);
@@ -64,6 +72,7 @@ export default function ProductsDashboard() {
     setImage("");
     setIsNewDiscovery(false);
     setIsWeddingSpecial(false);
+    setAttributes([]);
     setIsModalOpen(true);
   };
 
@@ -76,7 +85,90 @@ export default function ProductsDashboard() {
     setImage(prod.image || "");
     setIsNewDiscovery(!!prod.is_new_discovery);
     setIsWeddingSpecial(!!prod.is_wedding_special);
+    
+    // Parse existing attributes if present
+    if (prod.attributes && Array.isArray(prod.attributes)) {
+      setAttributes(
+        prod.attributes.map((attr: any) => ({
+          name: attr.name,
+          values: attr.values ? attr.values.map((v: any) => ({
+            value: v.value,
+            price_modifier: parseFloat(v.price_modifier || "0")
+          })) : []
+        }))
+      );
+    } else {
+      setAttributes([]);
+    }
+    
     setIsModalOpen(true);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setUploading(true);
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/upload", {
+      method: "POST",
+      body: formData,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Upload failed. Verify image type & size (<2MB).");
+        return res.json();
+      })
+      .then((data) => {
+        if (data.url) {
+          setImage(data.url);
+        }
+      })
+      .catch((err) => {
+        alert(err.message);
+      })
+      .finally(() => {
+        setUploading(false);
+      });
+  };
+
+  // Attributes Management
+  const addAttribute = () => {
+    setAttributes([...attributes, { name: "", values: [{ value: "", price_modifier: 0 }] }]);
+  };
+
+  const removeAttribute = (index: number) => {
+    setAttributes(attributes.filter((_, i) => i !== index));
+  };
+
+  const updateAttributeName = (index: number, newName: string) => {
+    const updated = [...attributes];
+    updated[index].name = newName;
+    setAttributes(updated);
+  };
+
+  const addAttributeValue = (attrIndex: number) => {
+    const updated = [...attributes];
+    updated[attrIndex].values.push({ value: "", price_modifier: 0 });
+    setAttributes(updated);
+  };
+
+  const removeAttributeValue = (attrIndex: number, valIndex: number) => {
+    const updated = [...attributes];
+    updated[attrIndex].values = updated[attrIndex].values.filter((_: any, i: number) => i !== valIndex);
+    setAttributes(updated);
+  };
+
+  const updateAttributeValueText = (attrIndex: number, valIndex: number, text: string) => {
+    const updated = [...attributes];
+    updated[attrIndex].values[valIndex].value = text;
+    setAttributes(updated);
+  };
+
+  const updateAttributeValueModifier = (attrIndex: number, valIndex: number, val: number) => {
+    const updated = [...attributes];
+    updated[attrIndex].values[valIndex].price_modifier = val;
+    setAttributes(updated);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -89,6 +181,14 @@ export default function ProductsDashboard() {
 
     const method = editingProduct ? "PUT" : "POST";
 
+    // Clean up empty attributes
+    const cleanAttributes = attributes
+      .filter((attr) => attr.name.trim() !== "")
+      .map((attr) => ({
+        name: attr.name,
+        values: attr.values.filter((v: any) => v.value.trim() !== "")
+      }));
+
     fetch(url, {
       method: method,
       headers: { "Content-Type": "application/json" },
@@ -100,6 +200,7 @@ export default function ProductsDashboard() {
         image,
         is_new_discovery: isNewDiscovery,
         is_wedding_special: isWeddingSpecial,
+        attributes: cleanAttributes
       }),
     })
       .then((res) => {
@@ -164,11 +265,11 @@ export default function ProductsDashboard() {
             <thead>
               <tr style={{ backgroundColor: "#F9F6F0", borderBottom: "2px solid #D98A9C" }}>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>ID</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Thumbnail</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Title</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Category</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Base Price</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>New Discovery</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Wedding Special</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Attributes</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
@@ -176,30 +277,28 @@ export default function ProductsDashboard() {
               {products.map((prod) => (
                 <tr key={prod.id} style={{ borderBottom: "1px solid #EBE5DB" }}>
                   <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{prod.id}</td>
+                  <td style={{ padding: "16px 24px" }}>
+                    {prod.image ? (
+                      <img src={prod.image} alt={prod.title} style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "8px" }} />
+                    ) : (
+                      <div style={{ width: "50px", height: "50px", backgroundColor: "#F5EDE8", borderRadius: "8px" }}></div>
+                    )}
+                  </td>
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{prod.title}</td>
                   <td style={{ padding: "16px 24px", color: "#D98A9C" }}>{prod.category?.name || "Uncategorized"}</td>
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>₹{prod.base_price}</td>
-                  <td style={{ padding: "16px 24px" }}>
-                    <span
-                      style={{
-                        padding: "4px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: 500,
-                        backgroundColor: prod.is_new_discovery ? "rgba(143,185,168,0.15)" : "#F5EDE8",
-                        color: prod.is_new_discovery ? "#8FB9A8" : "#BCAEA2",
-                      }}
-                    >
-                      {prod.is_new_discovery ? "Yes" : "No"}
-                    </span>
-                  </td>
-                  <td style={{ padding: "16px 24px" }}>
-                    <span
-                      style={{
-                        padding: "4px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: 500,
-                        backgroundColor: prod.is_wedding_special ? "rgba(217,138,156,0.15)" : "#F5EDE8",
-                        color: prod.is_wedding_special ? "#D98A9C" : "#BCAEA2",
-                      }}
-                    >
-                      {prod.is_wedding_special ? "Yes" : "No"}
-                    </span>
+                  <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>
+                    {prod.attributes && prod.attributes.length > 0 ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                        {prod.attributes.map((a: any) => (
+                          <span key={a.id} style={{ padding: "2px 8px", backgroundColor: "#F5EDE8", borderRadius: "10px", fontSize: "12px", color: "#8B7E74" }}>
+                            {a.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: "12px", color: "#BCAEA2", fontStyle: "italic" }}>None</span>
+                    )}
                   </td>
                   <td style={{ padding: "16px 24px", textAlign: "right" }}>
                     <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
@@ -236,7 +335,7 @@ export default function ProductsDashboard() {
           <div
             style={{
               backgroundColor: "#fff", padding: "30px", borderRadius: "15px",
-              width: "500px", maxHeight: "90vh", overflowY: "auto",
+              width: "600px", maxHeight: "90vh", overflowY: "auto",
               boxShadow: "0 10px 25px rgba(0,0,0,0.1)", border: "1px solid #D9A85C",
               display: "flex", flexDirection: "column", gap: "20px",
             }}
@@ -315,18 +414,142 @@ export default function ProductsDashboard() {
                 />
               </div>
 
+              {/* Image Input & Upload */}
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Image URL</label>
-                <input
-                  type="text"
-                  value={image}
-                  onChange={(e) => setImage(e.target.value)}
-                  style={{
-                    height: "40px", borderRadius: "8px", border: "1px solid #D9A85C",
-                    padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38",
-                  }}
-                  placeholder="e.g. /images/wedding.jpg"
-                />
+                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Product Image</label>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <input
+                    type="text"
+                    value={image}
+                    onChange={(e) => setImage(e.target.value)}
+                    style={{
+                      flex: 1, height: "40px", borderRadius: "8px", border: "1px solid #D9A85C",
+                      padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38",
+                    }}
+                    placeholder="Enter image URL or upload..."
+                  />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept="image/*"
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      height: "40px", padding: "0 16px", backgroundColor: "#8FB9A8",
+                      color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer",
+                      display: "flex", alignItems: "center", gap: "8px", fontWeight: 500,
+                    }}
+                  >
+                    {uploading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Upload size={16} />
+                    )}
+                    Upload
+                  </button>
+                </div>
+                {image && (
+                  <div style={{ marginTop: "10px" }}>
+                    <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#8FB9A8" }}>Image Preview:</p>
+                    <img src={image} alt="Preview" style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "8px", border: "1px solid #EBE5DB" }} />
+                  </div>
+                )}
+              </div>
+
+              {/* Optional Product Attributes Section */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", border: "1px dashed #D9A85C", borderRadius: "10px", padding: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h4 className="font-serif" style={{ margin: 0, fontSize: "16px", color: "#3F3B38" }}>
+                    Product Attributes (Optional)
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={addAttribute}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "4px", background: "none",
+                      border: "none", color: "#D98A9C", cursor: "pointer", fontWeight: 600, fontSize: "14px"
+                    }}
+                  >
+                    <Plus size={16} /> Add Attribute
+                  </button>
+                </div>
+
+                {attributes.map((attr, attrIndex) => (
+                  <div key={attrIndex} style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "12px", backgroundColor: "#F9F6F0", borderRadius: "8px", position: "relative" }}>
+                    <button
+                      type="button"
+                      onClick={() => removeAttribute(attrIndex)}
+                      style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", color: "#E05A47", cursor: "pointer" }}
+                    >
+                      <X size={16} />
+                    </button>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "85%" }}>
+                      <label style={{ fontSize: "12px", color: "#6E6E6E" }}>Attribute Name</label>
+                      <input
+                        type="text"
+                        value={attr.name}
+                        onChange={(e) => updateAttributeName(attrIndex, e.target.value)}
+                        placeholder="e.g. Size, Frame Color, Preservation"
+                        style={{
+                          height: "36px", borderRadius: "6px", border: "1px solid #D9A85C",
+                          padding: "0 10px", fontSize: "14px", outline: "none", color: "#3F3B38", backgroundColor: "#fff"
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "12px", fontWeight: 500, color: "#8B7E74" }}>Values & Price Modifiers</span>
+                        <button
+                          type="button"
+                          onClick={() => addAttributeValue(attrIndex)}
+                          style={{ fontSize: "12px", color: "#D98A9C", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}
+                        >
+                          + Add Value
+                        </button>
+                      </div>
+
+                      {attr.values.map((val: any, valIndex: number) => (
+                        <div key={valIndex} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                          <input
+                            type="text"
+                            value={val.value}
+                            onChange={(e) => updateAttributeValueText(attrIndex, valIndex, e.target.value)}
+                            placeholder="e.g. Medium / Gold"
+                            style={{
+                              flex: 2, height: "32px", borderRadius: "6px", border: "1px solid #D9A85C",
+                              padding: "0 10px", fontSize: "14px", outline: "none", color: "#3F3B38"
+                            }}
+                          />
+                          <input
+                            type="number"
+                            value={val.price_modifier}
+                            onChange={(e) => updateAttributeValueModifier(attrIndex, valIndex, parseFloat(e.target.value) || 0)}
+                            placeholder="Price modifier (e.g. +500)"
+                            style={{
+                              flex: 1, height: "32px", borderRadius: "6px", border: "1px solid #D9A85C",
+                              padding: "0 10px", fontSize: "14px", outline: "none", color: "#3F3B38"
+                            }}
+                          />
+                          {attr.values.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeAttributeValue(attrIndex, valIndex)}
+                              style={{ background: "none", border: "none", color: "#E05A47", cursor: "pointer" }}
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div style={{ display: "flex", gap: "24px", marginTop: "4px" }}>
@@ -362,7 +585,7 @@ export default function ProductsDashboard() {
                 onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
                 onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
               >
-                Save
+                Save Product
               </button>
             </form>
           </div>
