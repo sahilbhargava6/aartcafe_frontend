@@ -132,9 +132,39 @@ export default function ProductsDashboard() {
       });
   };
 
+  // Predefined attributes from user request
+  const PREDEFINED_ATTRIBUTES = [
+    { name: "Type of Preservation", values: ["3D", "Covered with Acrylic", "Deep Cast"] },
+    { name: "Shapes", values: ["Round", "Round Zig Zag", "Heart", "Rectangle", "Rectangle Zig Zag", "Hexagon"] },
+    { name: "Sizes", values: ["8\"x10\" format", "12\"x12\" format", "8\" format", "10\" format"] },
+    { name: "Type of Filling", values: ["Broken petal with shimmer", "Filled with crushed petal", "Crushed Petals", "Loose Petals", "with color"] },
+    { name: "Textual Format", values: ["With text", "Without text"] },
+    { name: "Type of Flowers", values: ["Your flowers", "Our flowers"] },
+    { name: "Pictorial Format", values: ["With picture", "Without picture"] },
+    { name: "Accessories", values: ["With Stand", "With Chains", "With Hook"] },
+    { name: "Outline", values: ["With frame", "Without frame (frameless)"] }
+  ];
+
   // Attributes Management
   const addAttribute = () => {
     setAttributes([...attributes, { name: "", values: [{ value: "", price_modifier: 0 }] }]);
+  };
+
+  const addPredefinedAttribute = (name: string) => {
+    const found = PREDEFINED_ATTRIBUTES.find(a => a.name === name);
+    if (!found) return;
+    
+    // Check if attribute already exists to avoid duplicates
+    if (attributes.some(a => a.name.toLowerCase() === name.toLowerCase())) {
+      alert("This attribute is already added to the product.");
+      return;
+    }
+
+    const newAttr = {
+      name: found.name,
+      values: found.values.map(v => ({ value: v, price_modifier: 0 }))
+    };
+    setAttributes([...attributes, newAttr]);
   };
 
   const removeAttribute = (index: number) => {
@@ -459,23 +489,50 @@ export default function ProductsDashboard() {
                   </div>
                 )}
               </div>
-
+              
               {/* Optional Product Attributes Section */}
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", border: "1px dashed #D9A85C", borderRadius: "10px", padding: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h4 className="font-serif" style={{ margin: 0, fontSize: "16px", color: "#3F3B38" }}>
-                    Product Attributes (Optional)
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={addAttribute}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "4px", background: "none",
-                      border: "none", color: "#D98A9C", cursor: "pointer", fontWeight: 600, fontSize: "14px"
-                    }}
-                  >
-                    <Plus size={16} /> Add Attribute
-                  </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <h4 className="font-serif" style={{ margin: 0, fontSize: "16px", color: "#3F3B38" }}>
+                      Product Attributes (Optional)
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={addAttribute}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "4px", background: "none",
+                        border: "none", color: "#D98A9C", cursor: "pointer", fontWeight: 600, fontSize: "14px"
+                      }}
+                    >
+                      <Plus size={16} /> Custom Attribute
+                    </button>
+                  </div>
+                  
+                  {/* Predefined Attribute Quick-Select */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label style={{ fontSize: "12px", color: "#6E6E6E" }}>Quick Add Predefined Attribute:</label>
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          addPredefinedAttribute(e.target.value);
+                          e.target.value = ""; // Reset
+                        }
+                      }}
+                      defaultValue=""
+                      style={{
+                        height: "36px", borderRadius: "8px", border: "1px solid #D9A85C",
+                        padding: "0 10px", fontSize: "14px", outline: "none", color: "#3F3B38", backgroundColor: "#fff"
+                      }}
+                    >
+                      <option value="" disabled>-- Select to add --</option>
+                      {PREDEFINED_ATTRIBUTES.map((pattr) => (
+                        <option key={pattr.name} value={pattr.name}>
+                          {pattr.name} ({pattr.values.length} values)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {attributes.map((attr, attrIndex) => (
