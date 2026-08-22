@@ -15,6 +15,7 @@ export default function Home() {
   const [newDiscoveryProducts, setNewDiscoveryProducts] = useState<any[]>([]);
   const [weddingSpecials, setWeddingSpecials] = useState<any[]>([]);
   const [activeWeddingIndex, setActiveWeddingIndex] = useState(0);
+  const [reviews, setReviews] = useState<any[]>([]);
 
   const bestsellersRef = useRef<HTMLDivElement>(null);
   const reviewsRef = useRef<HTMLDivElement>(null);
@@ -46,6 +47,15 @@ export default function Home() {
         }
       })
       .catch((err) => console.error("Error fetching wedding specials:", err));
+
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setReviews(data);
+        }
+      })
+      .catch((err) => console.error("Error fetching reviews:", err));
   }, []);
 
   const festiveDetails: Record<string, { desc: string; price: number; title: string }> = {
@@ -1078,56 +1088,55 @@ export default function Home() {
                   padding: "10px 0",
                 }}
               >
-                {/* Review card 1 — Pink border */}
-                <div style={{
-                  flex: "0 0 calc(33.333% - 22px)",
-                  minWidth: "280px",
-                  border: "2px solid #D98A9C",
-                  borderRadius: "15px",
-                  padding: "40px 30px",
-                  background: "#fff",
-                }}>
-                  <h3 className="font-serif" style={{ fontSize: "24px", lineHeight: "32px", fontWeight: 400, color: "#3F3B38", margin: "0 0 12px 0", textAlign: "center" }}>
-                    Mohit Sharma
-                  </h3>
-                  <p className="font-sans" style={{ fontSize: "22px", lineHeight: "32px", fontWeight: 400, color: "#3F3B38", margin: 0, textAlign: "center" }}>
-                    Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime
-                  </p>
-                </div>
+                {(reviews.length > 0
+                  ? reviews
+                  : [
+                      { id: 1, reviewer_name: "Mohit Sharma", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
+                      { id: 2, reviewer_name: "Ananya Roy", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
+                      { id: 3, reviewer_name: "Priya Patel", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
+                    ]
+                ).map((rev, index) => {
+                  const borderColors = ["#D98A9C", "#8FB9A8", "#D9A85C"];
+                  const borderColor = borderColors[index % borderColors.length];
+                  return (
+                    <div
+                      key={rev.id || index}
+                      style={{
+                        flex: "0 0 calc(33.333% - 22px)",
+                        minWidth: "280px",
+                        border: `2px solid ${borderColor}`,
+                        borderRadius: "15px",
+                        padding: "30px 24px",
+                        background: "#fff",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        textAlign: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div>
+                        <h3 className="font-serif" style={{ fontSize: "24px", lineHeight: "32px", fontWeight: 400, color: "#3F3B38", margin: "0 0 8px 0" }}>
+                          {rev.reviewer_name}
+                        </h3>
+                        {rev.product && (
+                          <span style={{ fontSize: "12px", color: "#D98A9C", display: "block", marginBottom: "12px", fontWeight: 500 }}>
+                            {rev.product.title}
+                          </span>
+                        )}
+                        <p className="font-sans" style={{ fontSize: "18px", lineHeight: "28px", fontWeight: 400, color: "#555", margin: 0 }}>
+                          "{rev.review_text}"
+                        </p>
+                      </div>
 
-                {/* Review card 2 — Teal border */}
-                <div style={{
-                  flex: "0 0 calc(33.333% - 22px)",
-                  minWidth: "280px",
-                  border: "2px solid #8FB9A8",
-                  borderRadius: "15px",
-                  padding: "40px 30px",
-                  background: "#fff",
-                }}>
-                  <h3 className="font-serif" style={{ fontSize: "24px", lineHeight: "32px", fontWeight: 400, color: "#3F3B38", margin: "0 0 12px 0", textAlign: "center" }}>
-                    Mohit Sharma
-                  </h3>
-                  <p className="font-sans" style={{ fontSize: "22px", lineHeight: "32px", fontWeight: 400, color: "#3F3B38", margin: 0, textAlign: "center" }}>
-                    Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime
-                  </p>
-                </div>
-
-                {/* Review card 3 — Gold border */}
-                <div style={{
-                  flex: "0 0 calc(33.333% - 22px)",
-                  minWidth: "280px",
-                  border: "2px solid #D9A85C",
-                  borderRadius: "15px",
-                  padding: "40px 30px",
-                  background: "#fff",
-                }}>
-                  <h3 className="font-serif" style={{ fontSize: "24px", lineHeight: "32px", fontWeight: 400, color: "#3F3B38", margin: "0 0 12px 0", textAlign: "center" }}>
-                    Mohit Sharma
-                  </h3>
-                  <p className="font-sans" style={{ fontSize: "22px", lineHeight: "32px", fontWeight: 400, color: "#3F3B38", margin: 0, textAlign: "center" }}>
-                    Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime
-                  </p>
-                </div>
+                      {rev.rating && (
+                        <div style={{ color: "#D9A85C", fontSize: "18px", marginTop: "16px" }}>
+                          {"★".repeat(Number(rev.rating))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Right Arrow */}
