@@ -26,11 +26,66 @@ export default function ProductsDashboard() {
 
   // CSV Import State
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+  const [importMode, setImportMode] = useState<"file" | "text">("file");
+  const [rawText, setRawText] = useState("");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvPreview, setCsvPreview] = useState<any[]>([]);
   const [csvImporting, setCsvImporting] = useState(false);
   const [csvMessage, setCsvMessage] = useState("");
   const csvFileInputRef = useRef<HTMLInputElement>(null);
+
+  const parseRawCatalogText = () => {
+    if (!rawText.trim()) {
+      setCsvMessage("Please paste product catalog text first.");
+      return;
+    }
+    setCsvMessage("");
+
+    const lines = rawText.split(/\r\n|\n/).map((l) => l.trim()).filter(Boolean);
+    const parsed: any[] = [];
+
+    lines.forEach((line) => {
+      // Look for price patterns like ₹2000, 2000 INR, Rs. 2000, or numbers at end/middle
+      const priceMatch = line.match(/(?:₹|Rs\.?|\$)\s*(\d+(?:,\d+)*(?:\.\d+)?)/i) || line.match(/(\d+(?:,\d+)*(?:\.\d+)?)\s*(?:INR|rs|rupees|\/-)/i);
+      
+      let price = "0";
+      if (priceMatch) {
+        price = priceMatch[1].replace(/,/g, "");
+      } else {
+        const numMatch = line.match(/\b\d{3,6}\b/);
+        if (numMatch) price = numMatch[0];
+      }
+
+      // Clean up title from line numbers or prices
+      let title = line
+        .replace(/^\d+[\.\)\-]\s*/, "") // remove leading "1. " or "1) "
+        .replace(/(?:₹|Rs\.?|\$)\s*\d+(?:,\d+)*(?:\.\d+)?/gi, "")
+        .replace(/(\d+(?:,\d+)*(?:\.\d+)?)\s*(?:INR|rs|rupees|\/-)/gi, "")
+        .replace(/[-–—:]\s*$/, "")
+        .trim();
+
+      if (title.length > 2) {
+        parsed.push({
+          title: title,
+          category: "General",
+          price: price,
+          description: "Handcrafted catalog product",
+          image: "",
+          is_bestseller: "false",
+          is_new_discovery: "false",
+          is_wedding_special: "false",
+          is_hero_featured: "false",
+        });
+      }
+    });
+
+    if (parsed.length === 0) {
+      setCsvMessage("Could not identify any product titles and prices. Try pasting line by line.");
+    } else {
+      setCsvPreview(parsed);
+      setCsvMessage(`Successfully parsed ${parsed.length} products! Click "Upload & Import All" below.`);
+    }
+  };
 
   // Attribute Form Fields (Optional)
   // attributes: Array of { name: string, values: Array<{ value: string, price_modifier: number }> }
@@ -852,41 +907,100 @@ export default function ProductsDashboard() {
             </button>
 
             <h2 className="font-serif" style={{ fontSize: "24px", color: "#3F3B38", marginTop: 0, marginBottom: "8px" }}>
-              Bulk Import Catalog via CSV
+              Bulk Import Catalog
             </h2>
             <p className="font-sans" style={{ fontSize: "14px", color: "#6E6E6E", marginBottom: "20px", lineHeight: "20px" }}>
-              Upload your product catalog CSV sheet to automatically create all products at once.
+              Upload your catalog CSV file OR paste your WhatsApp catalog text list below.
             </p>
 
-            <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+            {/* Mode Selector Tabs */}
+            <div style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid #EBE5DB", paddingBottom: "10px" }}>
               <button
                 type="button"
-                onClick={downloadSampleCsv}
+                onClick={() => setImportMode("file")}
                 style={{
-                  padding: "8px 16px", borderRadius: "8px", border: "1px solid #D9A85C",
-                  backgroundColor: "transparent", color: "#D9A85C", fontSize: "14px",
-                  fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px",
+                  padding: "8px 16px", borderRadius: "20px", border: "none",
+                  backgroundColor: importMode === "file" ? "#D98A9C" : "#F5EDE8",
+                  color: importMode === "file" ? "#fff" : "#3F3B38",
+                  fontWeight: 600, fontSize: "14px", cursor: "pointer",
                 }}
               >
-                Download Sample CSV Template
+                📁 Upload CSV File
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportMode("text")}
+                style={{
+                  padding: "8px 16px", borderRadius: "20px", border: "none",
+                  backgroundColor: importMode === "text" ? "#8FB9A8" : "#F5EDE8",
+                  color: importMode === "text" ? "#fff" : "#3F3B38",
+                  fontWeight: 600, fontSize: "14px", cursor: "pointer",
+                }}
+              >
+                📝 Paste WhatsApp Catalog Text
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
-              <label className="font-sans" style={{ fontSize: "14px", fontWeight: 500, color: "#3F3B38" }}>
-                Select CSV File
-              </label>
-              <input
-                ref={csvFileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleCsvFileSelect}
-                style={{
-                  padding: "10px", borderRadius: "8px", border: "1.5px dashed #8FB9A8",
-                  backgroundColor: "#FAF6F0", cursor: "pointer",
-                }}
-              />
-            </div>
+            {importMode === "file" ? (
+              <>
+                <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+                  <button
+                    type="button"
+                    onClick={downloadSampleCsv}
+                    style={{
+                      padding: "8px 16px", borderRadius: "8px", border: "1px solid #D9A85C",
+                      backgroundColor: "transparent", color: "#D9A85C", fontSize: "14px",
+                      fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px",
+                    }}
+                  >
+                    Download Sample CSV Template
+                  </button>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
+                  <label className="font-sans" style={{ fontSize: "14px", fontWeight: 500, color: "#3F3B38" }}>
+                    Select CSV File
+                  </label>
+                  <input
+                    ref={csvFileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCsvFileSelect}
+                    style={{
+                      padding: "10px", borderRadius: "8px", border: "1.5px dashed #8FB9A8",
+                      backgroundColor: "#FAF6F0", cursor: "pointer",
+                    }}
+                  />
+                </div>
+              </>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
+                <label className="font-sans" style={{ fontSize: "14px", fontWeight: 500, color: "#3F3B38" }}>
+                  Paste Catalog Text List (e.g. &quot;1. Resin Frame - ₹2500&quot;)
+                </label>
+                <textarea
+                  rows={6}
+                  value={rawText}
+                  onChange={(e) => setRawText(e.target.value)}
+                  placeholder={`Example:\n1. Handmade Resin Frame - ₹2499\n2. Silk Rakhi Set - ₹599\n3. Couple Anniversary Keepsake - ₹3499`}
+                  style={{
+                    width: "100%", padding: "12px", borderRadius: "8px", border: "1.5px solid #8FB9A8",
+                    fontSize: "14px", fontFamily: "sans-serif", outline: "none", color: "#3F3B38",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={parseRawCatalogText}
+                  style={{
+                    alignSelf: "flex-start", padding: "8px 18px", borderRadius: "8px",
+                    backgroundColor: "#8FB9A8", color: "#fff", border: "none",
+                    fontSize: "14px", fontWeight: 600, cursor: "pointer",
+                  }}
+                >
+                  Parse Text &amp; Preview Items
+                </button>
+              </div>
+            )}
 
             {csvMessage && (
               <div
