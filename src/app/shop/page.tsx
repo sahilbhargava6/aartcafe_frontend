@@ -23,47 +23,52 @@ export default function Shop() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
   
-  const [categories, setCategories] = useState<string[]>([
-    "Personalized Frames",
-    "Handmade Rakhis",
-    "Gift Hampers"
-  ]);
-
-  const [allProducts, setAllProducts] = useState<any[]>([
-    { id: 1, title: "Wedding Frame", price: 2000, category: "Personalized Frames", image: "" },
-    { id: 2, title: "Baby Keepsake", price: 1500, category: "Personalized Frames", image: "" },
-    { id: 3, title: "Handmade Rakhi Set", price: 600, category: "Handmade Rakhis", image: "" },
-    { id: 4, title: "Lumba Rakhi", price: 400, category: "Handmade Rakhis", image: "" },
-    { id: 5, title: "Luxury Gift Hamper", price: 4500, category: "Gift Hampers", image: "" },
-    { id: 6, title: "Festive Joy Hamper", price: 3200, category: "Gift Hampers", image: "" }
-  ]);
-
-  const [filteredProducts, setFilteredProducts] = useState(allProducts);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
 
   // Fetch categories and products from Laravel API
   useEffect(() => {
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/categories")
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length > 0) {
           setCategories(data.map((c: any) => c.name));
+        } else {
+          setCategories(["Personalized Frames", "Handmade Rakhis", "Gift Hampers"]);
         }
       })
-      .catch((err) => console.error("Error loading categories:", err));
+      .catch((err) => {
+        console.error("Error loading categories:", err);
+        setCategories(["Personalized Frames", "Handmade Rakhis", "Gift Hampers"]);
+      });
 
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length > 0) {
           const formatted = data.map((p: any) => ({
             id: p.id,
             title: p.title,
+            slug: p.slug,
             price: parseFloat(p.base_price),
             category: p.category?.name || "Uncategorized",
-            image: p.image || ""
+            image: p.image || "",
+            description: p.description || ""
           }));
           setAllProducts(formatted);
           setFilteredProducts(formatted);
+        } else {
+          const defaultItems = [
+            { id: 1, title: "Wedding Frame", price: 2000, category: "Personalized Frames", image: "" },
+            { id: 2, title: "Baby Keepsake", price: 1500, category: "Personalized Frames", image: "" },
+            { id: 3, title: "Handmade Rakhi Set", price: 600, category: "Handmade Rakhis", image: "" },
+            { id: 4, title: "Lumba Rakhi", price: 400, category: "Handmade Rakhis", image: "" },
+            { id: 5, title: "Luxury Gift Hamper", price: 4500, category: "Gift Hampers", image: "" },
+            { id: 6, title: "Festive Joy Hamper", price: 3200, category: "Gift Hampers", image: "" }
+          ];
+          setAllProducts(defaultItems);
+          setFilteredProducts(defaultItems);
         }
       })
       .catch((err) => console.error("Error loading products:", err));
@@ -262,7 +267,7 @@ export default function Shop() {
                       <div key={prod.id} className="shop-product-card-wrapper">
                         {/* Product Card Container */}
                         <Link
-                          href="/shop/wedding-frames"
+                          href={prod.slug ? `/shop/${prod.slug}` : "/shop/wedding-frames"}
                           className="product-card"
                           style={{
                             position: "relative",
@@ -275,9 +280,13 @@ export default function Shop() {
                             boxShadow: "0px 4px 10px rgba(0,0,0,0.05)",
                           }}
                         >
-                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#BCAEA2", fontSize: "14px" }}>
-                            Product Image
-                          </div>
+                          {prod.image ? (
+                            <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#BCAEA2", fontSize: "14px" }}>
+                              Product Image
+                            </div>
+                          )}
 
                           {/* Hover action overlay */}
                           <div
