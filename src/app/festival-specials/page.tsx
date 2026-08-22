@@ -11,6 +11,19 @@ export default function FestivalSpecials() {
   const { addToBag } = useCart();
   const [reviewsExpanded1, setReviewsExpanded1] = useState(false);
   const [reviewsExpanded2, setReviewsExpanded2] = useState(false);
+  const [banner, setBanner] = useState<any>(null);
+
+  React.useEffect(() => {
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/banners")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const active = data.find((b: any) => b.is_active) || data[0];
+          setBanner(active);
+        }
+      })
+      .catch((err) => console.error("Error loading banners:", err));
+  }, []);
 
   const product1 = {
     id: "fest-1",
@@ -48,35 +61,48 @@ export default function FestivalSpecials() {
           {/* ═══════════════════════════════════════════════════════
               HERO BANNER SECTION
               ═══════════════════════════════════════════════════════ */}
-          <div className="rakhi-banner">
-            {/* Banner Drop Shadow settings: X: 4, Y: 4, Blur: 4, Spread: 0, Color: #000 (Opacity 50%) */}
-            
+          <div
+            className="rakhi-banner"
+            style={
+              banner?.image_url
+                ? {
+                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${banner.image_url})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }
+                : {}
+            }
+          >
             {/* Rakhi medallion visual graphic sketch with gold braid lines */}
-            <svg className="banner-svg-medallion" width="300" height="300" viewBox="0 0 200 200">
-              <circle cx="100" cy="100" r="85" fill="#EFD3C7" opacity="0.1" />
-              <path d="M5 100 Q 50 80, 100 100 T 195 100" stroke="#D9A85C" strokeWidth="3" fill="none" />
-              <path d="M5 100 Q 50 120, 100 100 T 195 100" stroke="#D98A9C" strokeWidth="2" strokeDasharray="4,4" fill="none" />
-              <circle cx="100" cy="100" r="45" fill="#D98A9C" stroke="#D9A85C" strokeWidth="4" />
-              <circle cx="100" cy="100" r="30" fill="#D9A85C" />
-              {Array.from({ length: 16 }).map((_, i) => {
-                const angle = (i * 360) / 16;
-                return (
-                  <circle
-                    key={i}
-                    cx={100 + 38 * Math.cos((angle * Math.PI) / 180)}
-                    cy={100 + 38 * Math.sin((angle * Math.PI) / 180)}
-                    r="4"
-                    fill="#FFF"
-                  />
-                );
-              })}
-              <path d="M 90 90 L 110 110 M 110 90 L 90 110" stroke="#FFF" strokeWidth="4" strokeLinecap="round" />
-            </svg>
+            {!banner?.image_url && (
+              <svg className="banner-svg-medallion" width="300" height="300" viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="85" fill="#EFD3C7" opacity="0.1" />
+                <path d="M5 100 Q 50 80, 100 100 T 195 100" stroke="#D9A85C" strokeWidth="3" fill="none" />
+                <path d="M5 100 Q 50 120, 100 100 T 195 100" stroke="#D98A9C" strokeWidth="2" strokeDasharray="4,4" fill="none" />
+                <circle cx="100" cy="100" r="45" fill="#D98A9C" stroke="#D9A85C" strokeWidth="4" />
+                <circle cx="100" cy="100" r="30" fill="#D9A85C" />
+                {Array.from({ length: 16 }).map((_, i) => {
+                  const angle = (i * 360) / 16;
+                  return (
+                    <circle
+                      key={i}
+                      cx={100 + 38 * Math.cos((angle * Math.PI) / 180)}
+                      cy={100 + 38 * Math.sin((angle * Math.PI) / 180)}
+                      r="4"
+                      fill="#FFF"
+                    />
+                  );
+                })}
+                <path d="M 90 90 L 110 110 M 110 90 L 90 110" stroke="#FFF" strokeWidth="4" strokeLinecap="round" />
+              </svg>
+            )}
 
             {/* Content box */}
             <div className="banner-content">
               <span className="font-serif banner-sub">FESTIVAL SPECIALS</span>
-              <h1 className="font-serif banner-title">Raksha Bandhan</h1>
+              <h1 className="font-serif banner-title">
+                {banner?.title || "Raksha Bandhan"}
+              </h1>
               <p
                 className="font-sans banner-desc"
                 style={{
@@ -87,7 +113,7 @@ export default function FestivalSpecials() {
                   margin: 0,
                 }}
               >
-                Celebrating the Bond of Siblings
+                {banner?.subtitle || "Celebrating the Bond of Siblings"}
               </p>
             </div>
           </div>
