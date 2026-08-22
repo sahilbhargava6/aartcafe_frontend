@@ -21,6 +21,7 @@ export default function ProductsDashboard() {
   const [image, setImage] = useState("");
   const [isNewDiscovery, setIsNewDiscovery] = useState(false);
   const [isWeddingSpecial, setIsWeddingSpecial] = useState(false);
+  const [isBestseller, setIsBestseller] = useState(false);
 
   // Attribute Form Fields (Optional)
   // attributes: Array of { name: string, values: Array<{ value: string, price_modifier: number }> }
@@ -72,6 +73,7 @@ export default function ProductsDashboard() {
     setImage("");
     setIsNewDiscovery(false);
     setIsWeddingSpecial(false);
+    setIsBestseller(false);
     setAttributes([]);
     setIsModalOpen(true);
   };
@@ -85,6 +87,7 @@ export default function ProductsDashboard() {
     setImage(prod.image || "");
     setIsNewDiscovery(!!prod.is_new_discovery);
     setIsWeddingSpecial(!!prod.is_wedding_special);
+    setIsBestseller(!!prod.is_bestseller);
     
     // Parse existing attributes if present
     if (prod.attributes && Array.isArray(prod.attributes)) {
@@ -230,6 +233,7 @@ export default function ProductsDashboard() {
         image,
         is_new_discovery: isNewDiscovery,
         is_wedding_special: isWeddingSpecial,
+        is_bestseller: isBestseller,
         attributes: cleanAttributes
       }),
     })
@@ -299,6 +303,7 @@ export default function ProductsDashboard() {
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Title</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Category</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Base Price</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Tags</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Attributes</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Actions</th>
               </tr>
@@ -317,6 +322,28 @@ export default function ProductsDashboard() {
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{prod.title}</td>
                   <td style={{ padding: "16px 24px", color: "#D98A9C" }}>{prod.category?.name || "Uncategorized"}</td>
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>₹{prod.base_price}</td>
+                  <td style={{ padding: "16px 24px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                      {prod.is_bestseller && (
+                        <span style={{ padding: "2px 6px", backgroundColor: "#FFEAEF", color: "#D98A9C", borderRadius: "6px", fontSize: "11px", fontWeight: 600 }}>
+                          Bestseller
+                        </span>
+                      )}
+                      {prod.is_new_discovery && (
+                        <span style={{ padding: "2px 6px", backgroundColor: "#EAF6F0", color: "#4E8E76", borderRadius: "6px", fontSize: "11px", fontWeight: 600 }}>
+                          New Discovery
+                        </span>
+                      )}
+                      {prod.is_wedding_special && (
+                        <span style={{ padding: "2px 6px", backgroundColor: "#FFF4E5", color: "#D9A85C", borderRadius: "6px", fontSize: "11px", fontWeight: 600 }}>
+                          Wedding Special
+                        </span>
+                      )}
+                      {!prod.is_bestseller && !prod.is_new_discovery && !prod.is_wedding_special && (
+                        <span style={{ fontSize: "12px", color: "#BCAEA2", fontStyle: "italic" }}>-</span>
+                      )}
+                    </div>
+                  </td>
                   <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>
                     {prod.attributes && prod.attributes.length > 0 ? (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -609,7 +636,7 @@ export default function ProductsDashboard() {
                 ))}
               </div>
 
-              <div style={{ display: "flex", gap: "24px", marginTop: "4px" }}>
+              <div style={{ display: "flex", gap: "24px", marginTop: "4px", flexWrap: "wrap" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "14px", color: "#3F3B38" }}>
                   <input
                     type="checkbox"
@@ -628,6 +655,16 @@ export default function ProductsDashboard() {
                     style={{ cursor: "pointer" }}
                   />
                   Wedding Special
+                </label>
+
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "14px", color: "#3F3B38" }}>
+                  <input
+                    type="checkbox"
+                    checked={isBestseller}
+                    onChange={(e) => setIsBestseller(e.target.checked)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  Best Seller (Customer&apos;s Favorite)
                 </label>
               </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
@@ -11,9 +11,42 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 export default function Home() {
   const { addToBag } = useCart();
   const [activeFestiveTab, setActiveFestiveTab] = useState("Handmade Rakhi");
+  const [bestsellerProducts, setBestsellerProducts] = useState<any[]>([]);
+  const [newDiscoveryProducts, setNewDiscoveryProducts] = useState<any[]>([]);
+  const [weddingSpecials, setWeddingSpecials] = useState<any[]>([]);
+  const [activeWeddingIndex, setActiveWeddingIndex] = useState(0);
 
   const bestsellersRef = useRef<HTMLDivElement>(null);
   const reviewsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/bestsellers")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setBestsellerProducts(data);
+        }
+      })
+      .catch((err) => console.error("Error fetching bestsellers:", err));
+
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/new-discoveries")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setNewDiscoveryProducts(data);
+        }
+      })
+      .catch((err) => console.error("Error fetching new discoveries:", err));
+
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/wedding-specials")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setWeddingSpecials(data);
+        }
+      })
+      .catch((err) => console.error("Error fetching wedding specials:", err));
+  }, []);
 
   const festiveDetails: Record<string, { desc: string; price: number; title: string }> = {
     "Handmade Thal": {
@@ -40,13 +73,6 @@ export default function Home() {
       ref.current.scrollTo({ left: scrollTo, behavior: "smooth" });
     }
   };
-
-  const bestsellerProducts = [
-    { id: "fav-1", title: "Wedding Frame", price: 2000 },
-    { id: "fav-2", title: "Wedding Frame", price: 2000 },
-    { id: "fav-3", title: "Wedding Frame", price: 2000 },
-    { id: "fav-4", title: "Wedding Frame", price: 2000 },
-  ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#fff" }}>
@@ -279,7 +305,15 @@ export default function Home() {
                   padding: "10px 0",
                 }}
               >
-                {bestsellerProducts.map((prod) => (
+                {(bestsellerProducts.length > 0
+                  ? bestsellerProducts
+                  : [
+                      { id: "fav-1", title: "Wedding Frame", base_price: 2000 },
+                      { id: "fav-2", title: "Wedding Frame", base_price: 2000 },
+                      { id: "fav-3", title: "Wedding Frame", base_price: 2000 },
+                      { id: "fav-4", title: "Wedding Frame", base_price: 2000 },
+                    ]
+                ).map((prod) => (
                   <div
                     key={prod.id}
                     style={{
@@ -291,7 +325,7 @@ export default function Home() {
                       textAlign: "center",
                     }}
                   >
-                    {/* Product image placeholder */}
+                    {/* Product image */}
                     <div
                       style={{
                         width: "100%",
@@ -312,7 +346,11 @@ export default function Home() {
                       onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
                       onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                     >
-                      Product Image
+                      {prod.image ? (
+                        <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        "Product Image"
+                      )}
                     </div>
 
                     <h3
@@ -338,10 +376,10 @@ export default function Home() {
                         margin: "0 0 4px 0",
                       }}
                     >
-                      ₹{prod.price}
+                      ₹{prod.base_price ?? prod.price}
                     </span>
                     <button
-                      onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.price, image: "" })}
+                      onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
                       className="font-sans"
                       style={{
                         background: "none",
@@ -437,7 +475,11 @@ export default function Home() {
                   overflow: "hidden",
                 }}
               >
-                Large Product Image
+                {newDiscoveryProducts.length > 0 && newDiscoveryProducts[0].image ? (
+                  <img src={newDiscoveryProducts[0].image} alt={newDiscoveryProducts[0].title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  "Large Product Image"
+                )}
               </div>
 
               {/* Right: Discover heading + smaller image + text */}
@@ -473,7 +515,11 @@ export default function Home() {
                     overflow: "hidden",
                   }}
                 >
-                  Product Image
+                  {newDiscoveryProducts.length > 0 && newDiscoveryProducts[0].image ? (
+                    <img src={newDiscoveryProducts[0].image} alt={newDiscoveryProducts[0].title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    "Product Image"
+                  )}
                 </div>
 
                 {/* Product details */}
@@ -488,7 +534,7 @@ export default function Home() {
                       margin: "0 0 12px 0",
                     }}
                   >
-                    Wedding Frame
+                    {newDiscoveryProducts.length > 0 ? newDiscoveryProducts[0].title : "Wedding Frame"}
                   </h3>
                   <p
                     className="font-sans"
@@ -503,10 +549,18 @@ export default function Home() {
                       marginRight: "auto",
                     }}
                   >
-                    Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime
+                    {newDiscoveryProducts.length > 0 && newDiscoveryProducts[0].description
+                      ? newDiscoveryProducts[0].description
+                      : "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime"}
                   </p>
                   <button
                     className="font-sans"
+                    onClick={() => {
+                      if (newDiscoveryProducts.length > 0) {
+                        const p = newDiscoveryProducts[0];
+                        addToBag({ id: p.id, title: p.title, price: p.base_price, image: p.image || "" });
+                      }
+                    }}
                     style={{
                       background: "none",
                       border: "none",
@@ -519,7 +573,7 @@ export default function Home() {
                       padding: "0 0 2px 0",
                     }}
                   >
-                    More details
+                    Add to Bag
                   </button>
                 </div>
               </div>
@@ -712,7 +766,7 @@ export default function Home() {
             </h2>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "80px", alignItems: "center", position: "relative" }}>
-              {/* Left Column: Wedding Couple Image */}
+              {/* Left Column: Wedding Couple / Product Image */}
               <div
                 style={{
                   width: "100%",
@@ -730,7 +784,15 @@ export default function Home() {
                   marginLeft: "60px",
                 }}
               >
-                Wedding Couple Illustration
+                {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIndex]?.image ? (
+                  <img
+                    src={weddingSpecials[activeWeddingIndex].image}
+                    alt={weddingSpecials[activeWeddingIndex].title}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  "Wedding Couple Illustration"
+                )}
               </div>
 
               {/* Right Column: Details & Mini-gallery */}
@@ -745,30 +807,61 @@ export default function Home() {
                     margin: 0,
                   }}
                 >
-                  WEDDING FRAMES
+                  {weddingSpecials.length > 0 ? weddingSpecials[activeWeddingIndex]?.title : "WEDDING FRAMES"}
                 </h3>
 
                 {/* 3 mini product thumbnails gallery */}
                 <div style={{ display: "flex", gap: "16px" }}>
-                  {[1, 2, 3].map((num) => (
-                    <div
-                      key={num}
-                      style={{
-                        width: "160px",
-                        height: "160px",
-                        backgroundColor: "#F5EDE8",
-                        borderRadius: "10px",
-                        boxShadow: "0px 2px 5px rgba(0,0,0,0.1)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#BCAEA2",
-                        fontSize: "14px",
-                      }}
-                    >
-                      Frame {num}
-                    </div>
-                  ))}
+                  {weddingSpecials.length > 0 ? (
+                    weddingSpecials.slice(0, 4).map((wProd, idx) => (
+                      <div
+                        key={wProd.id}
+                        onClick={() => setActiveWeddingIndex(idx)}
+                        style={{
+                          width: "160px",
+                          height: "160px",
+                          backgroundColor: "#F5EDE8",
+                          borderRadius: "10px",
+                          boxShadow: "0px 2px 5px rgba(0,0,0,0.1)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#BCAEA2",
+                          fontSize: "14px",
+                          overflow: "hidden",
+                          cursor: "pointer",
+                          border: activeWeddingIndex === idx ? "2px solid #D98A9C" : "2px solid transparent",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        {wProd.image ? (
+                          <img src={wProd.image} alt={wProd.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          `Frame ${idx + 1}`
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    [1, 2, 3].map((num) => (
+                      <div
+                        key={num}
+                        style={{
+                          width: "160px",
+                          height: "160px",
+                          backgroundColor: "#F5EDE8",
+                          borderRadius: "10px",
+                          boxShadow: "0px 2px 5px rgba(0,0,0,0.1)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#BCAEA2",
+                          fontSize: "14px",
+                        }}
+                      >
+                        Frame {num}
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 <p
@@ -782,7 +875,9 @@ export default function Home() {
                     maxWidth: "600px",
                   }}
                 >
-                  Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts. Top-rated options include customized text frames, elegant tabletop glass and pearl designs, and sterling silver anniversary frames that track a couple&apos;s journey over time.
+                  {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIndex]?.description
+                    ? weddingSpecials[activeWeddingIndex].description
+                    : "Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts. Top-rated options include customized text frames, elegant tabletop glass and pearl designs, and sterling silver anniversary frames that track a couple's journey over time."}
                 </p>
 
                 <div
@@ -794,7 +889,32 @@ export default function Home() {
                     color: "#3F3B38",
                   }}
                 >
-                  ₹2000
+                  ₹{weddingSpecials.length > 0 ? weddingSpecials[activeWeddingIndex]?.base_price : "2000"}
+                </div>
+
+                <div>
+                  <button
+                    onClick={() => {
+                      if (weddingSpecials.length > 0) {
+                        const wp = weddingSpecials[activeWeddingIndex];
+                        addToBag({ id: wp.id, title: wp.title, price: wp.base_price, image: wp.image || "" });
+                      }
+                    }}
+                    className="font-sans"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      borderBottom: "1px solid #000",
+                      fontSize: "22px",
+                      lineHeight: "32px",
+                      fontWeight: 400,
+                      color: "#3F3B38",
+                      cursor: "pointer",
+                      padding: "0 0 2px 0",
+                    }}
+                  >
+                    Add to Bag
+                  </button>
                 </div>
 
                 <div>
