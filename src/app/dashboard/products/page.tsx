@@ -47,7 +47,7 @@ export default function ProductsDashboard() {
     lines.forEach((line) => {
       // Look for price patterns like ₹2000, 2000 INR, Rs. 2000, or numbers at end/middle
       const priceMatch = line.match(/(?:₹|Rs\.?|\$)\s*(\d+(?:,\d+)*(?:\.\d+)?)/i) || line.match(/(\d+(?:,\d+)*(?:\.\d+)?)\s*(?:INR|rs|rupees|\/-)/i);
-      
+
       let price = "0";
       if (priceMatch) {
         price = priceMatch[1].replace(/,/g, "");
@@ -247,7 +247,7 @@ export default function ProductsDashboard() {
     setIsWeddingSpecial(!!prod.is_wedding_special);
     setIsBestseller(!!prod.is_bestseller);
     setIsHeroFeatured(!!prod.is_hero_featured);
-    
+
     // Parse existing attributes if present
     if (prod.attributes && Array.isArray(prod.attributes)) {
       setAttributes(
@@ -262,7 +262,7 @@ export default function ProductsDashboard() {
     } else {
       setAttributes([]);
     }
-    
+
     setIsModalOpen(true);
   };
 
@@ -315,7 +315,7 @@ export default function ProductsDashboard() {
   const addPredefinedAttribute = (name: string) => {
     const found = PREDEFINED_ATTRIBUTES.find(a => a.name === name);
     if (!found) return;
-    
+
     // Check if attribute already exists to avoid duplicates
     if (attributes.some(a => a.name.toLowerCase() === name.toLowerCase())) {
       alert("This attribute is already added to the product.");
@@ -698,7 +698,7 @@ export default function ProductsDashboard() {
                   </div>
                 )}
               </div>
-              
+
               {/* Optional Product Attributes Section */}
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", border: "1px dashed #D9A85C", borderRadius: "10px", padding: "16px" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -717,7 +717,7 @@ export default function ProductsDashboard() {
                       <Plus size={16} /> Custom Attribute
                     </button>
                   </div>
-                  
+
                   {/* Predefined Attribute Quick-Select */}
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     <label style={{ fontSize: "12px", color: "#6E6E6E" }}>Quick Add Predefined Attribute:</label>

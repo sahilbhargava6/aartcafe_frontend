@@ -8,7 +8,7 @@ import { Trash2, Plus, Minus } from "lucide-react";
 
 export default function CartPage() {
   const { cart, cartTotal, addToBag, removeFromBag, updateQuantity } = useCart();
-  
+
   // Contact form state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -38,31 +38,8 @@ export default function CartPage() {
       alert("Your bag is currently empty!");
       return;
     }
-
-    const whatsappNumber = "919876543210";
-
-    const customerName = name.trim() || "Guest";
-    const customerEmail = email.trim() || "Not provided";
-    const customerPhone = phone.trim() || "Not provided";
-
-    let messageText = `🌸 *NEW ORDER FROM AARTCAFE* 🌸\n\n`;
-    messageText += `Hello, I'm *${customerName}*. My email address is *${customerEmail}*, and my number is *${customerPhone}*.\n\n`;
-
-    messageText += `*This is my order:*\n`;
-    cart.forEach((item, index) => {
-      messageText += `${index + 1}. *${item.title}* (Qty: ${item.quantity}) — ₹${item.price * item.quantity}\n`;
-      if (item.description) {
-        messageText += `   _${item.description}_\n`;
-      }
-    });
-
-    messageText += `\n*TOTAL PRICE: ₹${cartTotal}*\n\n`;
-    messageText += `Please confirm my order and payment details!`;
-
-    const encodedMessage = encodeURIComponent(messageText);
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-
-    window.open(whatsappUrl, "_blank");
+    const itemNames = cart.map((i) => `${i.title} (x${i.quantity})`).join(", ");
+    alert(`Order List sent to Creator!\nName: ${name || "Guest"}\nEmail: ${email || "N/A"}\nPhone: ${phone || "N/A"}\nItems: ${itemNames}\nTotal: ₹${cartTotal}`);
   };
 
   return (
@@ -71,18 +48,18 @@ export default function CartPage() {
 
       <main style={{ flex: 1, backgroundColor: "#fff", padding: "40px 0 80px 0" }}>
         <div className="cart-container">
-          
+
           <h1 className="font-serif page-title">
             MY BAG
           </h1>
 
           <div className="cart-grid">
-            
+
             {/* ═══════════════════════════════════════════════════════
                 LEFT COLUMN: CART ITEMS LIST & TOTAL
                 ═══════════════════════════════════════════════════════ */}
             <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
-              
+
               {cart.length === 0 ? (
                 <div style={{ padding: "40px 0", textAlign: "center", color: "#BCAEA2" }}>
                   <p className="font-sans" style={{ fontSize: "18px" }}>Your bag is empty.</p>
@@ -190,8 +167,7 @@ export default function CartPage() {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = "transparent";
                   }}
-                >
-                  SEND THE ORDER LIST TO CREATOR
+                >SEND THE ORDER LIST
                 </button>
               </div>
 
@@ -273,7 +249,7 @@ export default function CartPage() {
                 <span className="font-sans" style={{ fontSize: "20px", fontWeight: 600, color: "#3F3B38" }}>
                   This is my order:
                 </span>
-                
+
                 {cart.length === 0 ? (
                   <span className="font-sans" style={{ fontSize: "16px", color: "#6E6E6E" }}>
                     No items selected yet.
