@@ -1,33 +1,45 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCart, CartItem } from "@/context/CartContext";
+import { Trash2, Plus, Minus } from "lucide-react";
 
 export default function CartPage() {
-  const { cart, cartTotal, addToBag } = useCart();
+  const { cart, cartTotal, addToBag, removeFromBag, updateQuantity } = useCart();
   
   // Contact form state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [relatedItems, setRelatedItems] = useState<any[]>([]);
 
-  const relatedItems = [
-    { id: "rel-1", title: "Wedding Frame", price: 2000, image: "" },
-    { id: "rel-2", title: "Wedding Frame", price: 2000, image: "" },
-    { id: "rel-3", title: "Wedding Frame", price: 2000, image: "" },
-    { id: "rel-4", title: "Wedding Frame", price: 2000, image: "" },
-  ];
-
-  // Helper tags from user's design reference
-  const itemTags = [
-    ["Festival Specials", "Rakhis", "Gift Hampers", "Home & Living", "Self-Care", "Personalized Gifts"],
-    ["Home & Living", "Self-Care", "Personalized Gifts", "Accessories"]
-  ];
+  useEffect(() => {
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setRelatedItems(data.slice(0, 4));
+        } else {
+          setRelatedItems([
+            { id: "rel-1", title: "Wedding Frame", base_price: 2000, price: 2000, image: "" },
+            { id: "rel-2", title: "Wedding Frame", base_price: 2000, price: 2000, image: "" },
+            { id: "rel-3", title: "Wedding Frame", base_price: 2000, price: 2000, image: "" },
+            { id: "rel-4", title: "Wedding Frame", base_price: 2000, price: 2000, image: "" },
+          ]);
+        }
+      })
+      .catch((err) => console.error("Error loading related products:", err));
+  }, []);
 
   const handleSendOrder = () => {
-    alert(`Order List sent to Creator!\nName: ${name}\nEmail: ${email}\nPhone: ${phone}`);
+    if (cart.length === 0) {
+      alert("Your bag is currently empty!");
+      return;
+    }
+    const itemNames = cart.map((i) => `${i.title} (x${i.quantity})`).join(", ");
+    alert(`Order List sent to Creator!\nName: ${name || "Guest"}\nEmail: ${email || "N/A"}\nPhone: ${phone || "N/A"}\nItems: ${itemNames}\nTotal: ₹${cartTotal}`);
   };
 
   return (
@@ -57,39 +69,59 @@ export default function CartPage() {
                   {cart.map((item: CartItem) => (
                     <div key={item.id} className="cart-item">
                       {/* Product image */}
-                      <div className="cart-item-image">
-                        Image
+                      <div className="cart-item-image" style={{ overflow: "hidden" }}>
+                        {item.image ? (
+                          <img src={item.image} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          "Image"
+                        )}
                       </div>
 
-                      {/* Details & Tags Grid */}
+                      {/* Details & Controls */}
                       <div style={{ display: "flex", flexDirection: "column", gap: "12px", flex: 1 }}>
-                        <h3 className="font-serif" style={{ fontSize: "24px", color: "#3F3B38", margin: 0, fontWeight: 400 }}>
-                          {item.title}
-                        </h3>
-
-                        {/* Two columns of specifications/categories */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 20px" }}>
-                          {/* Col 1 */}
-                          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                            {itemTags[0].map((tag, idx) => (
-                              <span key={idx} className="font-sans" style={{ fontSize: "14px", color: idx % 2 === 0 ? "#8FB9A8" : "#D98A9C" }}>
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                          {/* Col 2 */}
-                          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                            {itemTags[1].map((tag, idx) => (
-                              <span key={idx} className="font-sans" style={{ fontSize: "14px", color: idx % 2 === 0 ? "#8FB9A8" : "#D98A9C" }}>
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <h3 className="font-serif" style={{ fontSize: "24px", color: "#3F3B38", margin: 0, fontWeight: 400 }}>
+                            {item.title}
+                          </h3>
+                          <button
+                            onClick={() => removeFromBag(item.id)}
+                            style={{ background: "none", border: "none", color: "#E05A47", cursor: "pointer", padding: "4px" }}
+                            title="Remove item"
+                          >
+                            <Trash2 size={20} />
+                          </button>
                         </div>
 
-                        <span className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", marginTop: "8px", display: "block" }}>
-                          ₹{item.price}
-                        </span>
+                        {item.description && (
+                          <p className="font-sans" style={{ fontSize: "14px", color: "#8FB9A8", margin: 0 }}>
+                            {item.description}
+                          </p>
+                        )}
+
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "12px" }}>
+                          {/* Quantity selector */}
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px", border: "1px solid #D9A85C", borderRadius: "20px", padding: "4px 12px" }}>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              style={{ background: "none", border: "none", color: "#3F3B38", cursor: "pointer", display: "flex", alignItems: "center" }}
+                            >
+                              <Minus size={16} />
+                            </button>
+                            <span className="font-sans" style={{ fontSize: "16px", fontWeight: 600, color: "#3F3B38" }}>
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              style={{ background: "none", border: "none", color: "#3F3B38", cursor: "pointer", display: "flex", alignItems: "center" }}
+                            >
+                              <Plus size={16} />
+                            </button>
+                          </div>
+
+                          <span className="font-serif" style={{ fontSize: "28px", color: "#3F3B38" }}>
+                            ₹{item.price * item.quantity}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -219,20 +251,19 @@ export default function CartPage() {
                   This is my order:
                 </span>
                 
-                {cart.map((item: CartItem, index: number) => (
-                  <div key={item.id} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <span className="font-sans" style={{ fontSize: "18px", color: "#3F3B38" }}>
-                      {index + 1}. {item.title} with specification:
-                    </span>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                      {[...itemTags[0], ...itemTags[1]].map((tag: string, tIdx: number) => (
-                        <span key={tIdx} className="font-sans" style={{ fontSize: "16px", color: "#3F3B38" }}>
-                          {tag}
-                        </span>
-                      ))}
+                {cart.length === 0 ? (
+                  <span className="font-sans" style={{ fontSize: "16px", color: "#6E6E6E" }}>
+                    No items selected yet.
+                  </span>
+                ) : (
+                  cart.map((item: CartItem, index: number) => (
+                    <div key={item.id} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span className="font-sans" style={{ fontSize: "16px", color: "#3F3B38", fontWeight: 500 }}>
+                        {index + 1}. {item.title} (x{item.quantity}) — ₹{item.price * item.quantity}
+                      </span>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
 
             </div>
@@ -248,7 +279,7 @@ export default function CartPage() {
             </h2>
 
             <div className="related-grid">
-              {relatedItems.map((prod: { id: string; title: string; price: number; image: string }) => (
+              {relatedItems.map((prod: any) => (
                 <div key={prod.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <div
                     style={{
@@ -263,9 +294,14 @@ export default function CartPage() {
                       justifyContent: "center",
                       color: "#BCAEA2",
                       fontSize: "14px",
+                      overflow: "hidden",
                     }}
                   >
-                    Product Image
+                    {prod.image ? (
+                      <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      "Product Image"
+                    )}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
                     <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0 }}>
@@ -273,10 +309,10 @@ export default function CartPage() {
                     </h4>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                       <span className="font-sans" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
-                        ₹{prod.price}
+                        ₹{prod.base_price ?? prod.price}
                       </span>
                       <button
-                        onClick={() => addToBag(prod)}
+                        onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
                         className="font-sans"
                         style={{
                           background: "none",
