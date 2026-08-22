@@ -38,8 +38,31 @@ export default function CartPage() {
       alert("Your bag is currently empty!");
       return;
     }
-    const itemNames = cart.map((i) => `${i.title} (x${i.quantity})`).join(", ");
-    alert(`Order List sent to Creator!\nName: ${name || "Guest"}\nEmail: ${email || "N/A"}\nPhone: ${phone || "N/A"}\nItems: ${itemNames}\nTotal: ₹${cartTotal}`);
+
+    const whatsappNumber = "919876543210";
+
+    const customerName = name.trim() || "Guest";
+    const customerEmail = email.trim() || "Not provided";
+    const customerPhone = phone.trim() || "Not provided";
+
+    let messageText = `🌸 *NEW ORDER FROM AARTCAFE* 🌸\n\n`;
+    messageText += `Hello, I'm *${customerName}*. My email address is *${customerEmail}*, and my number is *${customerPhone}*.\n\n`;
+
+    messageText += `*This is my order:*\n`;
+    cart.forEach((item, index) => {
+      messageText += `${index + 1}. *${item.title}* (Qty: ${item.quantity}) — ₹${item.price * item.quantity}\n`;
+      if (item.description) {
+        messageText += `   _${item.description}_\n`;
+      }
+    });
+
+    messageText += `\n*TOTAL PRICE: ₹${cartTotal}*\n\n`;
+    messageText += `Please confirm my order and payment details!`;
+
+    const encodedMessage = encodeURIComponent(messageText);
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+
+    window.open(whatsappUrl, "_blank");
   };
 
   return (
