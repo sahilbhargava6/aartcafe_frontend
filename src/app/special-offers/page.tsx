@@ -8,43 +8,68 @@ import { useCart } from "@/context/CartContext";
 
 export default function SpecialOffers() {
   const { addToBag } = useCart();
+  const [banners, setBanners] = React.useState<any[]>([]);
+  const [products, setProducts] = React.useState<any[]>([]);
+  const [weddingSpecials, setWeddingSpecials] = React.useState<any[]>([]);
+  const [activeWeddingIdx, setActiveWeddingIdx] = React.useState(0);
+  const [relatedItems, setRelatedItems] = React.useState<any[]>([]);
 
-  const products = [
-    {
-      id: "so-1",
-      title: "HANDMADE RAKHI",
-      price: 2000,
-      image: "",
-      description: "Handcrafted with love, designed to celebrate the timeless bond between siblings.",
-    },
-    {
-      id: "so-2",
-      title: "HANDMADE RAKHI",
-      price: 2000,
-      image: "",
-      description: "Handcrafted with love, designed to celebrate the timeless bond between siblings.",
-    },
-    {
-      id: "so-3",
-      title: "HANDMADE RAKHI",
-      price: 2000,
-      image: "",
-      description: "Handcrafted with love, designed to celebrate the timeless bond between siblings.",
-    },
-    {
-      id: "so-4",
-      title: "HANDMADE RAKHI",
-      price: 2000,
-      image: "",
-      description: "Handcrafted with love, designed to celebrate the timeless bond between siblings.",
-    },
+  React.useEffect(() => {
+    // Fetch Banners
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/banners")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setBanners(data);
+        }
+      })
+      .catch((err) => console.error("Error loading banners:", err));
+
+    // Fetch Products for main offer grid
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data.slice(0, 4));
+          setRelatedItems(data.slice(0, 4));
+        } else {
+          setProducts(defaultProducts);
+          setRelatedItems(defaultRelated);
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading products:", err);
+        setProducts(defaultProducts);
+        setRelatedItems(defaultRelated);
+      });
+
+    // Fetch Wedding Specials
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/wedding-specials")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setWeddingSpecials(data);
+        }
+      })
+      .catch((err) => console.error("Error loading wedding specials:", err));
+  }, []);
+
+  const banner1 = banners[0] || null;
+  const banner2 = banners[1] || null;
+  const banner3 = banners[2] || null;
+
+  const defaultProducts = [
+    { id: "so-1", title: "HANDMADE RAKHI", base_price: 2000, price: 2000, image: "", description: "Handcrafted with love, designed to celebrate the timeless bond between siblings." },
+    { id: "so-2", title: "HANDMADE RAKHI", base_price: 2000, price: 2000, image: "", description: "Handcrafted with love, designed to celebrate the timeless bond between siblings." },
+    { id: "so-3", title: "HANDMADE RAKHI", base_price: 2000, price: 2000, image: "", description: "Handcrafted with love, designed to celebrate the timeless bond between siblings." },
+    { id: "so-4", title: "HANDMADE RAKHI", base_price: 2000, price: 2000, image: "", description: "Handcrafted with love, designed to celebrate the timeless bond between siblings." },
   ];
 
-  const relatedItems = [
-    { id: "rel-1", title: "Wedding Frame", price: 2000, image: "" },
-    { id: "rel-2", title: "Wedding Frame", price: 2000, image: "" },
-    { id: "rel-3", title: "Wedding Frame", price: 2000, image: "" },
-    { id: "rel-4", title: "Wedding Frame", price: 2000, image: "" },
+  const defaultRelated = [
+    { id: "rel-1", title: "Wedding Frame", base_price: 2000, price: 2000, image: "" },
+    { id: "rel-2", title: "Wedding Frame", base_price: 2000, price: 2000, image: "" },
+    { id: "rel-3", title: "Wedding Frame", base_price: 2000, price: 2000, image: "" },
+    { id: "rel-4", title: "Wedding Frame", price: 2000, base_price: 2000, image: "" },
   ];
 
   return (
@@ -61,7 +86,18 @@ export default function SpecialOffers() {
           <div className="banner-grid">
             
             {/* Left Box: Spring Sale Banner */}
-            <div className="spring-banner">
+            <div
+              className="spring-banner"
+              style={
+                banner1?.image_url
+                  ? {
+                      backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${banner1.image_url})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }
+                  : {}
+              }
+            >
               {/* Corner Floral SVGs */}
               <svg className="floral-svg-left" width="120" height="120" viewBox="0 0 100 100">
                 <path d="M10 90 Q30 60 40 40 T90 10" stroke="#8FB9A8" strokeWidth="2" fill="none" />
@@ -79,10 +115,10 @@ export default function SpecialOffers() {
                 SPECIAL OFFER
               </span>
               <h1 className="font-serif spring-title">
-                SPRING SALE
+                {banner1?.title || "SPRING SALE"}
               </h1>
               <p className="font-sans banner-desc" style={{ fontSize: "16px", color: "#8FB9A8", maxWidth: "600px", lineHeight: "26px", margin: "0 0 24px 0" }}>
-                Spring has arrived when you can stand on three daisies. Put a discount in your shopping basket.
+                {banner1?.subtitle || "Spring has arrived when you can stand on three daisies. Put a discount in your shopping basket."}
               </p>
               <div
                 style={{
@@ -118,6 +154,13 @@ export default function SpecialOffers() {
                   justifyContent: "space-between",
                   boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
                   overflow: "hidden",
+                  ...(banner2?.image_url
+                    ? {
+                        backgroundImage: `linear-gradient(rgba(217, 168, 92, 0.75), rgba(217, 168, 92, 0.75)), url(${banner2.image_url})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : {}),
                 }}
               >
                 {/* Background Text "Offer" */}
@@ -131,10 +174,10 @@ export default function SpecialOffers() {
                   <span className="font-sans" style={{ fontSize: "14px", color: "#fff", letterSpacing: "2px" }}>OFF</span>
                 </div>
 
-                {/* Center Shoes Image placeholder */}
+                {/* Center Shoes Image / Title */}
                 <div style={{ display: "flex", justifyContent: "center", margin: "10px 0" }}>
-                  <div style={{ width: "120px", height: "90px", backgroundColor: "rgba(255,255,255,0.9)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "#D9A85C", fontSize: "12px" }}>
-                    Image
+                  <div style={{ padding: "8px 16px", backgroundColor: "rgba(255,255,255,0.9)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "#D9A85C", fontSize: "14px", fontWeight: 600, textAlign: "center" }}>
+                    {banner2?.title || "Image"}
                   </div>
                 </div>
 
@@ -158,6 +201,13 @@ export default function SpecialOffers() {
                   alignItems: "center",
                   justifyContent: "center",
                   boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
+                  ...(banner3?.image_url
+                    ? {
+                        backgroundImage: `linear-gradient(rgba(143, 185, 168, 0.75), rgba(143, 185, 168, 0.75)), url(${banner3.image_url})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : {}),
                 }}
               >
                 <div
@@ -174,10 +224,10 @@ export default function SpecialOffers() {
                     SHOP NOW
                   </span>
                   <h4 className="font-serif" style={{ fontSize: "22px", color: "#3F3B38", margin: "0 0 6px 0", letterSpacing: "1px" }}>
-                    SPECIAL OFFER
+                    {banner3?.title || "SPECIAL OFFER"}
                   </h4>
                   <p className="font-sans" style={{ fontSize: "12px", color: "#8FB9A8", fontWeight: 600, margin: 0, letterSpacing: "1px" }}>
-                    SAVE UP TO 40%
+                    {banner3?.subtitle || "SAVE UP TO 40%"}
                   </p>
                 </div>
               </div>
@@ -187,15 +237,19 @@ export default function SpecialOffers() {
           </div>
 
           {/* ═══════════════════════════════════════════════════════
-              PRODUCT GRID SECTION: 2x2 HANDMADE RAKHIS
+              PRODUCT GRID SECTION: 2x2 HANDMADE RAKHIS / OFFERS
               ═══════════════════════════════════════════════════════ */}
           <div className="products-grid">
             {products.map((prod) => (
               <div key={prod.id} className="prod-card">
                 
                 {/* Left side: Small Image Frame */}
-                <div className="prod-image-box">
-                  Image
+                <div className="prod-image-box" style={{ overflow: "hidden" }}>
+                  {prod.image ? (
+                    <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    "Image"
+                  )}
                 </div>
 
                 {/* Right side: Product details */}
@@ -204,16 +258,16 @@ export default function SpecialOffers() {
                     {prod.title}
                   </h3>
                   <p className="font-sans" style={{ fontSize: "14px", color: "#8FB9A8", lineHeight: "20px", margin: 0 }}>
-                    {prod.description}
+                    {prod.description || "Handcrafted with love, designed to celebrate the timeless bond."}
                   </p>
                   <span className="font-serif" style={{ fontSize: "28px", color: "#3F3B38" }}>
-                    ₹{prod.price}
+                    ₹{prod.base_price ?? prod.price}
                   </span>
                   
                   {/* Add to Cart Button */}
                   <div>
                     <button
-                      onClick={() => addToBag(prod)}
+                      onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
                       style={{
                         width: "100%",
                         height: "36px",
@@ -283,42 +337,81 @@ export default function SpecialOffers() {
                 WEDDING SPECIALS
               </span>
               <h3 className="font-serif" style={{ fontSize: "36px", color: "#3F3B38", margin: 0 }}>
-                WEDDING FRAMES
+                {weddingSpecials.length > 0 ? weddingSpecials[activeWeddingIdx]?.title : "WEDDING FRAMES"}
               </h3>
 
               {/* Row of 3 square couple thumbnails */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      width: "100%",
-                      aspectRatio: "1/1",
-                      backgroundColor: "#F5EDE8",
-                      borderRadius: "15px",
-                      boxShadow: "0px 4px 10px rgba(0,0,0,0.15)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#BCAEA2",
-                      fontSize: "12px",
-                    }}
-                  >
-                    Couple Frame
-                  </div>
-                ))}
+                {weddingSpecials.length > 0 ? (
+                  weddingSpecials.slice(0, 3).map((wItem, i) => (
+                    <div
+                      key={wItem.id || i}
+                      onClick={() => setActiveWeddingIdx(i)}
+                      style={{
+                        width: "100%",
+                        aspectRatio: "1/1",
+                        backgroundColor: "#F5EDE8",
+                        borderRadius: "15px",
+                        boxShadow: "0px 4px 10px rgba(0,0,0,0.15)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#BCAEA2",
+                        fontSize: "12px",
+                        overflow: "hidden",
+                        cursor: "pointer",
+                        border: activeWeddingIdx === i ? "2px solid #D98A9C" : "2px solid transparent",
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      {wItem.image ? (
+                        <img src={wItem.image} alt={wItem.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        `Frame ${i + 1}`
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        width: "100%",
+                        aspectRatio: "1/1",
+                        backgroundColor: "#F5EDE8",
+                        borderRadius: "15px",
+                        boxShadow: "0px 4px 10px rgba(0,0,0,0.15)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#BCAEA2",
+                        fontSize: "12px",
+                      }}
+                    >
+                      Couple Frame
+                    </div>
+                  ))
+                )}
               </div>
 
               <p className="font-sans" style={{ fontSize: "16px", color: "#8FB9A8", lineHeight: "26px", margin: 0 }}>
-                Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts. Top-rated options include customized text frames, elegant tabletop glass and pearl designs, and sterling silver anniversary frames that track a couple's journey over time.
+                {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIdx]?.description
+                  ? weddingSpecials[activeWeddingIdx].description
+                  : "Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts. Top-rated options include customized text frames, elegant tabletop glass and pearl designs, and sterling silver anniversary frames that track a couple's journey over time."}
               </p>
 
               <span className="font-serif" style={{ fontSize: "36px", color: "#3F3B38" }}>
-                ₹2000
+                ₹{weddingSpecials.length > 0 ? weddingSpecials[activeWeddingIdx]?.base_price : "2000"}
               </span>
 
               <div>
                 <button
+                  onClick={() => {
+                    if (weddingSpecials.length > 0) {
+                      const wObj = weddingSpecials[activeWeddingIdx];
+                      addToBag({ id: wObj.id, title: wObj.title, price: wObj.base_price, image: wObj.image || "" });
+                    }
+                  }}
                   style={{
                     height: "44px",
                     padding: "0 40px",
@@ -339,7 +432,7 @@ export default function SpecialOffers() {
                     e.currentTarget.style.backgroundColor = "transparent";
                   }}
                 >
-                  MORE DETAILS
+                  ADD TO CART
                 </button>
               </div>
 
@@ -371,9 +464,14 @@ export default function SpecialOffers() {
                       justifyContent: "center",
                       color: "#BCAEA2",
                       fontSize: "14px",
+                      overflow: "hidden",
                     }}
                   >
-                    Product Image
+                    {prod.image ? (
+                      <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      "Product Image"
+                    )}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
                     <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0 }}>
@@ -381,10 +479,10 @@ export default function SpecialOffers() {
                     </h4>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                       <span className="font-sans" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
-                        ₹{prod.price}
+                        ₹{prod.base_price ?? prod.price}
                       </span>
                       <button
-                        onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.price, image: "" })}
+                        onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
                         className="font-sans"
                         style={{
                           background: "none",
