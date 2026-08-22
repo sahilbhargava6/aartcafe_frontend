@@ -391,12 +391,44 @@ export default function Navbar() {
               Log in to track orders, save favorites, and manage your custom requests.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <button style={{ height: "40px", borderRadius: "20px", border: "1px solid #D9A85C", backgroundColor: "transparent", color: "#D98A9C", fontWeight: 600, cursor: "pointer" }}>
+              <Link
+                href="/signin"
+                onClick={() => setUserMenuOpen(false)}
+                style={{
+                  height: "40px",
+                  borderRadius: "20px",
+                  border: "1px solid #D9A85C",
+                  backgroundColor: "transparent",
+                  color: "#D98A9C",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textDecoration: "none",
+                }}
+              >
                 SIGN IN
-              </button>
-              <button style={{ height: "40px", borderRadius: "20px", border: "none", backgroundColor: "#D9A85C", color: "#FFF", fontWeight: 600, cursor: "pointer" }}>
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setUserMenuOpen(false)}
+                style={{
+                  height: "40px",
+                  borderRadius: "20px",
+                  border: "none",
+                  backgroundColor: "#D9A85C",
+                  color: "#FFF",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textDecoration: "none",
+                }}
+              >
                 CREATE ACCOUNT
-              </button>
+              </Link>
             </div>
           </div>
         </div>
