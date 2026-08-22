@@ -24,6 +24,14 @@ export default function ProductsDashboard() {
   const [isBestseller, setIsBestseller] = useState(false);
   const [isHeroFeatured, setIsHeroFeatured] = useState(false);
 
+  // CSV Import State
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvPreview, setCsvPreview] = useState<any[]>([]);
+  const [csvImporting, setCsvImporting] = useState(false);
+  const [csvMessage, setCsvMessage] = useState("");
+  const csvFileInputRef = useRef<HTMLInputElement>(null);
+
   // Attribute Form Fields (Optional)
   // attributes: Array of { name: string, values: Array<{ value: string, price_modifier: number }> }
   const [attributes, setAttributes] = useState<any[]>([]);
@@ -31,6 +39,99 @@ export default function ProductsDashboard() {
   // File Upload State
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const downloadSampleCsv = () => {
+    const csvContent =
+      "Title,Category,Price,Description,Image,Is Bestseller,Is New Discovery,Is Wedding Special,Is Hero Featured\n" +
+      "Resin Floral Frame,Personalized Frames,2499,Preserved memory frame with gold foil,https://images.unsplash.com/photo-1513519245088-0e12902e5a38,true,false,true,true\n" +
+      "Handmade Rakhi Set,Festival Specials,599,Premium handcrafted silk thread rakhi set,false,true,false,false\n" +
+      "Couple Anniversary Keepsake,Wedding Specials,3499,Custom tabletop acrylic frame with crushed petals,true,false,true,false";
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "aartcafe_catalog_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleCsvFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvFile(file);
+    setCsvMessage("");
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const lines = text.split(/\r\n|\n/);
+      if (lines.length <= 1) return;
+
+      const headers = lines[0].split(",").map((h) => h.trim());
+      const parsed: any[] = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        // Basic CSV regex split handling quotes
+        const values = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(",");
+        const cleanValues = values.map((v) => v.replace(/^"|"$/g, "").trim());
+
+        const rowObj: any = {};
+        headers.forEach((h, idx) => {
+          rowObj[h] = cleanValues[idx] || "";
+        });
+        parsed.push(rowObj);
+      }
+
+      setCsvPreview(parsed);
+    };
+    reader.readAsText(file);
+  };
+
+  const submitCsvImport = () => {
+    if (!csvFile && csvPreview.length === 0) {
+      setCsvMessage("Please select a valid CSV file first.");
+      return;
+    }
+
+    setCsvImporting(true);
+    setCsvMessage("");
+
+    // Send Form Data or JSON list
+    const formData = new FormData();
+    if (csvFile) {
+      formData.append("csv_file", csvFile);
+    } else {
+      formData.append("products", JSON.stringify(csvPreview));
+    }
+
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/bulk-import", {
+      method: "POST",
+      body: formData,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Bulk import failed. Check CSV structure.");
+        return res.json();
+      })
+      .then((data) => {
+        setCsvMessage(`Success! ${data.message || "Products imported successfully."}`);
+        fetchData();
+        setTimeout(() => {
+          setIsCsvModalOpen(false);
+          setCsvPreview([]);
+          setCsvFile(null);
+          setCsvMessage("");
+        }, 1800);
+      })
+      .catch((err) => {
+        setCsvMessage(err.message || "Failed to import products.");
+      })
+      .finally(() => setCsvImporting(false));
+  };
 
   const fetchData = () => {
     setLoading(true);
@@ -276,18 +377,35 @@ export default function ProductsDashboard() {
         <h1 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", margin: 0, fontWeight: 400 }}>
           PRODUCTS
         </h1>
-        <button
-          onClick={openAddModal}
-          style={{
-            display: "flex", alignItems: "center", gap: "8px", backgroundColor: "#D98A9C",
-            color: "#fff", border: "none", borderRadius: "10px", padding: "10px 16px",
-            fontSize: "16px", cursor: "pointer", fontWeight: 500, transition: "opacity 0.2s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
-          onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-        >
-          <Plus size={18} /> Add Product
-        </button>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <button
+            onClick={() => {
+              setCsvMessage("");
+              setIsCsvModalOpen(true);
+            }}
+            style={{
+              display: "flex", alignItems: "center", gap: "8px", backgroundColor: "#8FB9A8",
+              color: "#fff", border: "none", borderRadius: "10px", padding: "10px 16px",
+              fontSize: "15px", cursor: "pointer", fontWeight: 500, transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+          >
+            <Upload size={18} /> Bulk Import CSV
+          </button>
+          <button
+            onClick={openAddModal}
+            style={{
+              display: "flex", alignItems: "center", gap: "8px", backgroundColor: "#D98A9C",
+              color: "#fff", border: "none", borderRadius: "10px", padding: "10px 16px",
+              fontSize: "15px", cursor: "pointer", fontWeight: 500, transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+          >
+            <Plus size={18} /> Add Product
+          </button>
+        </div>
       </div>
 
       {error && <div style={{ color: "#E05A47", fontSize: "16px", fontWeight: 500 }}>{error}</div>}
@@ -701,6 +819,148 @@ export default function ProductsDashboard() {
                 Save Product
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* CSV Bulk Import Modal */}
+      {isCsvModalOpen && (
+        <div
+          style={{
+            position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+            backgroundColor: "rgba(0,0,0,0.4)", zIndex: 1000,
+            display: "flex", justifyContent: "center", alignItems: "center",
+          }}
+          onClick={() => setIsCsvModalOpen(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#fff", padding: "30px", borderRadius: "15px",
+              maxWidth: "680px", width: "90%", maxHeight: "90vh", overflowY: "auto",
+              boxShadow: "0px 10px 30px rgba(0,0,0,0.15)", position: "relative",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setIsCsvModalOpen(false)}
+              style={{
+                position: "absolute", top: "20px", right: "20px", background: "none",
+                border: "none", cursor: "pointer", color: "#3F3B38",
+              }}
+            >
+              <X size={20} />
+            </button>
+
+            <h2 className="font-serif" style={{ fontSize: "24px", color: "#3F3B38", marginTop: 0, marginBottom: "8px" }}>
+              Bulk Import Catalog via CSV
+            </h2>
+            <p className="font-sans" style={{ fontSize: "14px", color: "#6E6E6E", marginBottom: "20px", lineHeight: "20px" }}>
+              Upload your product catalog CSV sheet to automatically create all products at once.
+            </p>
+
+            <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+              <button
+                type="button"
+                onClick={downloadSampleCsv}
+                style={{
+                  padding: "8px 16px", borderRadius: "8px", border: "1px solid #D9A85C",
+                  backgroundColor: "transparent", color: "#D9A85C", fontSize: "14px",
+                  fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px",
+                }}
+              >
+                Download Sample CSV Template
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
+              <label className="font-sans" style={{ fontSize: "14px", fontWeight: 500, color: "#3F3B38" }}>
+                Select CSV File
+              </label>
+              <input
+                ref={csvFileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleCsvFileSelect}
+                style={{
+                  padding: "10px", borderRadius: "8px", border: "1.5px dashed #8FB9A8",
+                  backgroundColor: "#FAF6F0", cursor: "pointer",
+                }}
+              />
+            </div>
+
+            {csvMessage && (
+              <div
+                style={{
+                  padding: "10px 14px", borderRadius: "8px", fontSize: "14px", marginBottom: "16px",
+                  backgroundColor: csvMessage.includes("Success") ? "rgba(143, 185, 168, 0.2)" : "rgba(224, 90, 71, 0.2)",
+                  color: csvMessage.includes("Success") ? "#4E8E76" : "#E05A47",
+                }}
+              >
+                {csvMessage}
+              </div>
+            )}
+
+            {/* CSV Preview Table */}
+            {csvPreview.length > 0 && (
+              <div style={{ marginBottom: "20px" }}>
+                <h4 className="font-sans" style={{ fontSize: "15px", color: "#3F3B38", marginBottom: "8px" }}>
+                  Preview ({csvPreview.length} items found):
+                </h4>
+                <div style={{ maxHeight: "200px", overflowY: "auto", border: "1px solid #EBE5DB", borderRadius: "8px" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                    <thead>
+                      <tr style={{ backgroundColor: "#FCFAF7", textAlign: "left", borderBottom: "1px solid #EBE5DB" }}>
+                        <th style={{ padding: "8px" }}>Title</th>
+                        <th style={{ padding: "8px" }}>Category</th>
+                        <th style={{ padding: "8px" }}>Price</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvPreview.map((row, idx) => (
+                        <tr key={idx} style={{ borderBottom: "1px solid #F5EDE8" }}>
+                          <td style={{ padding: "8px", fontWeight: 500 }}>{row.Title || row.title || "—"}</td>
+                          <td style={{ padding: "8px", color: "#8FB9A8" }}>{row.Category || row.category || "General"}</td>
+                          <td style={{ padding: "8px" }}>₹{row.Price || row.price || row.base_price || 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+              <button
+                type="button"
+                onClick={() => setIsCsvModalOpen(false)}
+                style={{
+                  padding: "10px 20px", borderRadius: "8px", border: "1px solid #EBE5DB",
+                  backgroundColor: "transparent", color: "#6E6E6E", cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitCsvImport}
+                disabled={csvImporting || (!csvFile && csvPreview.length === 0)}
+                style={{
+                  padding: "10px 24px", borderRadius: "8px", border: "none",
+                  backgroundColor: "#8FB9A8", color: "#fff", fontWeight: 600,
+                  cursor: csvImporting || (!csvFile && csvPreview.length === 0) ? "not-allowed" : "pointer",
+                  opacity: csvImporting || (!csvFile && csvPreview.length === 0) ? 0.6 : 1,
+                  display: "flex", alignItems: "center", gap: "8px",
+                }}
+              >
+                {csvImporting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Importing...
+                  </>
+                ) : (
+                  "Upload & Import All"
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
