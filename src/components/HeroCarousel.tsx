@@ -19,12 +19,12 @@ const SLOTS: SlotStyle[] = [
   { width: 169, height: 211, left: 510, top: 59, opacity: 0.5,  zIndex: 1 }, // far right
 ];
 
-const IMAGES = [
-  { id: 0, label: "Image 1", bg: "#F5EDE8" },
-  { id: 1, label: "Image 2", bg: "#F0E6DF" },
-  { id: 2, label: "Image 3", bg: "#EBE0D8" },
-  { id: 3, label: "Image 4", bg: "#F5EDE8" },
-  { id: 4, label: "Image 5", bg: "#F0E6DF" },
+const DEFAULT_IMAGES = [
+  { id: "def-0", label: "Image 1", bg: "#F5EDE8", url: "" },
+  { id: "def-1", label: "Image 2", bg: "#F0E6DF", url: "" },
+  { id: "def-2", label: "Image 3", bg: "#EBE0D8", url: "" },
+  { id: "def-3", label: "Image 4", bg: "#F5EDE8", url: "" },
+  { id: "def-4", label: "Image 5", bg: "#F0E6DF", url: "" },
 ];
 
 const AUTO_INTERVAL = 3000;
@@ -32,27 +32,75 @@ const AUTO_INTERVAL = 3000;
 export default function HeroCarousel() {
   const [offset, setOffset] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-
-  const advance = useCallback(() => {
-    setOffset((prev) => (prev + 1) % IMAGES.length);
-  }, []);
+  const [carouselItems, setCarouselItems] = useState<any[]>(DEFAULT_IMAGES);
 
   useEffect(() => {
-    if (isPaused) return;
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/hero-featured")
+      .then((res) => {
+        if (!res.ok) throw new Error("Endpoint not available yet");
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          applyHeroItems(data);
+        } else {
+          fetchFallbackProducts();
+        }
+      })
+      .catch(() => {
+        fetchFallbackProducts();
+      });
+  }, []);
+
+  const fetchFallbackProducts = () => {
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const featured = data.filter((p: any) => p.is_hero_featured);
+          if (featured.length > 0) {
+            applyHeroItems(featured);
+          }
+        }
+      })
+      .catch(() => {});
+  };
+
+  const applyHeroItems = (data: any[]) => {
+    const fetchedItems = data.map((p, i) => ({
+      id: p.id || i,
+      label: p.title,
+      bg: "#F5EDE8",
+      url: p.image || "",
+    }));
+
+    let items = [...fetchedItems];
+    while (items.length < 5) {
+      items = items.concat(fetchedItems).slice(0, 5);
+    }
+    setCarouselItems(items.slice(0, 5));
+  };
+
+  const advance = useCallback(() => {
+    setOffset((prev) => (prev + 1) % carouselItems.length);
+  }, [carouselItems.length]);
+
+  useEffect(() => {
+    if (isPaused || carouselItems.length === 0) return;
     const timer = setInterval(advance, AUTO_INTERVAL);
     return () => clearInterval(timer);
-  }, [advance, isPaused]);
+  }, [advance, isPaused, carouselItems.length]);
 
   return (
     <div className="carousel-wrapper" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)}>
       <div className="carousel-inner">
-        {IMAGES.map((image, index) => {
-          const slotIdx = ((index - offset) % IMAGES.length + IMAGES.length) % IMAGES.length;
+        {carouselItems.map((image, index) => {
+          const slotIdx = ((index - offset) % carouselItems.length + carouselItems.length) % carouselItems.length;
           const slot = SLOTS[slotIdx] || SLOTS[0];
 
           return (
             <div
-              key={image.id}
+              key={`${image.id}-${index}`}
               style={{
                 position: "absolute",
                 width: `${slot.width}px`,
@@ -73,7 +121,11 @@ export default function HeroCarousel() {
                 transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
-              <span>{image.label}</span>
+              {image.url ? (
+                <img src={image.url} alt={image.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span>{image.label}</span>
+              )}
             </div>
           );
         })}

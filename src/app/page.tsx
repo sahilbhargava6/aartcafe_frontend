@@ -22,7 +22,7 @@ export default function Home() {
 
   useEffect(() => {
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/bestsellers")
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setBestsellerProducts(data);
@@ -31,7 +31,7 @@ export default function Home() {
       .catch((err) => console.error("Error fetching bestsellers:", err));
 
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/new-discoveries")
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setNewDiscoveryProducts(data);
@@ -40,7 +40,7 @@ export default function Home() {
       .catch((err) => console.error("Error fetching new discoveries:", err));
 
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/wedding-specials")
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setWeddingSpecials(data);
@@ -49,7 +49,7 @@ export default function Home() {
       .catch((err) => console.error("Error fetching wedding specials:", err));
 
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews")
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setReviews(data);

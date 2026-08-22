@@ -22,6 +22,7 @@ export default function ProductsDashboard() {
   const [isNewDiscovery, setIsNewDiscovery] = useState(false);
   const [isWeddingSpecial, setIsWeddingSpecial] = useState(false);
   const [isBestseller, setIsBestseller] = useState(false);
+  const [isHeroFeatured, setIsHeroFeatured] = useState(false);
 
   // Attribute Form Fields (Optional)
   // attributes: Array of { name: string, values: Array<{ value: string, price_modifier: number }> }
@@ -74,6 +75,7 @@ export default function ProductsDashboard() {
     setIsNewDiscovery(false);
     setIsWeddingSpecial(false);
     setIsBestseller(false);
+    setIsHeroFeatured(false);
     setAttributes([]);
     setIsModalOpen(true);
   };
@@ -88,6 +90,7 @@ export default function ProductsDashboard() {
     setIsNewDiscovery(!!prod.is_new_discovery);
     setIsWeddingSpecial(!!prod.is_wedding_special);
     setIsBestseller(!!prod.is_bestseller);
+    setIsHeroFeatured(!!prod.is_hero_featured);
     
     // Parse existing attributes if present
     if (prod.attributes && Array.isArray(prod.attributes)) {
@@ -234,6 +237,7 @@ export default function ProductsDashboard() {
         is_new_discovery: isNewDiscovery,
         is_wedding_special: isWeddingSpecial,
         is_bestseller: isBestseller,
+        is_hero_featured: isHeroFeatured,
         attributes: cleanAttributes
       }),
     })
@@ -339,7 +343,12 @@ export default function ProductsDashboard() {
                           Wedding Special
                         </span>
                       )}
-                      {!prod.is_bestseller && !prod.is_new_discovery && !prod.is_wedding_special && (
+                      {prod.is_hero_featured && (
+                        <span style={{ padding: "2px 6px", backgroundColor: "#EBF3FA", color: "#3B82F6", borderRadius: "6px", fontSize: "11px", fontWeight: 600 }}>
+                          Hero Featured
+                        </span>
+                      )}
+                      {!prod.is_bestseller && !prod.is_new_discovery && !prod.is_wedding_special && !prod.is_hero_featured && (
                         <span style={{ fontSize: "12px", color: "#BCAEA2", fontStyle: "italic" }}>-</span>
                       )}
                     </div>
@@ -665,6 +674,16 @@ export default function ProductsDashboard() {
                     style={{ cursor: "pointer" }}
                   />
                   Best Seller (Customer&apos;s Favorite)
+                </label>
+
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "14px", color: "#3F3B38" }}>
+                  <input
+                    type="checkbox"
+                    checked={isHeroFeatured}
+                    onChange={(e) => setIsHeroFeatured(e.target.checked)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  Hero Carousel Featured
                 </label>
               </div>
 
