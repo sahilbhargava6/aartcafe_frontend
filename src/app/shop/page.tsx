@@ -55,6 +55,7 @@ export default function Shop() {
             basePrice: parseFloat(p.base_price),
             discountPrice: p.discount_price ? parseFloat(p.discount_price) : null,
             category: p.category?.name || "Uncategorized",
+            categories: Array.isArray(p.categories) && p.categories.length > 0 ? p.categories.map((c: any) => c.name) : [p.category?.name || "Uncategorized"],
             image: p.image || "",
             description: p.description || ""
           }));
@@ -62,12 +63,12 @@ export default function Shop() {
           setFilteredProducts(formatted);
         } else {
           const defaultItems = [
-            { id: 1, title: "Wedding Frame", price: 2000, category: "Personalized Frames", image: "" },
-            { id: 2, title: "Baby Keepsake", price: 1500, category: "Personalized Frames", image: "" },
-            { id: 3, title: "Handmade Rakhi Set", price: 600, category: "Handmade Rakhis", image: "" },
-            { id: 4, title: "Lumba Rakhi", price: 400, category: "Handmade Rakhis", image: "" },
-            { id: 5, title: "Luxury Gift Hamper", price: 4500, category: "Gift Hampers", image: "" },
-            { id: 6, title: "Festive Joy Hamper", price: 3200, category: "Gift Hampers", image: "" }
+            { id: 1, title: "Wedding Frame", price: 2000, category: "Personalized Frames", categories: ["Personalized Frames"], image: "" },
+            { id: 2, title: "Baby Keepsake", price: 1500, category: "Personalized Frames", categories: ["Personalized Frames"], image: "" },
+            { id: 3, title: "Handmade Rakhi Set", price: 600, category: "Handmade Rakhis", categories: ["Handmade Rakhis"], image: "" },
+            { id: 4, title: "Lumba Rakhi", price: 400, category: "Handmade Rakhis", categories: ["Handmade Rakhis"], image: "" },
+            { id: 5, title: "Luxury Gift Hamper", price: 4500, category: "Gift Hampers", categories: ["Gift Hampers"], image: "" },
+            { id: 6, title: "Festive Joy Hamper", price: 3200, category: "Gift Hampers", categories: ["Gift Hampers"], image: "" }
           ];
           setAllProducts(defaultItems);
           setFilteredProducts(defaultItems);
@@ -87,7 +88,7 @@ export default function Shop() {
     let result = allProducts;
 
     if (selectedCategory) {
-      result = result.filter((p) => p.category === selectedCategory);
+      result = result.filter((p) => (p.categories && Array.isArray(p.categories)) ? p.categories.includes(selectedCategory) : p.category === selectedCategory);
     }
 
     if (selectedPriceRange) {

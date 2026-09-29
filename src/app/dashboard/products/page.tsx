@@ -16,6 +16,7 @@ export default function ProductsDashboard() {
 
   // Form Fields
   const [categoryId, setCategoryId] = useState("");
+  const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [title, setTitle] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [discountPrice, setDiscountPrice] = useState("");
@@ -289,7 +290,8 @@ export default function ProductsDashboard() {
 
   const openAddModal = () => {
     setEditingProduct(null);
-    setCategoryId(categories[0]?.id || "");
+    setCategoryId(categories[0]?.id ? String(categories[0].id) : "");
+    setCategoryIds(categories[0]?.id ? [Number(categories[0].id)] : []);
     setTitle("");
     setBasePrice("");
     setDiscountPrice("");
@@ -306,7 +308,11 @@ export default function ProductsDashboard() {
 
   const openEditModal = (prod: any) => {
     setEditingProduct(prod);
-    setCategoryId(prod.category_id);
+    setCategoryId(prod.category_id ? String(prod.category_id) : "");
+    const existingCats: number[] = Array.isArray(prod.categories) && prod.categories.length > 0
+      ? prod.categories.map((c: any) => Number(c.id))
+      : prod.category_id ? [Number(prod.category_id)] : [];
+    setCategoryIds(existingCats);
     setTitle(prod.title);
     setBasePrice(prod.base_price);
     setDiscountPrice(prod.discount_price || "");
@@ -441,7 +447,11 @@ export default function ProductsDashboard() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !basePrice || !categoryId) return;
+    const selectedCategoryList = categoryIds.length > 0 ? categoryIds : categoryId ? [parseInt(categoryId)] : [];
+    if (!title.trim() || !basePrice || selectedCategoryList.length === 0) {
+      alert("Please select at least one category, fill in title and base price.");
+      return;
+    }
 
     const url = editingProduct
       ? `https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/${editingProduct.id}`
@@ -461,7 +471,8 @@ export default function ProductsDashboard() {
       method: method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        category_id: parseInt(categoryId),
+        category_id: selectedCategoryList[0],
+        category_ids: selectedCategoryList,
         title,
         base_price: parseFloat(basePrice),
         discount_price: discountPrice ? parseFloat(discountPrice) : null,
@@ -579,7 +590,19 @@ export default function ProductsDashboard() {
                     )}
                   </td>
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{prod.title}</td>
-                  <td style={{ padding: "16px 24px", color: "#D98A9C" }}>{prod.category?.name || "Uncategorized"}</td>
+                  <td style={{ padding: "16px 24px" }}>
+                    {prod.categories && prod.categories.length > 0 ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                        {prod.categories.map((c: any) => (
+                          <span key={c.id} style={{ padding: "2px 8px", backgroundColor: "#FFEAEF", color: "#D98A9C", borderRadius: "10px", fontSize: "12px", fontWeight: 500 }}>
+                            {c.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ color: "#D98A9C" }}>{prod.category?.name || "Uncategorized"}</span>
+                    )}
+                  </td>
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>
                     {prod.discount_price ? (
                       <div style={{ display: "flex", flexDirection: "column" }}>
@@ -683,22 +706,54 @@ export default function ProductsDashboard() {
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Category</label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  style={{
-                    height: "40px", borderRadius: "8px", border: "1px solid #D9A85C",
-                    padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38", backgroundColor: "#fff",
-                  }}
-                  required
-                >
-                  <option value="" disabled>Select a category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <label style={{ fontSize: "14px", color: "#6E6E6E", fontWeight: 500 }}>
+                  Categories <span style={{ fontSize: "12px", color: "#D98A9C" }}>(Select one or multiple)</span>
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", border: "1px solid #D9A85C", borderRadius: "10px", padding: "12px", backgroundColor: "#FAF6F0" }}>
+                  {categories.map((cat) => {
+                    const isSelected = categoryIds.includes(Number(cat.id));
+                    return (
+                      <label
+                        key={cat.id}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "6px 14px",
+                          borderRadius: "20px",
+                          border: isSelected ? "1.5px solid #D98A9C" : "1.5px solid #EBE5DB",
+                          backgroundColor: isSelected ? "#FFEAEF" : "#fff",
+                          color: isSelected ? "#D98A9C" : "#3F3B38",
+                          fontSize: "14px",
+                          fontWeight: isSelected ? 600 : 400,
+                          cursor: "pointer",
+                          userSelect: "none",
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            const catId = Number(cat.id);
+                            if (e.target.checked) {
+                              setCategoryIds((prev) => [...prev, catId]);
+                              if (!categoryId) setCategoryId(String(catId));
+                            } else {
+                              const updated = categoryIds.filter((id) => id !== catId);
+                              setCategoryIds(updated);
+                              if (updated.length > 0) setCategoryId(String(updated[0]));
+                              else setCategoryId("");
+                            }
+                          }}
+                          style={{ accentColor: "#D98A9C", cursor: "pointer" }}
+                        />
+                        {cat.name}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
