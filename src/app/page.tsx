@@ -382,21 +382,26 @@ export default function Home() {
                         {prod.title}
                       </h3>
                     </a>
-                    <span
-                      className="font-sans"
-                      style={{
-                        fontSize: "22px",
-                        lineHeight: "32px",
-                        fontWeight: 400,
-                        color: "#3F3B38",
-                        display: "block",
-                        margin: "0 0 4px 0",
-                      }}
-                    >
-                      ₹{prod.base_price ?? prod.price}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "8px", margin: "0 0 4px 0" }}>
+                      <span
+                        className="font-sans"
+                        style={{
+                          fontSize: "22px",
+                          lineHeight: "32px",
+                          fontWeight: 500,
+                          color: "#3F3B38",
+                        }}
+                      >
+                        ₹{prod.discount_price ?? prod.base_price ?? prod.price}
+                      </span>
+                      {prod.discount_price && (
+                        <span className="font-sans" style={{ fontSize: "15px", textDecoration: "line-through", color: "#999" }}>
+                          ₹{prod.base_price}
+                        </span>
+                      )}
+                    </div>
                     <button
-                      onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
+                      onClick={() => addToBag({ id: prod.id, title: prod.title, price: parseFloat(prod.discount_price ?? prod.base_price ?? prod.price), image: prod.image || "" })}
                       className="font-sans"
                       style={{
                         background: "none",

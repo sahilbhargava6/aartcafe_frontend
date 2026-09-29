@@ -101,11 +101,21 @@ export default function ProductDetailsPage() {
 
   const calculateTotalPrice = () => {
     if (!productData) return 0;
-    let base = parseFloat(productData.base_price || "0");
+    const baseVal = productData.discount_price ? parseFloat(productData.discount_price) : parseFloat(productData.base_price || "0");
+    let total = baseVal;
     Object.values(selectedAttributes).forEach((attr) => {
-      base += attr.modifier || 0;
+      total += attr.modifier || 0;
     });
-    return Math.max(0, base);
+    return Math.max(0, total);
+  };
+
+  const calculateOriginalTotalPrice = () => {
+    if (!productData) return 0;
+    let baseVal = parseFloat(productData.base_price || "0");
+    Object.values(selectedAttributes).forEach((attr) => {
+      baseVal += attr.modifier || 0;
+    });
+    return Math.max(0, baseVal);
   };
 
   const handleAddToBag = () => {
@@ -270,14 +280,19 @@ export default function ProductDetailsPage() {
                 <div
                   className="font-serif product-price"
                   style={{
-                    fontSize: "36px",
-                    lineHeight: "44px",
-                    fontWeight: 400,
-                    color: "#3F3B38",
-                    whiteSpace: "nowrap",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
                   }}
                 >
-                  ₹{calculateTotalPrice()}
+                  <span style={{ fontSize: "36px", lineHeight: "44px", fontWeight: 400, color: "#3F3B38" }}>
+                    ₹{calculateTotalPrice()}
+                  </span>
+                  {productData.discount_price && (
+                    <span style={{ fontSize: "20px", textDecoration: "line-through", color: "#999" }}>
+                      ₹{calculateOriginalTotalPrice()}
+                    </span>
+                  )}
                 </div>
               </div>
 

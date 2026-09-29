@@ -18,6 +18,7 @@ export default function ProductsDashboard() {
   const [categoryId, setCategoryId] = useState("");
   const [title, setTitle] = useState("");
   const [basePrice, setBasePrice] = useState("");
+  const [discountPrice, setDiscountPrice] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState("");
   const [images, setImages] = useState<string[]>([]);
@@ -291,6 +292,7 @@ export default function ProductsDashboard() {
     setCategoryId(categories[0]?.id || "");
     setTitle("");
     setBasePrice("");
+    setDiscountPrice("");
     setDescription("");
     setImage("");
     setImages([]);
@@ -307,6 +309,7 @@ export default function ProductsDashboard() {
     setCategoryId(prod.category_id);
     setTitle(prod.title);
     setBasePrice(prod.base_price);
+    setDiscountPrice(prod.discount_price || "");
     setDescription(prod.description || "");
     setImage(prod.image || "");
     setImages(Array.isArray(prod.images) ? prod.images : []);
@@ -461,6 +464,7 @@ export default function ProductsDashboard() {
         category_id: parseInt(categoryId),
         title,
         base_price: parseFloat(basePrice),
+        discount_price: discountPrice ? parseFloat(discountPrice) : null,
         description,
         image,
         images,
@@ -557,7 +561,7 @@ export default function ProductsDashboard() {
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Thumbnail</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Title</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Category</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Base Price</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Price</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Tags</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Attributes</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Actions</th>
@@ -576,7 +580,16 @@ export default function ProductsDashboard() {
                   </td>
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{prod.title}</td>
                   <td style={{ padding: "16px 24px", color: "#D98A9C" }}>{prod.category?.name || "Uncategorized"}</td>
-                  <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>₹{prod.base_price}</td>
+                  <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>
+                    {prod.discount_price ? (
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span style={{ color: "#D98A9C", fontWeight: 700 }}>₹{prod.discount_price}</span>
+                        <span style={{ textDecoration: "line-through", color: "#999", fontSize: "12px" }}>₹{prod.base_price}</span>
+                      </div>
+                    ) : (
+                      <span>₹{prod.base_price}</span>
+                    )}
+                  </td>
                   <td style={{ padding: "16px 24px" }}>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                       {prod.is_bestseller && (
@@ -703,19 +716,35 @@ export default function ProductsDashboard() {
                 />
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Base Price (₹)</label>
-                <input
-                  type="number"
-                  value={basePrice}
-                  onChange={(e) => setBasePrice(e.target.value)}
-                  style={{
-                    height: "40px", borderRadius: "8px", border: "1px solid #D9A85C",
-                    padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38",
-                  }}
-                  placeholder="e.g. 2000"
-                  required
-                />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Original Price (₹)</label>
+                  <input
+                    type="number"
+                    value={basePrice}
+                    onChange={(e) => setBasePrice(e.target.value)}
+                    style={{
+                      height: "40px", borderRadius: "8px", border: "1px solid #D9A85C",
+                      padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38",
+                    }}
+                    placeholder="e.g. 2500"
+                    required
+                  />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Discounted Price (₹) <span style={{ fontSize: "11px", color: "#D98A9C" }}>(Optional)</span></label>
+                  <input
+                    type="number"
+                    value={discountPrice}
+                    onChange={(e) => setDiscountPrice(e.target.value)}
+                    style={{
+                      height: "40px", borderRadius: "8px", border: "1px solid #D98A9C",
+                      padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38",
+                    }}
+                    placeholder="e.g. 2000"
+                  />
+                </div>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>

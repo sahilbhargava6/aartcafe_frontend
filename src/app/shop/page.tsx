@@ -51,7 +51,9 @@ export default function Shop() {
             id: p.id,
             title: p.title,
             slug: p.slug,
-            price: parseFloat(p.base_price),
+            price: p.discount_price ? parseFloat(p.discount_price) : parseFloat(p.base_price),
+            basePrice: parseFloat(p.base_price),
+            discountPrice: p.discount_price ? parseFloat(p.discount_price) : null,
             category: p.category?.name || "Uncategorized",
             image: p.image || "",
             description: p.description || ""
@@ -337,9 +339,16 @@ export default function Shop() {
                           </h4>
                           
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <span className="font-sans" style={{ fontSize: "20px", color: "#3F3B38" }}>
-                              ₹{prod.price}
-                            </span>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
+                              <span className="font-sans" style={{ fontSize: "20px", color: "#3F3B38", fontWeight: 500 }}>
+                                ₹{prod.price}
+                              </span>
+                              {prod.discountPrice && (
+                                <span className="font-sans" style={{ fontSize: "14px", textDecoration: "line-through", color: "#999" }}>
+                                  ₹{prod.basePrice}
+                                </span>
+                              )}
+                            </div>
                             
                             <button
                               onClick={(e) => {
