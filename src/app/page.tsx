@@ -336,7 +336,8 @@ export default function Home() {
                     }}
                   >
                     {/* Product image */}
-                    <div
+                    <a
+                      href={prod.slug ? `/shop/${prod.slug}` : `/shop`}
                       style={{
                         width: "100%",
                         aspectRatio: "1/1",
@@ -352,6 +353,7 @@ export default function Home() {
                         overflow: "hidden",
                         cursor: "pointer",
                         transition: "transform 0.3s ease",
+                        textDecoration: "none",
                       }}
                       onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
                       onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
@@ -361,20 +363,25 @@ export default function Home() {
                       ) : (
                         "Product Image"
                       )}
-                    </div>
+                    </a>
 
-                    <h3
-                      className="font-serif"
-                      style={{
-                        fontSize: "24px",
-                        lineHeight: "32px",
-                        fontWeight: 400,
-                        color: "#3F3B38",
-                        margin: "0 0 4px 0",
-                      }}
+                    <a
+                      href={prod.slug ? `/shop/${prod.slug}` : `/shop`}
+                      style={{ textDecoration: "none" }}
                     >
-                      {prod.title}
-                    </h3>
+                      <h3
+                        className="font-serif"
+                        style={{
+                          fontSize: "24px",
+                          lineHeight: "32px",
+                          fontWeight: 400,
+                          color: "#3F3B38",
+                          margin: "0 0 4px 0",
+                        }}
+                      >
+                        {prod.title}
+                      </h3>
+                    </a>
                     <span
                       className="font-sans"
                       style={{
