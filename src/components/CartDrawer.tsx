@@ -283,7 +283,9 @@ export default function CartDrawer() {
                 ₹{cartTotal}
               </span>
             </div>
-            <button
+            <a
+              href="/cart"
+              onClick={() => closeCart()}
               className="btn-primary"
               style={{
                 width: "100%",
@@ -293,11 +295,12 @@ export default function CartDrawer() {
                 justifyContent: "center",
                 alignItems: "center",
                 gap: "0.5rem",
+                textDecoration: "none",
+                textAlign: "center",
               }}
-              onClick={() => alert("Checkout flow is simulated! Thank you.")}
             >
               Proceed to Checkout
-            </button>
+            </a>
             <p
               style={{
                 textAlign: "center",
