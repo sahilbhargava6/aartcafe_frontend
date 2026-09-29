@@ -11,14 +11,36 @@ export default function SignIn() {
   const [rememberMe, setRememberMe] = useState(false);
   const [message, setMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setMessage("Please fill in all required fields.");
       return;
     }
-    // Success simulation
-    setMessage("Successfully signed in!");
+
+    try {
+      const res = await fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.token) {
+        localStorage.setItem("admin_token", data.token);
+        localStorage.setItem("admin_user", JSON.stringify(data.user));
+        setMessage("Successfully signed in! Redirecting to Dashboard...");
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1000);
+      } else {
+        setMessage(data.message || data.errors?.email?.[0] || "Invalid email or password.");
+      }
+    } catch (err) {
+      console.error("Sign in error:", err);
+      setMessage("Connection error. Please try again.");
+    }
   };
 
   return (

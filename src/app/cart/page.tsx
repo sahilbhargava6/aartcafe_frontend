@@ -33,7 +33,7 @@ export default function CartPage() {
       .catch((err) => console.error("Error loading related products:", err));
   }, []);
 
-  const handleSendOrder = () => {
+  const handleSendOrder = async () => {
     if (cart.length === 0) {
       alert("Your bag is currently empty!");
       return;
@@ -47,6 +47,30 @@ export default function CartPage() {
     if (!phone.trim()) {
       alert("Please enter your Phone Number before sending the order.");
       return;
+    }
+
+    // Save order in backend database first
+    try {
+      await fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_name: name.trim(),
+          customer_email: email.trim() || null,
+          customer_phone: phone.trim(),
+          total_amount: cartTotal,
+          items: cart.map((item) => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image,
+          })),
+          status: "pending",
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to save order to database:", err);
     }
 
     const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919267943830"; // Business WhatsApp Number (+91 9267943830)

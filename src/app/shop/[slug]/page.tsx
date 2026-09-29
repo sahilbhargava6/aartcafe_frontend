@@ -19,6 +19,49 @@ export default function ProductDetailsPage() {
   const [reviewsList, setReviewsList] = useState<any[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
 
+  // Review Form State
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newReviewerName, setNewReviewerName] = useState("");
+  const [newReviewText, setNewReviewText] = useState("");
+  const [newRating, setNewRating] = useState(5);
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newReviewerName.trim() || !newReviewText.trim()) return;
+
+    setSubmittingReview(true);
+    try {
+      const res = await fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: productData?.id,
+          reviewer_name: newReviewerName.trim(),
+          review_text: newReviewText.trim(),
+          rating: newRating,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setReviewsList((prev) => [data.review || data, ...prev]);
+        setNewReviewerName("");
+        setNewReviewText("");
+        setNewRating(5);
+        setShowReviewForm(false);
+        alert("Thank you! Your review has been submitted successfully.");
+      } else {
+        alert("Failed to submit review. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error submitting review:", err);
+      alert("Error submitting review.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
@@ -384,8 +427,127 @@ export default function ProductDetailsPage() {
               </div>
 
               {/* Reviews Section */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "10px" }}>
-                <h3 className="font-serif" style={{ fontSize: "20px", color: "#3F3B38", margin: 0 }}>Reviews</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginTop: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h3 className="font-serif" style={{ fontSize: "22px", color: "#3F3B38", margin: 0 }}>Customer Reviews</h3>
+                  <button
+                    onClick={() => setShowReviewForm(!showReviewForm)}
+                    style={{
+                      backgroundColor: showReviewForm ? "#FAF6F0" : "#D98A9C",
+                      color: showReviewForm ? "#3F3B38" : "#fff",
+                      border: "1px solid #D98A9C",
+                      padding: "8px 18px",
+                      borderRadius: "20px",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {showReviewForm ? "Cancel" : "Write a Review"}
+                  </button>
+                </div>
+
+                {/* Write a Review Form */}
+                {showReviewForm && (
+                  <form
+                    onSubmit={handleReviewSubmit}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "14px",
+                      padding: "20px",
+                      borderRadius: "15px",
+                      backgroundColor: "#FAF6F0",
+                      border: "1px solid #D9A85C",
+                    }}
+                  >
+                    <h4 className="font-serif" style={{ fontSize: "18px", margin: 0, color: "#3F3B38" }}>
+                      Share Your Feedback
+                    </h4>
+                    
+                    <div>
+                      <label className="font-sans" style={{ fontSize: "13px", color: "#6E6E6E", display: "block", marginBottom: "4px" }}>
+                        Your Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newReviewerName}
+                        onChange={(e) => setNewReviewerName(e.target.value)}
+                        placeholder="e.g. Priya Sharma"
+                        style={{
+                          width: "100%",
+                          padding: "10px 14px",
+                          borderRadius: "8px",
+                          border: "1px solid #EBE5DB",
+                          fontSize: "14px",
+                          outline: "none",
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-sans" style={{ fontSize: "13px", color: "#6E6E6E", display: "block", marginBottom: "4px" }}>
+                        Rating (1 to 5 Stars) *
+                      </label>
+                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setNewRating(star)}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px" }}
+                          >
+                            <Heart size={22} fill={star <= newRating ? "#D98A9C" : "none"} color="#3F3B38" />
+                          </button>
+                        ))}
+                        <span className="font-sans" style={{ fontSize: "14px", color: "#3F3B38", fontWeight: 500, marginLeft: "6px" }}>
+                          {newRating} / 5
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="font-sans" style={{ fontSize: "13px", color: "#6E6E6E", display: "block", marginBottom: "4px" }}>
+                        Review Comment *
+                      </label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={newReviewText}
+                        onChange={(e) => setNewReviewText(e.target.value)}
+                        placeholder="What did you love about this item?"
+                        style={{
+                          width: "100%",
+                          padding: "10px 14px",
+                          borderRadius: "8px",
+                          border: "1px solid #EBE5DB",
+                          fontSize: "14px",
+                          outline: "none",
+                          resize: "vertical",
+                        }}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submittingReview}
+                      style={{
+                        backgroundColor: "#D98A9C",
+                        color: "#fff",
+                        border: "none",
+                        padding: "12px 24px",
+                        borderRadius: "24px",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                        cursor: submittingReview ? "not-allowed" : "pointer",
+                        alignSelf: "flex-start",
+                      }}
+                    >
+                      {submittingReview ? "Submitting..." : "Submit Review"}
+                    </button>
+                  </form>
+                )}
                 
                 {reviewsList.length === 0 ? (
                   <div style={{ border: "1px solid #EBE5DB", borderRadius: "12px", padding: "16px", backgroundColor: "#FAF6F0" }}>
@@ -404,7 +566,7 @@ export default function ProductDetailsPage() {
                 ) : (
                   reviewsList.map((item) => (
                     <div
-                      key={item.id}
+                      key={item.id || Math.random()}
                       style={{
                         border: "1px solid #D9A85C",
                         borderRadius: "15px",

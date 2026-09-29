@@ -16,6 +16,7 @@ export default function DashboardLayout({
   const menuItems = [
     { name: "Website Analytics", path: "/dashboard" },
     { name: "Product Analytics", path: "/dashboard/product-analytics" },
+    { name: "Orders", path: "/dashboard/orders" },
     { name: "Categories", path: "/dashboard/categories" },
     { name: "Products", path: "/dashboard/products" },
     { name: "Banners", path: "/dashboard/banners" },
