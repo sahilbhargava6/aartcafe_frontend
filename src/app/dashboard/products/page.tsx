@@ -1030,13 +1030,18 @@ export default function ProductsDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {csvPreview.map((row, idx) => (
-                        <tr key={idx} style={{ borderBottom: "1px solid #F5EDE8" }}>
-                          <td style={{ padding: "8px", fontWeight: 500 }}>{row.Title || row.title || "—"}</td>
-                          <td style={{ padding: "8px", color: "#8FB9A8" }}>{row.Category || row.category || "General"}</td>
-                          <td style={{ padding: "8px" }}>₹{row.Price || row.price || row.base_price || 0}</td>
-                        </tr>
-                      ))}
+                      {csvPreview.map((row, idx) => {
+                        const title = row["Name of the Product"] || row["Product Name"] || row["Title"] || row["title"] || "—";
+                        const cat = row["Category of the Product"] || row["Category of the Product, also best seller etc"] || row["Category"] || row["category"] || "General";
+                        const price = row["Price"] || row["₹"] || row["base_price"] || row["price"] || "0";
+                        return (
+                          <tr key={idx} style={{ borderBottom: "1px solid #F5EDE8" }}>
+                            <td style={{ padding: "8px", fontWeight: 500 }}>{title}</td>
+                            <td style={{ padding: "8px", color: "#8FB9A8" }}>{cat}</td>
+                            <td style={{ padding: "8px" }}>₹{price}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
