@@ -42,27 +42,36 @@ export default function CartPage() {
     const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919267943830"; // Business WhatsApp Number (+91 9267943830)
 
     const itemDetails = cart
-      .map(
-        (item, idx) =>
-          `*${idx + 1}. ${item.title}*\n   Quantity: ${item.quantity}\n   Price: ₹${item.price * item.quantity}`
-      )
+      .map((item, idx) => {
+        const titleClean = item.title
+          .replace(/\b(NA|N\/A|none|null|-)\b,?\s*/gi, "")
+          .replace(/,\s*,/g, ", ")
+          .replace(/\(\s*,/g, "(")
+          .replace(/,\s*\)/g, ")")
+          .replace(/\(\s*\)/g, "")
+          .trim();
+
+        return `*${idx + 1}. ${titleClean}*\n   ▫️ Quantity: ${item.quantity}\n   ▫️ Price: ₹${item.price * item.quantity}`;
+      })
       .join("\n\n");
 
-    const message = 
-`🌸 *NEW CUSTOM ORDER - AARTCAFE* 🌸
+    const messageLines = [
+      "✨ *NEW ORDER - AARTCAFE* ✨",
+      "━━━━━━━━━━━━━━━━━━",
+      "*Customer Details:*",
+      `👤 *Name:* ${name.trim() || "Customer"}`,
+      `📧 *Email:* ${email.trim() || "N/A"}`,
+      `📞 *Phone:* ${phone.trim() || "N/A"}`,
+      "━━━━━━━━━━━━━━━━━━",
+      "*Order Items:*",
+      itemDetails,
+      "━━━━━━━━━━━━━━━━━━",
+      `💳 *TOTAL AMOUNT:* ₹${cartTotal}`,
+      "━━━━━━━━━━━━━━━━━━",
+      "Hello Aartcafe! I would like to confirm my order. Please share availability & payment details. Thank you! 💕"
+    ];
 
-*Customer Info:*
-👤 *Name:* ${name.trim() || "Customer"}
-📧 *Email:* ${email.trim() || "N/A"}
-📞 *Phone:* ${phone.trim() || "N/A"}
-
-*Order Items:*
-${itemDetails}
-
-💰 *TOTAL AMOUNT:* ₹${cartTotal}
-
-Hello Aartcafe! I would like to place this order with you. Please confirm availability and share payment details.`;
-
+    const message = messageLines.join("\n");
     const encoded = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encoded}`;
 
