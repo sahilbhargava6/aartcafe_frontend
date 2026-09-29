@@ -428,32 +428,32 @@ export default function ProductsDashboard() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Header with add button */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
         <h1 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", margin: 0, fontWeight: 400 }}>
           PRODUCTS
         </h1>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap", width: "100%", maxWidth: "400px" }}>
           <button
             onClick={() => {
               setCsvMessage("");
               setIsCsvModalOpen(true);
             }}
             style={{
-              display: "flex", alignItems: "center", gap: "8px", backgroundColor: "#8FB9A8",
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", backgroundColor: "#8FB9A8",
               color: "#fff", border: "none", borderRadius: "10px", padding: "10px 16px",
-              fontSize: "15px", cursor: "pointer", fontWeight: 500, transition: "opacity 0.2s",
+              fontSize: "14px", cursor: "pointer", fontWeight: 500, transition: "opacity 0.2s", whiteSpace: "nowrap",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
             onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
           >
-            <Upload size={18} /> Bulk Import CSV
+            <Upload size={18} /> Bulk Import CSV/Excel
           </button>
           <button
             onClick={openAddModal}
             style={{
-              display: "flex", alignItems: "center", gap: "8px", backgroundColor: "#D98A9C",
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", backgroundColor: "#D98A9C",
               color: "#fff", border: "none", borderRadius: "10px", padding: "10px 16px",
-              fontSize: "15px", cursor: "pointer", fontWeight: 500, transition: "opacity 0.2s",
+              fontSize: "14px", cursor: "pointer", fontWeight: 500, transition: "opacity 0.2s", whiteSpace: "nowrap",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
             onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
@@ -465,8 +465,8 @@ export default function ProductsDashboard() {
 
       {error && <div style={{ color: "#E05A47", fontSize: "16px", fontWeight: 500 }}>{error}</div>}
 
-      {/* Products List */}
-      <div style={{ border: "2px solid #D98A9C", borderRadius: "15px", overflow: "hidden", backgroundColor: "#fff" }}>
+      {/* Products List Table Wrapper with Horizontal Scroll for Mobile */}
+      <div style={{ border: "2px solid #D98A9C", borderRadius: "15px", overflowX: "auto", backgroundColor: "#fff", width: "100%" }}>
         {loading ? (
           <div style={{ padding: "40px", textAlign: "center", color: "#8FB9A8" }}>Loading products...</div>
         ) : products.length === 0 ? (
@@ -573,8 +573,8 @@ export default function ProductsDashboard() {
         >
           <div
             style={{
-              backgroundColor: "#fff", padding: "30px", borderRadius: "15px",
-              width: "600px", maxHeight: "90vh", overflowY: "auto",
+              backgroundColor: "#fff", padding: "24px", borderRadius: "15px",
+              width: "95%", maxWidth: "600px", maxHeight: "90vh", overflowY: "auto",
               boxShadow: "0 10px 25px rgba(0,0,0,0.1)", border: "1px solid #D9A85C",
               display: "flex", flexDirection: "column", gap: "20px",
             }}
