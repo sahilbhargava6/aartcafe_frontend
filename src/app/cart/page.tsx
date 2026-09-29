@@ -38,8 +38,35 @@ export default function CartPage() {
       alert("Your bag is currently empty!");
       return;
     }
-    const itemNames = cart.map((i) => `${i.title} (x${i.quantity})`).join(", ");
-    alert(`Order List sent to Creator!\nName: ${name || "Guest"}\nEmail: ${email || "N/A"}\nPhone: ${phone || "N/A"}\nItems: ${itemNames}\nTotal: ₹${cartTotal}`);
+
+    const whatsappNumber = "918851475721"; // Creator's WhatsApp Business Number
+
+    const itemDetails = cart
+      .map(
+        (item, idx) =>
+          `*${idx + 1}. ${item.title}*\n   Quantity: ${item.quantity}\n   Price: ₹${item.price * item.quantity}`
+      )
+      .join("\n\n");
+
+    const message = 
+`🌸 *NEW CUSTOM ORDER - AARTCAFE* 🌸
+
+*Customer Info:*
+👤 *Name:* ${name.trim() || "Customer"}
+📧 *Email:* ${email.trim() || "N/A"}
+📞 *Phone:* ${phone.trim() || "N/A"}
+
+*Order Items:*
+${itemDetails}
+
+💰 *TOTAL AMOUNT:* ₹${cartTotal}
+
+Hello Aartcafe! I would like to place this order with you. Please confirm availability and share payment details.`;
+
+    const encoded = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encoded}`;
+
+    window.open(whatsappUrl, "_blank");
   };
 
   return (
