@@ -249,6 +249,122 @@ export default function DashboardLayout({
             width: 100%;
           }
         }
+
+        /* ════════════════════════════════════════════════════════════════════
+           DASHBOARD MOBILE RESPONSIVE OVERRIDES
+           Covers tables, modals, grids, analytics charts, buttons, typography
+           for all dashboard sub-pages on phones (≤768px) and compact (≤480px)
+           ════════════════════════════════════════════════════════════════════ */
+
+        /* --- Dashboard Page Titles --- */
+        @media (max-width: 768px) {
+          .dashboard-main h1 {
+            font-size: 22px !important;
+            letter-spacing: 0.5px !important;
+          }
+        }
+
+        /* --- Dashboard Tables: Compact cells, allow text wrapping --- */
+        @media (max-width: 992px) {
+          .dashboard-main table th,
+          .dashboard-main table td {
+            padding: 10px 12px !important;
+            font-size: 13px !important;
+          }
+          .dashboard-main table th:first-child,
+          .dashboard-main table td:first-child {
+            padding-left: 14px !important;
+          }
+          .dashboard-main table th:last-child,
+          .dashboard-main table td:last-child {
+            padding-right: 14px !important;
+          }
+          /* Compact thumbnails */
+          .dashboard-main table img {
+            width: 40px !important;
+            height: 40px !important;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .dashboard-main table th,
+          .dashboard-main table td {
+            padding: 8px 8px !important;
+            font-size: 12px !important;
+          }
+          .dashboard-main table th:first-child,
+          .dashboard-main table td:first-child {
+            padding-left: 10px !important;
+          }
+          /* Smaller thumbnails on phones */
+          .dashboard-main table img {
+            width: 34px !important;
+            height: 34px !important;
+            border-radius: 6px !important;
+          }
+          /* Hide non-essential columns on phones */
+          .dashboard-main table th.hide-mobile,
+          .dashboard-main table td.hide-mobile {
+            display: none !important;
+          }
+        }
+
+        /* --- Dashboard Grids: Stack on Mobile --- */
+        @media (max-width: 768px) {
+          .dashboard-main > div > div[style*="gridTemplateColumns"] {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        /* --- Dashboard Header Rows (title + button): stack vertically --- */
+        @media (max-width: 600px) {
+          .dashboard-main > div > div[style*="justifyContent"][style*="space-between"] {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
+        }
+
+        /* --- Dashboard Buttons: Full width on small screens --- */
+        @media (max-width: 480px) {
+          .dashboard-main button[style*="borderRadius: \"10px\""] {
+            width: 100% !important;
+            justify-content: center !important;
+            padding: 12px 16px !important;
+          }
+        }
+
+        /* --- Stat Cards (Pink box, analytics): Compact padding --- */
+        @media (max-width: 768px) {
+          .dashboard-main > div > div > div[style*="backgroundColor: \"#D98A9C\""] {
+            padding: 24px 20px !important;
+            gap: 24px !important;
+          }
+          .dashboard-main > div > div > div[style*="backgroundColor: \"#D98A9C\""] h3 {
+            font-size: 16px !important;
+          }
+          .dashboard-main > div > div > div[style*="backgroundColor: \"#D98A9C\""] span {
+            font-size: 32px !important;
+          }
+        }
+
+        /* --- Chart area: Prevent overflow --- */
+        @media (max-width: 768px) {
+          .dashboard-main svg {
+            max-width: 100%;
+            height: auto;
+          }
+        }
+
+        /* --- Metric pills and Date range tabs: scrollable horizontal --- */
+        @media (max-width: 768px) {
+          .dashboard-main div[style*="gap: \"10px\""] {
+            flex-wrap: wrap !important;
+          }
+          .dashboard-main div[style*="gap: \"16px\""] {
+            flex-wrap: wrap !important;
+          }
+        }
       `}</style>
     </div>
   );

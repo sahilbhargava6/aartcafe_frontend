@@ -129,7 +129,7 @@ export default function PagesDashboard() {
 
       {error && <div style={{ color: "#E05A47", fontSize: "16px", fontWeight: 500 }}>{error}</div>}
 
-      <div style={{ border: "2px solid #D9A85C", borderRadius: "15px", overflow: "hidden", backgroundColor: "#fff" }}>
+      <div style={{ border: "2px solid #D9A85C", borderRadius: "15px", overflowX: "auto", backgroundColor: "#fff" }}>
         {loading ? (
           <div style={{ padding: "40px", textAlign: "center", color: "#8FB9A8" }}>Loading pages...</div>
         ) : pages.length === 0 ? (
@@ -186,7 +186,7 @@ export default function PagesDashboard() {
           <div
             style={{
               backgroundColor: "#fff", padding: "30px", borderRadius: "15px",
-              width: "500px", maxHeight: "90vh", overflowY: "auto",
+              width: "95%", maxWidth: "500px", maxHeight: "90vh", overflowY: "auto",
               boxShadow: "0 10px 25px rgba(0,0,0,0.1)", border: "1px solid #D9A85C",
               display: "flex", flexDirection: "column", gap: "20px",
             }}
