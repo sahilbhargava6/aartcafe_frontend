@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Plus, Edit2, Trash2, X, Upload, Check, Loader2 } from "lucide-react";
+import * as XLSX from "xlsx";
 
 export default function ProductsDashboard() {
   const [products, setProducts] = useState<any[]>([]);
@@ -118,33 +119,80 @@ export default function ProductsDashboard() {
     setCsvFile(file);
     setCsvMessage("");
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (!text) return;
+    const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
 
-      const lines = text.split(/\r\n|\n/);
-      if (lines.length <= 1) return;
+    if (isExcel) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = new Uint8Array(event.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const rawJson: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-      const headers = lines[0].split(",").map((h) => h.trim());
-      const parsed: any[] = [];
+          if (rawJson.length === 0) return;
 
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
-        // Basic CSV regex split handling quotes
-        const values = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(",");
-        const cleanValues = values.map((v) => v.replace(/^"|"$/g, "").trim());
+          // Forward-fill merged cell product titles for preview
+          let lastTitle = "";
+          let lastCategory = "";
+          const parsed = rawJson.map((row) => {
+            const currentTitle = row["Name of the Product"] || row["Product Name"] || row["Title"] || row["title"] || "";
+            const currentCategory = row["Category of the Product"] || row["Category of the Product, also best seller etc"] || row["Category"] || row["category"] || "";
 
-        const rowObj: any = {};
-        headers.forEach((h, idx) => {
-          rowObj[h] = cleanValues[idx] || "";
-        });
-        parsed.push(rowObj);
-      }
+            if (currentTitle.trim()) lastTitle = currentTitle.trim();
+            if (currentCategory.trim()) lastCategory = currentCategory.trim();
 
-      setCsvPreview(parsed);
-    };
-    reader.readAsText(file);
+            return {
+              ...row,
+              "Name of the Product": currentTitle.trim() || lastTitle,
+              "Category of the Product": currentCategory.trim() || lastCategory || "General",
+            };
+          });
+
+          setCsvPreview(parsed);
+          setCsvMessage(`Successfully read ${parsed.length} rows from Excel sheet!`);
+        } catch (err: any) {
+          console.error("Excel parse error", err);
+          setCsvMessage("Error reading Excel file format.");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        if (!text) return;
+
+        const lines = text.split(/\r\n|\n/);
+        if (lines.length <= 1) return;
+
+        const headers = lines[0].split(",").map((h) => h.trim());
+        const parsed: any[] = [];
+        let lastTitle = "";
+        let lastCategory = "";
+
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          const values = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(",");
+          const cleanValues = values.map((v) => v.replace(/^"|"$/g, "").trim());
+
+          const rowObj: any = {};
+          headers.forEach((h, idx) => {
+            rowObj[h] = cleanValues[idx] || "";
+          });
+
+          const currentTitle = rowObj["Name of the Product"] || rowObj["Product Name"] || rowObj["Title"] || rowObj["title"] || "";
+          if (currentTitle) lastTitle = currentTitle;
+
+          rowObj["Name of the Product"] = currentTitle || lastTitle;
+          parsed.push(rowObj);
+        }
+
+        setCsvPreview(parsed);
+      };
+      reader.readAsText(file);
+    }
   };
 
   const submitCsvImport = () => {
