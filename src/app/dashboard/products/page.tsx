@@ -207,8 +207,9 @@ export default function ProductsDashboard() {
     // Send Form Data or JSON list
     const formData = new FormData();
     if (csvFile) {
+      formData.append("file", csvFile);
       formData.append("csv_file", csvFile);
-    } else {
+    } else if (csvPreview.length > 0) {
       formData.append("products", JSON.stringify(csvPreview));
     }
 
