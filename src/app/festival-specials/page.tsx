@@ -12,8 +12,12 @@ export default function FestivalSpecials() {
   const [reviewsExpanded1, setReviewsExpanded1] = useState(false);
   const [reviewsExpanded2, setReviewsExpanded2] = useState(false);
   const [banner, setBanner] = useState<any>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
 
   React.useEffect(() => {
+    // 1. Fetch Banner
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/banners")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
@@ -23,32 +27,47 @@ export default function FestivalSpecials() {
         }
       })
       .catch((err) => console.error("Error loading banners:", err));
+
+    // 2. Fetch Festival Products
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const fest = data.filter((p: any) => p.category?.name?.toLowerCase().includes("rakhi") || p.category?.name?.toLowerCase().includes("festival") || p.is_bestseller);
+          setProducts(fest.length >= 2 ? fest.slice(0, 2) : data.slice(0, 2));
+          setRelatedProducts(data.slice(0, 4));
+        }
+      })
+      .catch((err) => console.error("Error loading products:", err));
+
+    // 3. Fetch Reviews
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setReviews(data);
+        }
+      })
+      .catch((err) => console.error("Error loading reviews:", err));
   }, []);
 
-  const product1 = {
+  const product1 = products[0] || {
     id: "fest-1",
     title: "HANDMADE RAKHI",
     price: 2000,
     image: "",
     category: "Handmade Rakhis",
-    description: "Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts. Top-rated options include customized text frames, elegant tabletop glass and pearl designs, and sterling silver anniversary frames that track a couple's journey over time.",
+    description: "Beautifully handcrafted with resin and gold accents to celebrate timeless bonds.",
   };
 
-  const product2 = {
+  const product2 = products[1] || {
     id: "fest-2",
-    title: "HANDMADE RAKHI",
-    price: 2000,
+    title: "HANDMADE LUMBBA SET",
+    price: 2400,
     image: "",
     category: "Handmade Rakhis",
-    description: "Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts. Top-rated options include customized text frames, elegant tabletop glass and pearl designs, and sterling silver anniversary frames that track a couple's journey over time.",
+    description: "Elegant matching bhaiya bhabhi rakhi set created with pressed flowers and love.",
   };
-
-  const relatedProducts = [
-    { id: "rel-1", title: "Wedding Frame", price: 2000, image: "" },
-    { id: "rel-2", title: "Wedding Frame", price: 2000, image: "" },
-    { id: "rel-3", title: "Wedding Frame", price: 2000, image: "" },
-    { id: "rel-4", title: "Wedding Frame", price: 2000, image: "" },
-  ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#fff" }}>
@@ -124,7 +143,11 @@ export default function FestivalSpecials() {
           <div className="product-row row-align-left">
             {/* Left Column: Product Image */}
             <div className="product-image-container">
-              Rakhi Product Image
+              {product1.image ? (
+                <img src={product1.image} alt={product1.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                "Rakhi Product Image"
+              )}
             </div>
 
             {/* Right Column: Details & Reviews */}
@@ -284,7 +307,11 @@ export default function FestivalSpecials() {
 
             {/* Right Column: Product Image */}
             <div className="product-image-container detail-order-second">
-              Rakhi Product Image
+              {product2.image ? (
+                <img src={product2.image} alt={product2.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                "Rakhi Product Image"
+              )}
             </div>
           </div>
 
