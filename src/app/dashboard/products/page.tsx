@@ -20,10 +20,50 @@ export default function ProductsDashboard() {
   const [basePrice, setBasePrice] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState("");
+  const [images, setImages] = useState<string[]>([]);
   const [isNewDiscovery, setIsNewDiscovery] = useState(false);
   const [isWeddingSpecial, setIsWeddingSpecial] = useState(false);
   const [isBestseller, setIsBestseller] = useState(false);
   const [isHeroFeatured, setIsHeroFeatured] = useState(false);
+
+  // Additional Gallery Photos Upload State
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+
+  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const files = Array.from(e.target.files);
+
+    setUploadingGallery(true);
+    const uploadPromises = files.map((file) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Upload failed.");
+          return res.json();
+        })
+        .then((data) => data.url);
+    });
+
+    Promise.all(uploadPromises)
+      .then((urls) => {
+        setImages((prev) => [...prev, ...urls.filter(Boolean)]);
+      })
+      .catch((err) => {
+        alert(err.message || "Error uploading gallery photos.");
+      })
+      .finally(() => {
+        setUploadingGallery(false);
+      });
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // CSV Import State
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
@@ -262,6 +302,7 @@ export default function ProductsDashboard() {
     setBasePrice("");
     setDescription("");
     setImage("");
+    setImages([]);
     setIsNewDiscovery(false);
     setIsWeddingSpecial(false);
     setIsBestseller(false);
@@ -277,6 +318,7 @@ export default function ProductsDashboard() {
     setBasePrice(prod.base_price);
     setDescription(prod.description || "");
     setImage(prod.image || "");
+    setImages(Array.isArray(prod.images) ? prod.images : []);
     setIsNewDiscovery(!!prod.is_new_discovery);
     setIsWeddingSpecial(!!prod.is_wedding_special);
     setIsBestseller(!!prod.is_bestseller);
@@ -424,6 +466,7 @@ export default function ProductsDashboard() {
         base_price: parseFloat(basePrice),
         description,
         image,
+        images,
         is_new_discovery: isNewDiscovery,
         is_wedding_special: isWeddingSpecial,
         is_bestseller: isBestseller,
@@ -730,6 +773,68 @@ export default function ProductsDashboard() {
                     <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#8FB9A8" }}>Image Preview:</p>
                     <img src={image} alt="Preview" style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "8px", border: "1px solid #EBE5DB" }} />
                   </div>
+                )}
+              </div>
+
+              {/* Additional Gallery Photos Section */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <label style={{ fontSize: "14px", fontWeight: 500, color: "#3F3B38" }}>
+                    Additional Gallery Photos (Multiple)
+                  </label>
+                  <input
+                    type="file"
+                    ref={galleryInputRef}
+                    onChange={handleGalleryUpload}
+                    accept="image/*"
+                    multiple
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    style={{
+                      height: "34px", padding: "0 14px", backgroundColor: "#D98A9C",
+                      color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer",
+                      display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 500,
+                    }}
+                  >
+                    {uploadingGallery ? (
+                      <Loader2 size={15} className="animate-spin" />
+                    ) : (
+                      <Upload size={15} />
+                    )}
+                    Upload Gallery Photos
+                  </button>
+                </div>
+
+                {images.length > 0 ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "6px" }}>
+                    {images.map((imgUrl, idx) => (
+                      <div key={idx} style={{ position: "relative", width: "80px", height: "80px" }}>
+                        <img
+                          src={imgUrl}
+                          alt={`Gallery ${idx + 1}`}
+                          style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px", border: "1px solid #EBE5DB" }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(idx)}
+                          style={{
+                            position: "absolute", top: "-6px", right: "-6px", backgroundColor: "#E05A47",
+                            color: "#fff", border: "none", borderRadius: "50%", width: "20px", height: "20px",
+                            display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                          }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: "12px", color: "#A09A92" }}>
+                    No additional gallery photos added yet. Click &quot;Upload Gallery Photos&quot; to add multi-angle product images.
+                  </p>
                 )}
               </div>
 
