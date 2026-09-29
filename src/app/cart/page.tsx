@@ -39,6 +39,16 @@ export default function CartPage() {
       return;
     }
 
+    if (!name.trim()) {
+      alert("Please enter your Name before sending the order.");
+      return;
+    }
+
+    if (!phone.trim()) {
+      alert("Please enter your Phone Number before sending the order.");
+      return;
+    }
+
     const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919267943830"; // Business WhatsApp Number (+91 9267943830)
 
     const itemDetails = cart
@@ -226,15 +236,16 @@ export default function CartPage() {
                 Hello, I'm{" "}
                 <input
                   type="text"
-                  placeholder="name"
+                  placeholder="Name (Required)"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  required
                   style={{
-                    border: "1.5px solid #8FB9A8",
+                    border: !name.trim() ? "1.5px solid #D98A9C" : "1.5px solid #8FB9A8",
                     borderRadius: "20px",
                     padding: "0 15px",
                     height: "32px",
-                    fontSize: "16px",
+                    fontSize: "15px",
                     color: "#3F3B38",
                     outline: "none",
                     width: "160px",
@@ -244,7 +255,7 @@ export default function CartPage() {
                 . My email address is{" "}
                 <input
                   type="email"
-                  placeholder="email"
+                  placeholder="Email (Optional)"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
@@ -252,28 +263,29 @@ export default function CartPage() {
                     borderRadius: "20px",
                     padding: "0 15px",
                     height: "32px",
-                    fontSize: "16px",
+                    fontSize: "15px",
                     color: "#3F3B38",
                     outline: "none",
-                    width: "200px",
+                    width: "180px",
                     textAlign: "center",
                   }}
                 />
                 , and my number is{" "}
                 <input
                   type="tel"
-                  placeholder="phone number"
+                  placeholder="Phone (Required)"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  required
                   style={{
-                    border: "1.5px solid #8FB9A8",
+                    border: !phone.trim() ? "1.5px solid #D98A9C" : "1.5px solid #8FB9A8",
                     borderRadius: "20px",
                     padding: "0 15px",
                     height: "32px",
-                    fontSize: "16px",
+                    fontSize: "15px",
                     color: "#3F3B38",
                     outline: "none",
-                    width: "160px",
+                    width: "170px",
                     textAlign: "center",
                   }}
                 />
