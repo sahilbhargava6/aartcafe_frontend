@@ -97,10 +97,10 @@ export default function ProductsDashboard() {
 
   const downloadSampleCsv = () => {
     const csvContent =
-      "Serial Number,Name of the Product,Types of designs,Shapes,Type of filling,Sizes,Textual Format,Pictoral Format,Choices of Flower,Accessories,Frames,Options,₹,Type of perservation,Category of the Product, also best seller etc,Product Image\n" +
-      "1,Resin Floral Memory Frame,3D Deep Cast,Heart,Filled with crushed petal,12\"x12\" format,With text,With picture,Your flowers,With Stand,With frame,Glitter Finish,2499,3D,Personalized Frames Bestseller,https://images.unsplash.com/photo-1513519245088-0e12902e5a38\n" +
-      "2,Handmade Silk Rakhi Set,Traditional,Round,Crushed Petals,Standard,Without text,Without picture,Our flowers,With Hook,Without frame,Silk Thread,599,Standard,Festival Specials New Discovery,https://images.unsplash.com/photo-1607344645866-009c320c5ab8\n" +
-      "3,Couple Anniversary Keepsake,Covered with Acrylic,Hexagon,Broken petal with shimmer,8\"x10\" format,With text,With picture,Your flowers,With Chains,With frame,Gold Leafing,3499,Covered with Acrylic,Wedding Specials Bestseller,https://images.unsplash.com/photo-1518895949257-7621c3c786d7";
+      "Serial Number,Name of the Product,Types of designs,Shapes,Type of filling,Sizes,Textual Format,Pictoral Format,Choices of Flower,Accessories,Frames,Options,₹,Type of perservation,Category of the Product,also best seller etc,Product Image\n" +
+      "1,Resin Floral Memory Frame,3D Deep Cast,Heart,Filled with crushed petal,12\"x12\" format,With text,With picture,Your flowers,With Stand,With frame,Glitter Finish,2499,3D,Personalized Frames,Bestseller,https://images.unsplash.com/photo-1513519245088-0e12902e5a38\n" +
+      "2,Handmade Silk Rakhi Set,Traditional,Round,Crushed Petals,Standard,Without text,Without picture,Our flowers,With Hook,Without frame,Silk Thread,599,Standard,Festival Specials,New Discovery,https://images.unsplash.com/photo-1607344645866-009c320c5ab8\n" +
+      "3,Couple Anniversary Keepsake,Covered with Acrylic,Hexagon,Broken petal with shimmer,8\"x10\" format,With text,With picture,Your flowers,With Chains,With frame,Gold Leafing,3499,Covered with Acrylic,Wedding Specials,Bestseller,https://images.unsplash.com/photo-1518895949257-7621c3c786d7";
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
