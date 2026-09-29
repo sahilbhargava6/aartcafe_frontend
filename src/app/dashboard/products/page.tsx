@@ -116,10 +116,6 @@ export default function ProductsDashboard() {
   const handleCsvFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setCsvFile(file);
-  const handleCsvFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
     setCsvFile(file);
     setCsvMessage("");
@@ -1082,8 +1078,6 @@ export default function ProductsDashboard() {
                     </tbody>
                   </table>
                 </div>
-              </div>
-            )}div>
               </div>
             )}
 
