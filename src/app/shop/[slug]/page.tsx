@@ -284,47 +284,56 @@ export default function ProductDetailsPage() {
               {/* Dynamic Attribute Customizers */}
               {productData.attributes && productData.attributes.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {productData.attributes.map((attr: any) => (
-                    <div key={attr.id || attr.name} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <label className="font-serif" style={{ fontSize: "17px", color: "#3F3B38", fontWeight: 400 }}>
-                        {attr.name}
-                      </label>
-                      <div style={{ position: "relative" }}>
-                        <select
-                          value={selectedAttributes[attr.name]?.value || ""}
-                          onChange={(e) => handleAttributeChange(attr.name, e.target.value, attr.values || [])}
-                          style={{
-                            width: "100%",
-                            height: "44px",
-                            borderRadius: "10px",
-                            border: "1px solid #D9A85C",
-                            padding: "0 40px 0 16px",
-                            fontSize: "15px",
-                            color: "#D98A9C",
-                            backgroundColor: "#fff",
-                            outline: "none",
-                            cursor: "pointer",
-                            appearance: "none",
-                          }}
-                        >
-                          {attr.values?.map((opt: any) => {
-                            const mod = parseFloat(opt.price_modifier || "0");
-                            const modText = mod > 0 ? ` (+₹${parseInt(mod.toString())})` : mod < 0 ? ` (-₹${Math.abs(parseInt(mod.toString()))})` : "";
-                            return (
-                              <option key={opt.id || opt.value} value={opt.value}>
-                                {opt.value}{modText}
-                              </option>
-                            );
-                          })}
-                        </select>
-                        <ChevronDown
-                          size={18}
-                          color="#D98A9C"
-                          style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
-                        />
+                  {productData.attributes.map((attr: any) => {
+                    // Filter out invalid/placeholder values like NA, N/A, -, none, empty
+                    const validValues = (attr.values || []).filter(
+                      (v: any) => v.value && !["na", "n/a", "none", "-", "null", ""].includes(v.value.toString().trim().toLowerCase())
+                    );
+
+                    if (validValues.length === 0) return null;
+
+                    return (
+                      <div key={attr.id || attr.name} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <label className="font-serif" style={{ fontSize: "17px", color: "#3F3B38", fontWeight: 400 }}>
+                          {attr.name}
+                        </label>
+                        <div style={{ position: "relative" }}>
+                          <select
+                            value={selectedAttributes[attr.name]?.value || validValues[0]?.value || ""}
+                            onChange={(e) => handleAttributeChange(attr.name, e.target.value, validValues)}
+                            style={{
+                              width: "100%",
+                              height: "44px",
+                              borderRadius: "10px",
+                              border: "1px solid #D9A85C",
+                              padding: "0 40px 0 16px",
+                              fontSize: "15px",
+                              color: "#D98A9C",
+                              backgroundColor: "#fff",
+                              outline: "none",
+                              cursor: "pointer",
+                              appearance: "none",
+                            }}
+                          >
+                            {validValues.map((opt: any) => {
+                              const mod = parseFloat(opt.price_modifier || "0");
+                              const modText = mod > 0 ? ` (+₹${parseInt(mod.toString())})` : mod < 0 ? ` (-₹${Math.abs(parseInt(mod.toString()))})` : "";
+                              return (
+                                <option key={opt.id || opt.value} value={opt.value}>
+                                  {opt.value}{modText}
+                                </option>
+                              );
+                            })}
+                          </select>
+                          <ChevronDown
+                            size={18}
+                            color="#D98A9C"
+                            style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 

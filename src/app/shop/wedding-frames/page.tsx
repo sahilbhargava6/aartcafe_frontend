@@ -63,7 +63,8 @@ export default function ProductDetails() {
 
   const getAttributeOptions = (name: string) => {
     const attr = productData?.attributes?.find((a: any) => a.name === name);
-    return attr?.values || [];
+    const raw = attr?.values || [];
+    return raw.filter((v: any) => v.value && !["na", "n/a", "none", "-", "null", ""].includes(v.value.toString().trim().toLowerCase()));
   };
 
   // Calculate dynamic total price based on selected surcharges
