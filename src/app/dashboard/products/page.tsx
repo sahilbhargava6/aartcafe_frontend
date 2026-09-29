@@ -471,16 +471,20 @@ export default function ProductsDashboard() {
         attributes: cleanAttributes
       }),
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to save product.");
-        return res.json();
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const errMsg = data.message || (data.errors ? Object.values(data.errors).flat().join("\n") : "Failed to save product.");
+          throw new Error(errMsg);
+        }
+        return data;
       })
       .then(() => {
         setIsModalOpen(false);
         fetchData();
       })
       .catch((err) => {
-        alert(err.message);
+        alert(err.message || "Failed to save product.");
       });
   };
 
