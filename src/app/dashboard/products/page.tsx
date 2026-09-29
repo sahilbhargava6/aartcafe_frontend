@@ -117,82 +117,71 @@ export default function ProductsDashboard() {
     const file = e.target.files?.[0];
     if (!file) return;
     setCsvFile(file);
+  const handleCsvFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCsvFile(file);
     setCsvMessage("");
 
-    const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rawJson: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-    if (isExcel) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = new Uint8Array(event.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: "array" });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          const rawJson: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-
-          if (rawJson.length === 0) return;
-
-          // Forward-fill merged cell product titles for preview
-          let lastTitle = "";
-          let lastCategory = "";
-          const parsed = rawJson.map((row) => {
-            const currentTitle = row["Name of the Product"] || row["Product Name"] || row["Title"] || row["title"] || "";
-            const currentCategory = row["Category of the Product"] || row["Category of the Product, also best seller etc"] || row["Category"] || row["category"] || "";
-
-            if (currentTitle.trim()) lastTitle = currentTitle.trim();
-            if (currentCategory.trim()) lastCategory = currentCategory.trim();
-
-            return {
-              ...row,
-              "Name of the Product": currentTitle.trim() || lastTitle,
-              "Category of the Product": currentCategory.trim() || lastCategory || "General",
-            };
-          });
-
-          setCsvPreview(parsed);
-          setCsvMessage(`Successfully read ${parsed.length} rows from Excel sheet!`);
-        } catch (err: any) {
-          console.error("Excel parse error", err);
-          setCsvMessage("Error reading Excel file format.");
+        if (rawJson.length === 0) {
+          setCsvMessage("Selected file is empty.");
+          return;
         }
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const text = event.target?.result as string;
-        if (!text) return;
 
-        const lines = text.split(/\r\n|\n/);
-        if (lines.length <= 1) return;
-
-        const headers = lines[0].split(",").map((h) => h.trim());
-        const parsed: any[] = [];
+        // Forward-fill merged cell product titles & compute preview prices
         let lastTitle = "";
         let lastCategory = "";
+        const parsed = rawJson.map((row) => {
+          const currentTitle = (row["Name of the Product"] || row["Product Name"] || row["Title"] || row["title"] || "").toString().trim();
+          const currentCategory = (row["Category of the Product"] || row["Category of the Product, also best seller etc"] || row["Category"] || row["category"] || "").toString().trim();
 
-        for (let i = 1; i < lines.length; i++) {
-          if (!lines[i].trim()) continue;
-          const values = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(",");
-          const cleanValues = values.map((v) => v.replace(/^"|"$/g, "").trim());
-
-          const rowObj: any = {};
-          headers.forEach((h, idx) => {
-            rowObj[h] = cleanValues[idx] || "";
-          });
-
-          const currentTitle = rowObj["Name of the Product"] || rowObj["Product Name"] || rowObj["Title"] || rowObj["title"] || "";
           if (currentTitle) lastTitle = currentTitle;
+          if (currentCategory) lastCategory = currentCategory;
 
-          rowObj["Name of the Product"] = currentTitle || lastTitle;
-          parsed.push(rowObj);
-        }
+          const rawPrice = row["Price"] || row["₹"] || row["base_price"] || row["price"] || "";
+          let extractedPrice = "";
+          if (rawPrice) {
+            const clean = String(rawPrice).replace(/[^0-9.]/g, "");
+            if (clean) extractedPrice = clean;
+          }
+          if (!extractedPrice) {
+            const textual = String(row["Textual Format"] || "");
+            const pictoral = String(row["Pictoral Format"] || row["Pictorial Format"] || "");
+            const match = (textual + " " + pictoral).match(/(?:₹|Rs\.?|With|Without)?\s*[:\-]?\s*(\d+)/i);
+            if (match) {
+              extractedPrice = match[1];
+            }
+          }
+
+          return {
+            ...row,
+            "Name of the Product": currentTitle || lastTitle,
+            "Category of the Product": currentCategory || lastCategory || "General",
+            _previewPrice: extractedPrice || "0",
+          };
+        });
+
+        // Unique product count
+        const uniqueTitles = new Set(parsed.map(p => p["Name of the Product"]).filter(Boolean));
 
         setCsvPreview(parsed);
-      };
-      reader.readAsText(file);
-    }
+        setCsvMessage(`Successfully loaded ${uniqueTitles.size} Products (${parsed.length} rows) from file!`);
+      } catch (err: any) {
+        console.error("File parse error", err);
+        setCsvMessage("Error reading file format.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   const submitCsvImport = () => {
@@ -1056,7 +1045,6 @@ export default function ProductsDashboard() {
                 style={{
                   padding: "10px 14px", borderRadius: "8px", fontSize: "14px", marginBottom: "16px",
                   backgroundColor: csvMessage.includes("Success") ? "rgba(143, 185, 168, 0.2)" : "rgba(224, 90, 71, 0.2)",
-                  color: csvMessage.includes("Success") ? "#4E8E76" : "#E05A47",
                 }}
               >
                 {csvMessage}
@@ -1067,7 +1055,7 @@ export default function ProductsDashboard() {
             {csvPreview.length > 0 && (
               <div style={{ marginBottom: "20px" }}>
                 <h4 className="font-sans" style={{ fontSize: "15px", color: "#3F3B38", marginBottom: "8px" }}>
-                  Preview ({csvPreview.length} items found):
+                  Preview ({new Set(csvPreview.map(r => r["Name of the Product"])).size} Products, {csvPreview.length} sub-rows):
                 </h4>
                 <div style={{ maxHeight: "200px", overflowY: "auto", border: "1px solid #EBE5DB", borderRadius: "8px" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
@@ -1082,7 +1070,7 @@ export default function ProductsDashboard() {
                       {csvPreview.map((row, idx) => {
                         const title = row["Name of the Product"] || row["Product Name"] || row["Title"] || row["title"] || "—";
                         const cat = row["Category of the Product"] || row["Category of the Product, also best seller etc"] || row["Category"] || row["category"] || "General";
-                        const price = row["Price"] || row["₹"] || row["base_price"] || row["price"] || "0";
+                        const price = row._previewPrice || row["Price"] || row["₹"] || row["base_price"] || row["price"] || "0";
                         return (
                           <tr key={idx} style={{ borderBottom: "1px solid #F5EDE8" }}>
                             <td style={{ padding: "8px", fontWeight: 500 }}>{title}</td>
@@ -1094,6 +1082,8 @@ export default function ProductsDashboard() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}div>
               </div>
             )}
 
