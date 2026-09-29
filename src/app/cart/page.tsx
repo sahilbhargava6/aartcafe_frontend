@@ -39,7 +39,7 @@ export default function CartPage() {
       return;
     }
 
-    const whatsappNumber = "918851475721"; // Creator's WhatsApp Business Number
+    const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919267843830"; // Business WhatsApp Number (+91 9267843830)
 
     const itemDetails = cart
       .map(
