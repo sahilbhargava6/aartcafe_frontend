@@ -35,26 +35,17 @@ export default function ProductsDashboard() {
     const files = Array.from(e.target.files);
 
     setUploadingGallery(true);
-    const uploadPromises = files.map((file) => {
-      const formData = new FormData();
-      formData.append("file", file);
-      return fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/upload", {
-        method: "POST",
-        body: formData,
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("Upload failed.");
-          return res.json();
-        })
-        .then((data) => data.url);
+    const readPromises = files.map((file) => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (evt) => resolve(evt.target?.result as string);
+        reader.readAsDataURL(file);
+      });
     });
 
-    Promise.all(uploadPromises)
-      .then((urls) => {
-        setImages((prev) => [...prev, ...urls.filter(Boolean)]);
-      })
-      .catch((err) => {
-        alert(err.message || "Error uploading gallery photos.");
+    Promise.all(readPromises)
+      .then((dataUrls) => {
+        setImages((prev) => [...prev, ...dataUrls.filter(Boolean)]);
       })
       .finally(() => {
         setUploadingGallery(false);
@@ -345,29 +336,35 @@ export default function ProductsDashboard() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-    const formData = new FormData();
-    formData.append("file", file);
 
     setUploading(true);
-    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/upload", {
-      method: "POST",
-      body: formData,
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Upload failed. Verify image type & size (<2MB).");
-        return res.json();
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const dataUrl = evt.target?.result as string;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/upload", {
+        method: "POST",
+        body: formData,
       })
-      .then((data) => {
-        if (data.url) {
-          setImage(data.url);
-        }
-      })
-      .catch((err) => {
-        alert(err.message);
-      })
-      .finally(() => {
-        setUploading(false);
-      });
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && data.url) {
+            setImage(data.url);
+          } else {
+            setImage(dataUrl);
+          }
+        })
+        .catch(() => {
+          setImage(dataUrl);
+        })
+        .finally(() => {
+          setUploading(false);
+        });
+    };
+    reader.readAsDataURL(file);
   };
 
   // Predefined attributes from user request
