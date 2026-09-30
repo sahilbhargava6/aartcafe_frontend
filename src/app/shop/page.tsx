@@ -6,6 +6,8 @@ import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
+import { Heart } from "lucide-react";
 
 const CARD_LAYOUTS = [
   { width: 364, height: 455 }, // Aspect ratio 364/455
@@ -20,6 +22,7 @@ const CARD_LAYOUTS = [
 
 export default function Shop() {
   const { addToBag } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
   
@@ -267,22 +270,62 @@ export default function Shop() {
                     const aspectRatioStr = `${layout.width}/${layout.height}`;
 
                     return (
-                      <div key={prod.id} className="shop-product-card-wrapper">
-                        {/* Product Card Container */}
-                        <Link
-                          href={prod.slug ? `/shop/${prod.slug}` : "/shop/wedding-frames"}
-                          className="product-card"
-                          style={{
-                            position: "relative",
-                            width: "100%",
-                            aspectRatio: aspectRatioStr,
-                            backgroundColor: "#FAF6F0",
-                            borderRadius: "15px",
-                            overflow: "hidden",
-                            display: "block",
-                            boxShadow: "0px 4px 10px rgba(0,0,0,0.05)",
-                          }}
-                        >
+                        <div key={prod.id} className="shop-product-card-wrapper" style={{ position: "relative" }}>
+                          {/* Wishlist Heart Button */}
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              toggleWishlist({
+                                id: prod.id,
+                                title: prod.title,
+                                price: prod.price,
+                                image: prod.image,
+                                category: prod.category,
+                                slug: prod.slug,
+                              });
+                            }}
+                            title={isInWishlist(prod.id) ? "Remove from Wishlist" : "Add to Wishlist"}
+                            style={{
+                              position: "absolute",
+                              top: "14px",
+                              right: "14px",
+                              zIndex: 10,
+                              backgroundColor: "rgba(255, 255, 255, 0.9)",
+                              border: "none",
+                              borderRadius: "50%",
+                              width: "36px",
+                              height: "36px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                              transition: "transform 0.2s ease",
+                            }}
+                          >
+                            <Heart
+                              size={18}
+                              color={isInWishlist(prod.id) ? "#D98A9C" : "#3F3B38"}
+                              fill={isInWishlist(prod.id) ? "#D98A9C" : "none"}
+                            />
+                          </button>
+
+                          {/* Product Card Container */}
+                          <Link
+                            href={prod.slug ? `/shop/${prod.slug}` : "/shop/wedding-frames"}
+                            className="product-card"
+                            style={{
+                              position: "relative",
+                              width: "100%",
+                              aspectRatio: aspectRatioStr,
+                              backgroundColor: "#FAF6F0",
+                              borderRadius: "15px",
+                              overflow: "hidden",
+                              display: "block",
+                              boxShadow: "0px 4px 10px rgba(0,0,0,0.05)",
+                            }}
+                          >
                           {prod.image ? (
                             <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                           ) : (

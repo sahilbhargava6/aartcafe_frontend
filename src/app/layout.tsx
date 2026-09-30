@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   description: "Personalized handmade frames, keepsakes, and festive treasures designed to tell your story. Handcrafted with love, meant for the heart.",
 };
 
-import WhatsAppButton from "@/components/WhatsAppButton";
+import { WishlistProvider } from "@/context/WishlistContext";
 
 export default function RootLayout({
   children,
@@ -41,8 +41,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-white text-[#3F3B38]">
         <CartProvider>
-          {children}
-          <WhatsAppButton />
+          <WishlistProvider>
+            {children}
+            <WhatsAppButton />
+          </WishlistProvider>
         </CartProvider>
       </body>
     </html>

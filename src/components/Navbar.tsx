@@ -1,25 +1,57 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
-import { Search, User, ShoppingBag, X, Menu } from "lucide-react";
+import { useWishlist } from "@/context/WishlistContext";
+import { Search, User, ShoppingBag, Heart, X, Menu, Package, ArrowRight } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
   const [searchOpen, setSearchOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "Shop", path: "/shop" },
     { name: "Festival Specials", path: "/festival-specials" },
     { name: "Special offers", path: "/special-offers" },
+    { name: "Track Order", path: "/track-order" },
   ];
+
+  // Fetch products once for live search
+  useEffect(() => {
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) setAllProducts(data);
+      })
+      .catch((err) => console.error("Error loading products for search:", err));
+  }, []);
+
+  // Filter search results in real time
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const q = searchQuery.toLowerCase().trim();
+    const filtered = allProducts.filter(
+      (p) =>
+        p.title?.toLowerCase().includes(q) ||
+        p.category?.name?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q)
+    );
+    setSearchResults(filtered.slice(0, 6)); // max 6 preview items
+  }, [searchQuery, allProducts]);
 
   return (
     <>
@@ -82,12 +114,12 @@ export default function Navbar() {
                   href={link.path}
                   className="font-serif"
                   style={{
-                    fontSize: "24px",
+                    fontSize: "22px",
                     lineHeight: "32px",
                     fontWeight: 400,
                     color: isActive ? "#D9A85C" : "#3F3B38",
                     textDecoration: "none",
-                    padding: "0 2rem",
+                    padding: "0 1.5rem",
                     whiteSpace: "nowrap",
                     transition: "color 0.2s ease",
                   }}
@@ -109,7 +141,7 @@ export default function Navbar() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "15px",
+              gap: "12px",
             }}
           >
             {/* Search */}
@@ -129,8 +161,56 @@ export default function Navbar() {
               onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.6")}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
             >
-              <Search size={30} strokeWidth={1.2} />
+              <Search size={28} strokeWidth={1.2} />
             </button>
+
+            {/* Wishlist Heart Icon */}
+            <Link
+              href="/wishlist"
+              style={{
+                background: pathname === "/wishlist" ? "#D98A9C" : "none",
+                border: "none",
+                cursor: "pointer",
+                width: "44px",
+                height: "44px",
+                borderRadius: "50%",
+                color: pathname === "/wishlist" ? "#fff" : "#000",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                position: "relative",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                if (pathname !== "/wishlist") e.currentTarget.style.opacity = "0.6";
+              }}
+              onMouseLeave={(e) => {
+                if (pathname !== "/wishlist") e.currentTarget.style.opacity = "1";
+              }}
+            >
+              <Heart size={26} strokeWidth={1.3} color={pathname === "/wishlist" ? "#fff" : "#3F3B38"} />
+              {wishlistCount > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-2px",
+                    right: "-2px",
+                    backgroundColor: "#D98A9C",
+                    color: "#fff",
+                    borderRadius: "50%",
+                    width: "18px",
+                    height: "18px",
+                    fontSize: "0.65rem",
+                    fontWeight: "bold",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
 
             {/* Profile/User */}
             <button
@@ -149,7 +229,7 @@ export default function Navbar() {
               onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.6")}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
             >
-              <User size={30} strokeWidth={1.2} />
+              <User size={28} strokeWidth={1.2} />
             </button>
 
             {/* Bag/Cart */}
@@ -159,8 +239,8 @@ export default function Navbar() {
                 background: pathname === "/cart" ? "#D9A85C" : "none",
                 border: "none",
                 cursor: "pointer",
-                width: "48px",
-                height: "48px",
+                width: "44px",
+                height: "44px",
                 borderRadius: "50%",
                 color: pathname === "/cart" ? "#fff" : "#000",
                 display: "flex",
@@ -176,18 +256,18 @@ export default function Navbar() {
                 if (pathname !== "/cart") e.currentTarget.style.opacity = "1";
               }}
             >
-              <ShoppingBag size={30} strokeWidth={1.2} color={pathname === "/cart" ? "#fff" : "#000"} />
+              <ShoppingBag size={28} strokeWidth={1.2} color={pathname === "/cart" ? "#fff" : "#000"} />
               {cartCount > 0 && (
                 <span
                   style={{
                     position: "absolute",
-                    top: "-4px",
-                    right: "-4px",
+                    top: "-2px",
+                    right: "-2px",
                     backgroundColor: "#D98A9C",
                     color: "#fff",
                     borderRadius: "50%",
-                    width: "20px",
-                    height: "20px",
+                    width: "18px",
+                    height: "18px",
                     fontSize: "0.65rem",
                     fontWeight: "bold",
                     display: "flex",
@@ -215,7 +295,7 @@ export default function Navbar() {
                 justifyContent: "center",
               }}
             >
-              <Menu size={30} strokeWidth={1.2} />
+              <Menu size={28} strokeWidth={1.2} />
             </button>
           </div>
         </div>
@@ -258,7 +338,7 @@ export default function Navbar() {
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: "30px",
+              gap: "24px",
               alignItems: "center",
             }}
           >
@@ -271,7 +351,7 @@ export default function Navbar() {
                   className="font-serif"
                   onClick={() => setMobileMenuOpen(false)}
                   style={{
-                    fontSize: "28px",
+                    fontSize: "26px",
                     fontWeight: 400,
                     color: isActive ? "#D9A85C" : "#3F3B38",
                     textDecoration: "none",
@@ -282,11 +362,26 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            <Link
+              href="/wishlist"
+              className="font-serif"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                fontSize: "26px",
+                color: "#D98A9C",
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <Heart size={24} /> My Wishlist ({wishlistCount})
+            </Link>
           </nav>
         </div>
       )}
 
-      {/* Search Overlay/Modal */}
+      {/* Live Search Overlay/Modal */}
       {searchOpen && (
         <div
           style={{
@@ -299,13 +394,16 @@ export default function Navbar() {
             zIndex: 1000,
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
             alignItems: "center",
-            padding: "2rem",
+            padding: "60px 20px 40px",
+            overflowY: "auto",
           }}
         >
           <button
-            onClick={() => setSearchOpen(false)}
+            onClick={() => {
+              setSearchOpen(false);
+              setSearchQuery("");
+            }}
             style={{
               position: "absolute",
               top: "2rem",
@@ -318,41 +416,109 @@ export default function Navbar() {
           >
             <X size={28} color="#3F3B38" />
           </button>
-          <div style={{ width: "100%", maxWidth: "600px", textAlign: "center" }}>
+
+          <div style={{ width: "100%", maxWidth: "680px", textAlign: "center" }}>
             <h2
               className="font-serif"
-              style={{ fontSize: "2rem", marginBottom: "1.5rem", color: "#3F3B38" }}
+              style={{ fontSize: "2.2rem", marginBottom: "1.5rem", color="#3F3B38", fontWeight: 400 }}
             >
-              Search Aartcafe
+              Search Aartcafe Catalog
             </h2>
-            <div style={{ position: "relative", width: "100%" }}>
+            <div style={{ position: "relative", width: "100%", marginBottom: "24px" }}>
               <input
                 type="text"
-                placeholder="Search for frames, gifts, collections..."
+                placeholder="Search by product name, category, or keyword..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
                 style={{
                   width: "100%",
-                  padding: "1rem 3rem 1rem 1.5rem",
+                  padding: "1.1rem 3.5rem 1.1rem 1.8rem",
                   fontSize: "1.2rem",
-                  borderRadius: "30px",
-                  border: "1.5px solid #8FB9A8",
+                  borderRadius: "35px",
+                  border: "1.5px solid #D9A85C",
                   outline: "none",
+                  backgroundColor: "#FAF6F0",
                   color: "#3F3B38",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
                 }}
               />
               <Search
-                size={22}
-                color="#8FB9A8"
+                size={24}
+                color="#D9A85C"
                 style={{
                   position: "absolute",
-                  right: "1.5rem",
+                  right: "1.8rem",
                   top: "50%",
                   transform: "translateY(-50%)",
                 }}
               />
             </div>
+
+            {/* Live Search Results Dropdown */}
+            {searchQuery.trim() !== "" && (
+              <div
+                style={{
+                  backgroundColor: "#FFF",
+                  borderRadius: "20px",
+                  boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+                  border: "1px solid #EBE5DB",
+                  overflow: "hidden",
+                  textAlign: "left",
+                }}
+              >
+                {searchResults.length === 0 ? (
+                  <div style={{ padding: "30px", textAlign: "center", color: "#999", fontSize: "15px" }}>
+                    No products found matching &quot;{searchQuery}&quot;
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ padding: "14px 20px", backgroundColor: "#FAF6F0", fontSize: "12px", color: "#6E6E6E", textTransform: "uppercase", fontWeight: 600, letterSpacing: "1px", borderBottom: "1px solid #EBE5DB" }}>
+                      Found {searchResults.length} Products
+                    </div>
+                    {searchResults.map((prod) => (
+                      <Link
+                        key={prod.id}
+                        href={prod.slug ? `/shop/${prod.slug}` : "/shop"}
+                        onClick={() => {
+                          setSearchOpen(false);
+                          setSearchQuery("");
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "16px",
+                          padding: "14px 20px",
+                          borderBottom: "1px solid #FAF6F0",
+                          textDecoration: "none",
+                          color: "#3F3B38",
+                          transition: "backgroundColor 0.2s",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FAF6F0")}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FFF")}
+                      >
+                        {prod.image ? (
+                          <img src={prod.image} alt={prod.title} style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "10px" }} />
+                        ) : (
+                          <div style={{ width: "50px", height: "50px", backgroundColor: "#EBE5DB", borderRadius: "10px" }} />
+                        )}
+                        <div style={{ flex: 1 }}>
+                          <div className="font-serif" style={{ fontSize: "16px", fontWeight: 500, color: "#3F3B38" }}>
+                            {prod.title}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#8FB9A8", textTransform: "uppercase", fontWeight: 600, marginTop: "2px" }}>
+                            {prod.category?.name || "General"}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "16px", fontWeight: 700, color: "#D9A85C" }}>
+                          ₹{Number(prod.base_price || 0).toLocaleString("en-IN")}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -378,7 +544,7 @@ export default function Navbar() {
             style={{
               backgroundColor: "#FFF",
               padding: "30px",
-              borderRadius: "15px",
+              borderRadius: "20px",
               maxWidth: "400px",
               width: "90%",
               boxShadow: "0px 10px 30px rgba(0,0,0,0.15)",
@@ -386,18 +552,39 @@ export default function Navbar() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-serif" style={{ fontSize: "24px", color: "#3F3B38", marginBottom: "20px" }}>My Account</h3>
-            <p className="font-sans" style={{ color: "#6E6E6E", fontSize: "16px", marginBottom: "24px" }}>
-              Log in to track orders, save favorites, and manage your custom requests.
+            <h3 className="font-serif" style={{ fontSize: "24px", color: "#3F3B38", marginBottom: "16px" }}>Aartcafe Account</h3>
+            <p className="font-sans" style={{ color: "#6E6E6E", fontSize: "15px", marginBottom: "24px", lineHeight: "22px" }}>
+              Access administrative dashboard or track your custom orders.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <Link
+                href="/track-order"
+                onClick={() => setUserMenuOpen(false)}
+                style={{
+                  height: "44px",
+                  borderRadius: "22px",
+                  border: "none",
+                  backgroundColor: "#FAF6F0",
+                  color: "#3F3B38",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textDecoration: "none",
+                  gap: "8px",
+                  fontSize: "14px",
+                }}
+              >
+                <Package size={16} color="#D9A85C" /> Track Customer Order
+              </Link>
               <Link
                 href="/signin"
                 onClick={() => setUserMenuOpen(false)}
                 style={{
-                  height: "40px",
-                  borderRadius: "20px",
-                  border: "1px solid #D9A85C",
+                  height: "44px",
+                  borderRadius: "22px",
+                  border: "1.5px solid #D9A85C",
                   backgroundColor: "transparent",
                   color: "#D98A9C",
                   fontWeight: 600,
@@ -406,28 +593,10 @@ export default function Navbar() {
                   alignItems: "center",
                   justifyContent: "center",
                   textDecoration: "none",
+                  fontSize: "14px",
                 }}
               >
-                SIGN IN
-              </Link>
-              <Link
-                href="/signup"
-                onClick={() => setUserMenuOpen(false)}
-                style={{
-                  height: "40px",
-                  borderRadius: "20px",
-                  border: "none",
-                  backgroundColor: "#D9A85C",
-                  color: "#FFF",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textDecoration: "none",
-                }}
-              >
-                CREATE ACCOUNT
+                ADMIN DASHBOARD SIGN IN
               </Link>
             </div>
           </div>
