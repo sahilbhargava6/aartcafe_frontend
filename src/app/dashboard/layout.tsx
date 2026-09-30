@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ChevronRight } from "lucide-react";
+import { Menu, X, ChevronRight, LogOut } from "lucide-react";
 
 export default function DashboardLayout({
   children,
@@ -12,6 +12,52 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("admin_token");
+      const loginTime = localStorage.getItem("admin_login_time");
+      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+      if (!token) {
+        window.location.href = "/signin";
+        return;
+      }
+
+      if (loginTime) {
+        const elapsed = Date.now() - parseInt(loginTime, 10);
+        if (elapsed > SEVEN_DAYS_MS) {
+          localStorage.removeItem("admin_token");
+          localStorage.removeItem("admin_user");
+          localStorage.removeItem("admin_login_time");
+          window.location.href = "/signin?expired=1";
+          return;
+        }
+      } else {
+        localStorage.setItem("admin_login_time", Date.now().toString());
+      }
+
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleSignOut = () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    if (token) {
+      fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/logout", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }).catch(() => {});
+    }
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_user");
+    localStorage.removeItem("admin_login_time");
+    window.location.href = "/signin";
+  };
 
   const menuItems = [
     { name: "Website Analytics", path: "/dashboard" },
@@ -27,6 +73,14 @@ export default function DashboardLayout({
   ];
 
   const currentItem = menuItems.find((item) => item.path === pathname) || menuItems[3];
+
+  if (isAuthenticated === null) {
+    return (
+      <div style={{ display: "flex", height: "100vh", alignItems: "center", justifyContent: "center", backgroundColor: "#FAF7F5", color: "#D9A85C", fontSize: "16px", fontWeight: 600 }}>
+        Verifying Security Session...
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-wrapper">
@@ -75,7 +129,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Navigation Options List */}
-        <nav style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <nav style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
           {menuItems.map((item) => {
             const isActive = pathname === item.path;
             return (
@@ -105,6 +159,37 @@ export default function DashboardLayout({
             );
           })}
         </nav>
+
+        {/* Sign Out Button */}
+        <button
+          onClick={handleSignOut}
+          style={{
+            marginTop: "20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 16px",
+            borderRadius: "10px",
+            backgroundColor: "rgba(224, 90, 71, 0.1)",
+            color: "#E05A47",
+            border: "1px solid rgba(224, 90, 71, 0.3)",
+            fontSize: "14px",
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#E05A47";
+            e.currentTarget.style.color = "#FFF";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "rgba(224, 90, 71, 0.1)";
+            e.currentTarget.style.color = "#E05A47";
+          }}
+        >
+          <span>Sign Out</span>
+          <LogOut size={16} />
+        </button>
       </aside>
 
       {/* ═══════════════════════════════════════════════════════

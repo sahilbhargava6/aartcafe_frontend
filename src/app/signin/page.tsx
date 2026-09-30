@@ -33,6 +33,7 @@ export default function SignIn() {
       if (res.ok && data.token) {
         localStorage.setItem("admin_token", data.token);
         localStorage.setItem("admin_user", JSON.stringify(data.user));
+        localStorage.setItem("admin_login_time", Date.now().toString());
         setMessage("Successfully signed in! Redirecting to Dashboard...");
         setTimeout(() => {
           window.location.href = "/dashboard";
