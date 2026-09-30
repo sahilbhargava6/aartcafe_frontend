@@ -231,8 +231,14 @@ export default function ProductsDashboard() {
       formData.append("products", JSON.stringify(csvPreview));
     }
 
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/bulk-import", {
       method: "POST",
+      headers: {
+        "Accept": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: formData,
     })
       .then((res) => {
@@ -467,9 +473,15 @@ export default function ProductsDashboard() {
         values: attr.values.filter((v: any) => v.value.trim() !== "")
       }));
 
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+
     fetch(url, {
       method: method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
         category_id: selectedCategoryList[0],
         category_ids: selectedCategoryList,
@@ -506,8 +518,14 @@ export default function ProductsDashboard() {
   const handleDelete = (id: number) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
 
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+
     fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/${id}`, {
       method: "DELETE",
+      headers: {
+        "Accept": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to delete product.");

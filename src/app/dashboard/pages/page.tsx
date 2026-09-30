@@ -69,10 +69,15 @@ export default function PagesDashboard() {
       : "https://aartcafe-backend-production-rjudvs.laravel.cloud/api/pages";
 
     const method = editingPage ? "PUT" : "POST";
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
     fetch(url, {
       method: method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
         title,
         slug,
@@ -81,9 +86,13 @@ export default function PagesDashboard() {
         meta_description: metaDescription,
       }),
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to save page.");
-        return res.json();
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const errMsg = data.message || "Failed to save page.";
+          throw new Error(errMsg);
+        }
+        return data;
       })
       .then(() => {
         setIsModalOpen(false);
@@ -96,9 +105,14 @@ export default function PagesDashboard() {
 
   const handleDelete = (id: number) => {
     if (!confirm("Are you sure you want to delete this page configuration?")) return;
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
     fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/pages/${id}`, {
       method: "DELETE",
+      headers: {
+        "Accept": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to delete page.");

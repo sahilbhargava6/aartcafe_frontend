@@ -32,10 +32,15 @@ export default function WeddingSpecialsDashboard() {
 
   const toggleWeddingSpecial = (prod: any) => {
     const updatedStatus = !prod.is_wedding_special;
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
     fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/${prod.id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
         ...prod,
         is_wedding_special: updatedStatus,

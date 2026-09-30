@@ -56,15 +56,24 @@ export default function CategoriesDashboard() {
       : "https://aartcafe-backend-production-rjudvs.laravel.cloud/api/categories";
 
     const method = editingCategory ? "PUT" : "POST";
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
     fetch(url, {
       method: method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({ name: categoryName }),
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to save category.");
-        return res.json();
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const errMsg = data.message || (data.errors ? Object.values(data.errors).flat().join("\n") : "Failed to save category.");
+          throw new Error(errMsg);
+        }
+        return data;
       })
       .then(() => {
         setIsModalOpen(false);
@@ -78,8 +87,14 @@ export default function CategoriesDashboard() {
   const handleDelete = (id: number) => {
     if (!confirm("Are you sure you want to delete this category?")) return;
 
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+
     fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/categories/${id}`, {
       method: "DELETE",
+      headers: {
+        "Accept": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to delete category.");
