@@ -420,7 +420,7 @@ export default function Navbar() {
           <div style={{ width: "100%", maxWidth: "680px", textAlign: "center" }}>
             <h2
               className="font-serif"
-              style={{ fontSize: "2.2rem", marginBottom: "1.5rem", color="#3F3B38", fontWeight: 400 }}
+              style={{ fontSize: "2.2rem", marginBottom: "1.5rem", color: "#3F3B38", fontWeight: 400 }}
             >
               Search Aartcafe Catalog
             </h2>

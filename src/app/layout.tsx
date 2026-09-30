@@ -28,6 +28,7 @@ export const metadata: Metadata = {
 };
 
 import { WishlistProvider } from "@/context/WishlistContext";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 export default function RootLayout({
   children,
