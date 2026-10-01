@@ -356,7 +356,7 @@ export default function ProductDetailsPage() {
                   }}
                 >
                   <Truck size={20} color="#4E8E76" />
-                  <span>🚚 <strong>Free Delivery:</strong> Included on this handcrafted product!</span>
+                  <span>🚚 <b>Free Delivery:</b> Included on this handcrafted product!</span>
                 </div>
               ) : (
                 <div
