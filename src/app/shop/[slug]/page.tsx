@@ -336,6 +336,7 @@ export default function ProductDetailsPage() {
                       ₹{calculateOriginalTotalPrice()}
                     </span>
                   )}
+                </div>
               </div>
 
               {/* Free Delivery Banner */}
