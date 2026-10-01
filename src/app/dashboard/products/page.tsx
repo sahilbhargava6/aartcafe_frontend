@@ -27,6 +27,7 @@ export default function ProductsDashboard() {
   const [isWeddingSpecial, setIsWeddingSpecial] = useState(false);
   const [isBestseller, setIsBestseller] = useState(false);
   const [isHeroFeatured, setIsHeroFeatured] = useState(false);
+  const [isFreeDelivery, setIsFreeDelivery] = useState(false);
 
   // Additional Gallery Photos Upload State
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -308,6 +309,7 @@ export default function ProductsDashboard() {
     setIsWeddingSpecial(false);
     setIsBestseller(false);
     setIsHeroFeatured(false);
+    setIsFreeDelivery(false);
     setAttributes([]);
     setIsModalOpen(true);
   };
@@ -329,6 +331,7 @@ export default function ProductsDashboard() {
     setIsWeddingSpecial(!!prod.is_wedding_special);
     setIsBestseller(!!prod.is_bestseller);
     setIsHeroFeatured(!!prod.is_hero_featured);
+    setIsFreeDelivery(!!prod.is_free_delivery);
 
     // Parse existing attributes if present
     if (prod.attributes && Array.isArray(prod.attributes)) {
@@ -495,6 +498,7 @@ export default function ProductsDashboard() {
         is_wedding_special: isWeddingSpecial,
         is_bestseller: isBestseller,
         is_hero_featured: isHeroFeatured,
+        is_free_delivery: isFreeDelivery,
         attributes: cleanAttributes
       }),
     })
@@ -653,7 +657,12 @@ export default function ProductsDashboard() {
                           Hero Featured
                         </span>
                       )}
-                      {!prod.is_bestseller && !prod.is_new_discovery && !prod.is_wedding_special && !prod.is_hero_featured && (
+                      {prod.is_free_delivery && (
+                        <span style={{ padding: "2px 6px", backgroundColor: "rgba(78, 142, 118, 0.15)", color: "#4E8E76", borderRadius: "6px", fontSize: "11px", fontWeight: 700 }}>
+                          🚚 Free Delivery
+                        </span>
+                      )}
+                      {!prod.is_bestseller && !prod.is_new_discovery && !prod.is_wedding_special && !prod.is_hero_featured && !prod.is_free_delivery && (
                         <span style={{ fontSize: "12px", color: "#BCAEA2", fontStyle: "italic" }}>-</span>
                       )}
                     </div>
@@ -1099,6 +1108,16 @@ export default function ProductsDashboard() {
                     style={{ cursor: "pointer" }}
                   />
                   Hero Carousel Featured
+                </label>
+
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "14px", color: "#4E8E76", fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={isFreeDelivery}
+                    onChange={(e) => setIsFreeDelivery(e.target.checked)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  🚚 Free Delivery
                 </label>
               </div>
 

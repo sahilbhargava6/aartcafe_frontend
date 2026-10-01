@@ -60,7 +60,8 @@ export default function Shop() {
             category: p.category?.name || "Uncategorized",
             categories: Array.isArray(p.categories) && p.categories.length > 0 ? p.categories.map((c: any) => c.name) : [p.category?.name || "Uncategorized"],
             image: p.image || "",
-            description: p.description || ""
+            description: p.description || "",
+            isFreeDelivery: !!p.is_free_delivery
           }));
           setAllProducts(formatted);
           setFilteredProducts(formatted);
@@ -326,6 +327,28 @@ export default function Shop() {
                               boxShadow: "0px 4px 10px rgba(0,0,0,0.05)",
                             }}
                           >
+                          {prod.isFreeDelivery && (
+                            <span
+                              style={{
+                                position: "absolute",
+                                top: "14px",
+                                left: "14px",
+                                zIndex: 3,
+                                backgroundColor: "rgba(78, 142, 118, 0.95)",
+                                color: "#FFF",
+                                padding: "4px 10px",
+                                borderRadius: "14px",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.5px",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                              }}
+                            >
+                              🚚 Free Delivery
+                            </span>
+                          )}
+
                           {prod.image ? (
                             <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                           ) : (
