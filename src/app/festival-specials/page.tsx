@@ -28,7 +28,14 @@ export default function FestivalSpecials() {
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/festive-specials")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data)) setProducts(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data);
+        } else {
+          setProducts([
+            { id: "fs-1", title: "HANDMADE RAKHI", base_price: 2000, image: "", description: "Handcrafted with love, designed to celebrate the timeless bond between siblings." },
+            { id: "fs-2", title: "HANDMADE RAKHI", base_price: 2000, image: "", description: "Handcrafted with love, designed to celebrate the timeless bond between siblings." }
+          ]);
+        }
       });
 
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/bestsellers")
