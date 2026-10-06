@@ -14,6 +14,12 @@ export default function FestivalSpecials() {
   const [products, setProducts] = useState<any[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
 
+  // Reviews state
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewingProductId, setReviewingProductId] = useState<number | null>(null);
+  const [reviewForm, setReviewForm] = useState({ name: '', text: '', rating: 5 });
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   useEffect(() => {
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/banners")
       .then((res) => (res.ok ? res.json() : []))
@@ -47,6 +53,39 @@ export default function FestivalSpecials() {
 
   const toggleReview = (id: string) => {
     setExpandedReviews(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const submitReview = async () => {
+    if (!reviewingProductId || !reviewForm.name || !reviewForm.text) return;
+    setSubmittingReview(true);
+    try {
+      const res = await fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: reviewingProductId,
+          reviewer_name: reviewForm.name,
+          review_text: reviewForm.text,
+          rating: reviewForm.rating,
+          is_approved: true
+        })
+      });
+      if (res.ok) {
+        const newReview = await res.json();
+        setProducts(prev => prev.map(p => {
+          if (p.id === reviewingProductId) {
+            return { ...p, reviews: [...(p.reviews || []), newReview] };
+          }
+          return p;
+        }));
+        setReviewModalOpen(false);
+        setReviewForm({ name: '', text: '', rating: 5 });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   return (
@@ -156,25 +195,53 @@ export default function FestivalSpecials() {
 
                     {/* Reviews */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
-                      <span className="font-serif review-section-label">Reviews</span>
-                      <div className="review-box">
-                        <span className="font-serif reviewer-name">Ayush Sharma</span>
-                        <p className="font-sans review-text">
-                          Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts.
-                        </p>
-                        <div style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-end" }}>
-                          <Heart size={26} fill="#D98A9C" />
-                          <Heart size={26} fill="#D98A9C" />
-                          <Heart size={26} fill="#D98A9C" />
-                          <Heart size={26} fill="#D98A9C" />
-                          <Heart size={26} color="#3F3B38" />
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "center" }}>
-                        <button onClick={() => toggleReview(prod.id)} className="review-toggle">
-                          <ChevronDown size={22} style={{ transform: expandedReviews[prod.id] ? "rotate(180deg)" : "none", transition: "transform 0.3s" }} />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span className="font-serif review-section-label">Reviews</span>
+                        <button 
+                          onClick={() => { setReviewingProductId(prod.id); setReviewModalOpen(true); }}
+                          className="font-sans" 
+                          style={{ background: "none", border: "1px solid #D9A85C", color: "#D9A85C", padding: "4px 12px", borderRadius: "12px", cursor: "pointer", fontSize: "14px" }}>
+                          Add Review
                         </button>
                       </div>
+
+                      {prod.reviews && prod.reviews.length > 0 ? (
+                        <>
+                          <div className="review-box">
+                            <span className="font-serif reviewer-name">{prod.reviews[0].reviewer_name}</span>
+                            <p className="font-sans review-text">{prod.reviews[0].review_text}</p>
+                            <div style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-end" }}>
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Heart key={i} size={26} fill={i < prod.reviews[0].rating ? "#D98A9C" : "transparent"} color={i < prod.reviews[0].rating ? "#D98A9C" : "#3F3B38"} />
+                              ))}
+                            </div>
+                          </div>
+                          
+                          {expandedReviews[prod.id] && prod.reviews.slice(1).map((rev: any) => (
+                            <div key={rev.id} className="review-box">
+                              <span className="font-serif reviewer-name">{rev.reviewer_name}</span>
+                              <p className="font-sans review-text">{rev.review_text}</p>
+                              <div style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-end" }}>
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Heart key={i} size={26} fill={i < rev.rating ? "#D98A9C" : "transparent"} color={i < rev.rating ? "#D98A9C" : "#3F3B38"} />
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+
+                          {prod.reviews.length > 1 && (
+                            <div style={{ display: "flex", justifyContent: "center" }}>
+                              <button onClick={() => toggleReview(prod.id)} className="review-toggle">
+                                <ChevronDown size={22} style={{ transform: expandedReviews[prod.id] ? "rotate(180deg)" : "none", transition: "transform 0.3s" }} />
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div style={{ color: "#8FB9A8", fontStyle: "italic", fontSize: "16px", padding: "10px 0" }}>
+                          No reviews yet. Be the first to add one!
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -209,25 +276,53 @@ export default function FestivalSpecials() {
 
                     {/* Reviews */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
-                      <span className="font-serif review-section-label">Reviews</span>
-                      <div className="review-box">
-                        <span className="font-serif reviewer-name">Ayush Sharma</span>
-                        <p className="font-sans review-text">
-                          Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts.
-                        </p>
-                        <div style={{ display: "flex", gap: "6px", color: "#D98A9C" }}>
-                          <Heart size={26} fill="#D98A9C" />
-                          <Heart size={26} fill="#D98A9C" />
-                          <Heart size={26} fill="#D98A9C" />
-                          <Heart size={26} fill="#D98A9C" />
-                          <Heart size={26} color="#3F3B38" />
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "center" }}>
-                        <button onClick={() => toggleReview(prod.id)} className="review-toggle">
-                          <ChevronDown size={22} style={{ transform: expandedReviews[prod.id] ? "rotate(180deg)" : "none", transition: "transform 0.3s" }} />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span className="font-serif review-section-label">Reviews</span>
+                        <button 
+                          onClick={() => { setReviewingProductId(prod.id); setReviewModalOpen(true); }}
+                          className="font-sans" 
+                          style={{ background: "none", border: "1px solid #D9A85C", color: "#D9A85C", padding: "4px 12px", borderRadius: "12px", cursor: "pointer", fontSize: "14px" }}>
+                          Add Review
                         </button>
                       </div>
+
+                      {prod.reviews && prod.reviews.length > 0 ? (
+                        <>
+                          <div className="review-box">
+                            <span className="font-serif reviewer-name">{prod.reviews[0].reviewer_name}</span>
+                            <p className="font-sans review-text">{prod.reviews[0].review_text}</p>
+                            <div style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-start" }}>
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Heart key={i} size={26} fill={i < prod.reviews[0].rating ? "#D98A9C" : "transparent"} color={i < prod.reviews[0].rating ? "#D98A9C" : "#3F3B38"} />
+                              ))}
+                            </div>
+                          </div>
+                          
+                          {expandedReviews[prod.id] && prod.reviews.slice(1).map((rev: any) => (
+                            <div key={rev.id} className="review-box">
+                              <span className="font-serif reviewer-name">{rev.reviewer_name}</span>
+                              <p className="font-sans review-text">{rev.review_text}</p>
+                              <div style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-start" }}>
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Heart key={i} size={26} fill={i < rev.rating ? "#D98A9C" : "transparent"} color={i < rev.rating ? "#D98A9C" : "#3F3B38"} />
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+
+                          {prod.reviews.length > 1 && (
+                            <div style={{ display: "flex", justifyContent: "center" }}>
+                              <button onClick={() => toggleReview(prod.id)} className="review-toggle">
+                                <ChevronDown size={22} style={{ transform: expandedReviews[prod.id] ? "rotate(180deg)" : "none", transition: "transform 0.3s" }} />
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div style={{ color: "#8FB9A8", fontStyle: "italic", fontSize: "16px", padding: "10px 0", textAlign: "left" }}>
+                          No reviews yet. Be the first to add one!
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -371,6 +466,62 @@ export default function FestivalSpecials() {
       </main>
 
       <Footer />
+
+      {/* ADD REVIEW MODAL */}
+      {reviewModalOpen && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
+          <div style={{ backgroundColor: "#fff", padding: "30px", borderRadius: "15px", width: "90%", maxWidth: "500px", display: "flex", flexDirection: "column", gap: "20px", boxShadow: "0px 10px 30px rgba(0,0,0,0.2)" }}>
+            <h3 className="font-serif" style={{ margin: 0, fontSize: "28px", color: "#3F3B38" }}>Add a Review</h3>
+            
+            <input 
+              type="text" 
+              placeholder="Your Name" 
+              value={reviewForm.name}
+              onChange={(e) => setReviewForm({...reviewForm, name: e.target.value})}
+              style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #EBE5DB", fontSize: "16px", outline: "none" }}
+            />
+            
+            <div>
+              <span className="font-sans" style={{ display: "block", marginBottom: "8px", color: "#8FB9A8", fontSize: "16px" }}>Rating</span>
+              <div style={{ display: "flex", gap: "8px", cursor: "pointer" }}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Heart 
+                    key={i} 
+                    size={32} 
+                    fill={i < reviewForm.rating ? "#D98A9C" : "transparent"} 
+                    color={i < reviewForm.rating ? "#D98A9C" : "#3F3B38"} 
+                    onClick={() => setReviewForm({...reviewForm, rating: i + 1})}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <textarea 
+              placeholder="Your Review" 
+              rows={4}
+              value={reviewForm.text}
+              onChange={(e) => setReviewForm({...reviewForm, text: e.target.value})}
+              style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #EBE5DB", fontSize: "16px", resize: "none", outline: "none" }}
+            />
+
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "10px" }}>
+              <button 
+                onClick={() => setReviewModalOpen(false)}
+                style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid #8FB9A8", backgroundColor: "transparent", color: "#8FB9A8", cursor: "pointer", fontWeight: 600, fontSize: "16px" }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={submitReview}
+                disabled={submittingReview}
+                style={{ padding: "10px 20px", borderRadius: "8px", border: "none", backgroundColor: "#D9A85C", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: "16px", opacity: submittingReview ? 0.7 : 1 }}
+              >
+                {submittingReview ? "Submitting..." : "Submit Review"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .fest-container {
