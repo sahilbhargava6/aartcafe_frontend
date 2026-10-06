@@ -4,6 +4,79 @@ import React, { useState, useEffect, useRef } from "react";
 import { Plus, Edit2, Trash2, X, Upload, Check, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
 
+// Utility to compress and convert images to WebP
+async function compressImageToWebp(file: File): Promise<string> {
+  // If it's an SVG, just read as data URL and return (don't rasterize it)
+  if (file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Handle HEIC/HEIF files if heic2any is installed
+  let blobToProcess: Blob = file;
+  if (
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    file.name.toLowerCase().endsWith(".heic") ||
+    file.name.toLowerCase().endsWith(".heif")
+  ) {
+    try {
+      const heic2any = (await import("heic2any")).default;
+      const converted = await heic2any({ blob: file, toType: "image/jpeg" });
+      blobToProcess = Array.isArray(converted) ? converted[0] : converted;
+    } catch (e) {
+      console.warn("heic2any conversion failed or not available", e);
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1920;
+        const MAX_HEIGHT = 1920;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(event.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to WebP with 0.8 quality
+        const dataUrl = canvas.toDataURL("image/webp", 0.8);
+        resolve(dataUrl);
+      };
+      img.onerror = () => resolve(event.target?.result as string);
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blobToProcess);
+  });
+}
+
 export default function ProductsDashboard() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -33,26 +106,20 @@ export default function ProductsDashboard() {
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [uploadingGallery, setUploadingGallery] = useState(false);
 
-  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const files = Array.from(e.target.files);
 
     setUploadingGallery(true);
-    const readPromises = files.map((file) => {
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (evt) => resolve(evt.target?.result as string);
-        reader.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(readPromises)
-      .then((dataUrls) => {
-        setImages((prev) => [...prev, ...dataUrls.filter(Boolean)]);
-      })
-      .finally(() => {
-        setUploadingGallery(false);
-      });
+    try {
+      const dataUrls = await Promise.all(files.map(compressImageToWebp));
+      setImages((prev) => [...prev, ...dataUrls.filter(Boolean)]);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to process gallery images.");
+    } finally {
+      setUploadingGallery(false);
+    }
   };
 
   const removeGalleryImage = (index: number) => {
@@ -351,38 +418,20 @@ export default function ProductsDashboard() {
     setIsModalOpen(true);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
 
     setUploading(true);
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const dataUrl = evt.target?.result as string;
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/upload", {
-        method: "POST",
-        body: formData,
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data && data.url) {
-            setImage(data.url);
-          } else {
-            setImage(dataUrl);
-          }
-        })
-        .catch(() => {
-          setImage(dataUrl);
-        })
-        .finally(() => {
-          setUploading(false);
-        });
-    };
-    reader.readAsDataURL(file);
+    try {
+      const dataUrl = await compressImageToWebp(file);
+      setImage(dataUrl);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to process image.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   // Predefined attributes from user request
