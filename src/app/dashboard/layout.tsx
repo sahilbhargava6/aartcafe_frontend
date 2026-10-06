@@ -70,6 +70,8 @@ export default function DashboardLayout({
     { name: "Reviews", path: "/dashboard/reviews" },
     { name: "New Discovers", path: "/dashboard/new-discovers" },
     { name: "Wedding Specials", path: "/dashboard/wedding-specials" },
+    { name: "Festive Specials", path: "/dashboard/festive-specials" },
+    { name: "Best Sellers", path: "/dashboard/best-sellers" },
   ];
 
   const currentItem = menuItems.find((item) => item.path === pathname) || menuItems[3];

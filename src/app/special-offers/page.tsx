@@ -20,7 +20,7 @@ export default function SpecialOffers() {
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          const activeBanners = data.filter((b: any) => b.is_active && (!b.position || b.position === 'all' || b.position === 'special-offers'));
+          const activeBanners = data.filter((b: any) => b.is_active);
           setBanners(activeBanners.length > 0 ? activeBanners : data);
         }
       })
