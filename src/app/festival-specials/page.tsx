@@ -100,7 +100,7 @@ export default function FestivalSpecials() {
               style={
                 activeBanner?.image_url
                   ? {
-                      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${activeBanner.image_url})`,
+                      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url("${activeBanner.image_url}")`,
                       backgroundSize: "cover",
                       backgroundPosition: "center",
                     }

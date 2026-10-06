@@ -92,7 +92,7 @@ export default function SpecialOffers() {
               style={
                 banner1?.image_url
                   ? {
-                      backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${banner1.image_url})`,
+                      backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url("${banner1.image_url}")`,
                       backgroundSize: "cover",
                       backgroundPosition: "center",
                     }
@@ -157,7 +157,7 @@ export default function SpecialOffers() {
                   overflow: "hidden",
                   ...(banner2?.image_url
                     ? {
-                        backgroundImage: `linear-gradient(rgba(217, 168, 92, 0.75), rgba(217, 168, 92, 0.75)), url(${banner2.image_url})`,
+                        backgroundImage: `linear-gradient(rgba(217, 168, 92, 0.75), rgba(217, 168, 92, 0.75)), url("${banner2.image_url}")`,
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                       }
@@ -204,7 +204,7 @@ export default function SpecialOffers() {
                   boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
                   ...(banner3?.image_url
                     ? {
-                        backgroundImage: `linear-gradient(rgba(143, 185, 168, 0.75), rgba(143, 185, 168, 0.75)), url(${banner3.image_url})`,
+                        backgroundImage: `linear-gradient(rgba(143, 185, 168, 0.75), rgba(143, 185, 168, 0.75)), url("${banner3.image_url}")`,
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                       }
