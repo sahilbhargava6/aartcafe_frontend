@@ -89,6 +89,8 @@ export default function ProductsDashboard() {
   const [isBestseller, setIsBestseller] = useState(false);
   const [isHeroFeatured, setIsHeroFeatured] = useState(false);
   const [isFreeDelivery, setIsFreeDelivery] = useState(false);
+  const [isFestiveSpecial, setIsFestiveSpecial] = useState(false);
+  const [isActive, setIsActive] = useState(true);
 
   // Additional Gallery Photos Upload State
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -320,7 +322,7 @@ export default function ProductsDashboard() {
   const fetchData = () => {
     setLoading(true);
     // Fetch Products
-    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products?all=true")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load products.");
         return res.json();
@@ -365,6 +367,8 @@ export default function ProductsDashboard() {
     setIsBestseller(false);
     setIsHeroFeatured(false);
     setIsFreeDelivery(false);
+    setIsFestiveSpecial(false);
+    setIsActive(true);
     setAttributes([]);
     setIsModalOpen(true);
   };
@@ -387,6 +391,8 @@ export default function ProductsDashboard() {
     setIsBestseller(!!prod.is_bestseller);
     setIsHeroFeatured(!!prod.is_hero_featured);
     setIsFreeDelivery(!!prod.is_free_delivery);
+    setIsFestiveSpecial(!!prod.is_festive_special);
+    setIsActive(prod.is_active !== undefined ? !!prod.is_active : true);
 
     // Parse existing attributes if present
     if (prod.attributes && Array.isArray(prod.attributes)) {
@@ -536,6 +542,8 @@ export default function ProductsDashboard() {
         is_bestseller: isBestseller,
         is_hero_featured: isHeroFeatured,
         is_free_delivery: isFreeDelivery,
+        is_festive_special: isFestiveSpecial,
+        is_active: isActive,
         attributes: cleanAttributes
       }),
     })
@@ -632,6 +640,7 @@ export default function ProductsDashboard() {
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Title</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Category</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Price</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Status</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Tags</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Attributes</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Actions</th>
@@ -673,6 +682,18 @@ export default function ProductsDashboard() {
                     )}
                   </td>
                   <td style={{ padding: "16px 24px" }}>
+                    <span style={{ 
+                      padding: "4px 10px", 
+                      borderRadius: "12px", 
+                      fontSize: "12px", 
+                      fontWeight: 600,
+                      backgroundColor: prod.is_active ? "#EAF6F0" : "#FFEAEF",
+                      color: prod.is_active ? "#4E8E76" : "#E05A47"
+                    }}>
+                      {prod.is_active ? "Active" : "Inactive"}
+                    </span>
+                  </td>
+                  <td style={{ padding: "16px 24px" }}>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                       {prod.is_bestseller && (
                         <span style={{ padding: "2px 6px", backgroundColor: "#FFEAEF", color: "#D98A9C", borderRadius: "6px", fontSize: "11px", fontWeight: 600 }}>
@@ -694,12 +715,17 @@ export default function ProductsDashboard() {
                           Hero Featured
                         </span>
                       )}
+                      {prod.is_festive_special && (
+                        <span style={{ padding: "2px 6px", backgroundColor: "#FDF4FF", color: "#D946EF", borderRadius: "6px", fontSize: "11px", fontWeight: 600 }}>
+                          Festive Special
+                        </span>
+                      )}
                       {prod.is_free_delivery && (
                         <span style={{ padding: "2px 6px", backgroundColor: "rgba(78, 142, 118, 0.15)", color: "#4E8E76", borderRadius: "6px", fontSize: "11px", fontWeight: 700 }}>
                           🚚 Free Delivery
                         </span>
                       )}
-                      {!prod.is_bestseller && !prod.is_new_discovery && !prod.is_wedding_special && !prod.is_hero_featured && !prod.is_free_delivery && (
+                      {!prod.is_bestseller && !prod.is_new_discovery && !prod.is_wedding_special && !prod.is_hero_featured && !prod.is_free_delivery && !prod.is_festive_special && (
                         <span style={{ fontSize: "12px", color: "#BCAEA2", fontStyle: "italic" }}>-</span>
                       )}
                     </div>
@@ -1155,6 +1181,26 @@ export default function ProductsDashboard() {
                     style={{ cursor: "pointer" }}
                   />
                   🚚 Free Delivery
+                </label>
+
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "14px", color: "#D946EF", fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={isFestiveSpecial}
+                    onChange={(e) => setIsFestiveSpecial(e.target.checked)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  Festive Special
+                </label>
+
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "14px", color: "#3F3B38", fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={isActive}
+                    onChange={(e) => setIsActive(e.target.checked)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  Active (Visible on website)
                 </label>
               </div>
 

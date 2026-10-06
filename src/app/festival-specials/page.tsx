@@ -1,73 +1,70 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import { useCart } from "@/context/CartContext";
-import { Heart, ChevronDown } from "lucide-react";
+import { Heart, ChevronRight, ChevronLeft } from "lucide-react";
 
 export default function FestivalSpecials() {
   const { addToBag } = useCart();
-  const [reviewsExpanded1, setReviewsExpanded1] = useState(false);
-  const [reviewsExpanded2, setReviewsExpanded2] = useState(false);
-  const [banner, setBanner] = useState<any>(null);
+  const [banners, setBanners] = useState<any[]>([]);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  
   const [products, setProducts] = useState<any[]>([]);
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [bestsellers, setBestsellers] = useState<any[]>([]);
 
-  React.useEffect(() => {
-    // 1. Fetch Banner
+  useEffect(() => {
+    // 1. Fetch All Active Banners
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/banners")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          const active = data.find((b: any) => b.is_active) || data[0];
-          setBanner(active);
+          const activeBanners = data.filter((b: any) => b.is_active);
+          setBanners(activeBanners.length > 0 ? activeBanners : [data[0]]);
         }
       })
       .catch((err) => console.error("Error loading banners:", err));
 
-    // 2. Fetch Festival Products
-    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
+    // 2. Fetch Festive Specials Products
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/festive-specials")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const fest = data.filter((p: any) => p.category?.name?.toLowerCase().includes("rakhi") || p.category?.name?.toLowerCase().includes("festival") || p.is_bestseller);
-          setProducts(fest.length >= 2 ? fest.slice(0, 2) : data.slice(0, 2));
-          setRelatedProducts(data.slice(0, 4));
+        if (Array.isArray(data)) {
+          setProducts(data);
         }
       })
-      .catch((err) => console.error("Error loading products:", err));
+      .catch((err) => console.error("Error loading festive products:", err));
 
-    // 3. Fetch Reviews
-    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews")
+    // 3. Fetch Bestsellers for Sidebar
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/bestsellers")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setReviews(data);
+        if (Array.isArray(data)) {
+          setBestsellers(data);
         }
       })
-      .catch((err) => console.error("Error loading reviews:", err));
+      .catch((err) => console.error("Error loading bestsellers:", err));
   }, []);
 
-  const product1 = products[0] || {
-    id: "fest-1",
-    title: "HANDMADE RAKHI",
-    price: 2000,
-    image: "",
-    category: "Handmade Rakhis",
-    description: "Beautifully handcrafted with resin and gold accents to celebrate timeless bonds.",
+  // Auto-slide carousel
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [banners.length]);
+
+  const nextBanner = () => {
+    setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+  };
+  const prevBanner = () => {
+    setCurrentBannerIndex((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
   };
 
-  const product2 = products[1] || {
-    id: "fest-2",
-    title: "HANDMADE LUMBBA SET",
-    price: 2400,
-    image: "",
-    category: "Handmade Rakhis",
-    description: "Elegant matching bhaiya bhabhi rakhi set created with pressed flowers and love.",
-  };
+  const activeBanner = banners[currentBannerIndex];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#fff" }}>
@@ -78,301 +75,197 @@ export default function FestivalSpecials() {
         <div className="fest-container">
           
           {/* ═══════════════════════════════════════════════════════
-              HERO BANNER SECTION
+              HERO CAROUSEL SECTION
               ═══════════════════════════════════════════════════════ */}
-          <div
-            className="rakhi-banner"
-            style={
-              banner?.image_url
-                ? {
-                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${banner.image_url})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }
-                : {}
-            }
-          >
-            {/* Rakhi medallion visual graphic sketch with gold braid lines */}
-            {!banner?.image_url && (
-              <svg className="banner-svg-medallion" width="300" height="300" viewBox="0 0 200 200">
-                <circle cx="100" cy="100" r="85" fill="#EFD3C7" opacity="0.1" />
-                <path d="M5 100 Q 50 80, 100 100 T 195 100" stroke="#D9A85C" strokeWidth="3" fill="none" />
-                <path d="M5 100 Q 50 120, 100 100 T 195 100" stroke="#D98A9C" strokeWidth="2" strokeDasharray="4,4" fill="none" />
-                <circle cx="100" cy="100" r="45" fill="#D98A9C" stroke="#D9A85C" strokeWidth="4" />
-                <circle cx="100" cy="100" r="30" fill="#D9A85C" />
-                {Array.from({ length: 16 }).map((_, i) => {
-                  const angle = (i * 360) / 16;
-                  return (
-                    <circle
-                      key={i}
-                      cx={100 + 38 * Math.cos((angle * Math.PI) / 180)}
-                      cy={100 + 38 * Math.sin((angle * Math.PI) / 180)}
-                      r="4"
-                      fill="#FFF"
-                    />
-                  );
-                })}
-                <path d="M 90 90 L 110 110 M 110 90 L 90 110" stroke="#FFF" strokeWidth="4" strokeLinecap="round" />
-              </svg>
+          <div className="carousel-wrapper">
+            {banners.length > 1 && (
+              <button onClick={prevBanner} className="carousel-btn left-btn">
+                <ChevronLeft size={24} />
+              </button>
+            )}
+            
+            <div
+              className="rakhi-banner"
+              style={
+                activeBanner?.image_url
+                  ? {
+                      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${activeBanner.image_url})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }
+                  : { backgroundColor: "#3F3B38" }
+              }
+            >
+              {!activeBanner?.image_url && (
+                <svg className="banner-svg-medallion" width="300" height="300" viewBox="0 0 200 200">
+                  <circle cx="100" cy="100" r="85" fill="#EFD3C7" opacity="0.1" />
+                  <path d="M5 100 Q 50 80, 100 100 T 195 100" stroke="#D9A85C" strokeWidth="3" fill="none" />
+                  <path d="M5 100 Q 50 120, 100 100 T 195 100" stroke="#D98A9C" strokeWidth="2" strokeDasharray="4,4" fill="none" />
+                  <circle cx="100" cy="100" r="45" fill="#D98A9C" stroke="#D9A85C" strokeWidth="4" />
+                  <circle cx="100" cy="100" r="30" fill="#D9A85C" />
+                  {Array.from({ length: 16 }).map((_, i) => {
+                    const angle = (i * 360) / 16;
+                    return (
+                      <circle
+                        key={i}
+                        cx={100 + 38 * Math.cos((angle * Math.PI) / 180)}
+                        cy={100 + 38 * Math.sin((angle * Math.PI) / 180)}
+                        r="4"
+                        fill="#FFF"
+                      />
+                    );
+                  })}
+                </svg>
+              )}
+
+              <div className="banner-content">
+                <span className="font-serif banner-sub">FESTIVAL SPECIALS</span>
+                <h1 className="font-serif banner-title">
+                  {activeBanner?.title || "Celebrate The Bond"}
+                </h1>
+                <p className="font-sans banner-desc" style={{ fontSize: "24px", lineHeight: "34px", color: "#BCAEA2", margin: 0 }}>
+                  {activeBanner?.subtitle || "Explore our handcrafted collection."}
+                </p>
+                {activeBanner?.button_url && activeBanner?.button_text && (
+                  <a href={activeBanner.button_url} style={{ marginTop: "16px", padding: "12px 30px", backgroundColor: "#D9A85C", color: "#fff", borderRadius: "30px", fontSize: "18px", fontWeight: 600, textDecoration: "none", display: "inline-block" }}>
+                    {activeBanner.button_text}
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {banners.length > 1 && (
+              <button onClick={nextBanner} className="carousel-btn right-btn">
+                <ChevronRight size={24} />
+              </button>
             )}
 
-            {/* Content box */}
-            <div className="banner-content">
-              <span className="font-serif banner-sub">FESTIVAL SPECIALS</span>
-              <h1 className="font-serif banner-title">
-                {banner?.title || "Raksha Bandhan"}
-              </h1>
-              <p
-                className="font-sans banner-desc"
-                style={{
-                  fontSize: "24px",
-                  lineHeight: "34px",
-                  fontWeight: 400,
-                  color: "#BCAEA2",
-                  margin: 0,
-                }}
-              >
-                {banner?.subtitle || "Celebrating the Bond of Siblings"}
-              </p>
-            </div>
-          </div>
-
-          {/* ═══════════════════════════════════════════════════════
-              PRODUCT ROW 1: Image Left, Details Right
-              ═══════════════════════════════════════════════════════ */}
-          <div className="product-row row-align-left">
-            {/* Left Column: Product Image */}
-            <div className="product-image-container">
-              {product1.image ? (
-                <img src={product1.image} alt={product1.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                "Rakhi Product Image"
-              )}
-            </div>
-
-            {/* Right Column: Details & Reviews */}
-            <div className="product-details-container">
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <span className="font-sans" style={{ fontSize: "16px", color: "#D98A9C", letterSpacing: "2px", fontWeight: 600 }}>
-                  FESTIVAL SPECIALS
-                </span>
-                <h2 className="font-serif detail-title">
-                  {product1.title}
-                </h2>
-              </div>
-
-              <p className="font-sans detail-desc">
-                {product1.description}
-              </p>
-
-              <span className="font-serif detail-price">
-                ₹{product1.price}
-              </span>
-
-              <div>
-                <button
-                  onClick={() => addToBag(product1)}
-                  className="font-sans cart-button"
-                >
-                  ADD TO CART
-                </button>
-              </div>
-
-              {/* Collapsible Reviews block */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
-                <span className="font-serif review-section-label">Reviews</span>
-
-                <div className="review-box">
-                  <span className="font-serif reviewer-name">Ayush Sharma</span>
-                  <p className="font-sans review-text">
-                    Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts. Top-rated options include customized text frames, elegant tabletop glass and pearl designs.
-                  </p>
-                  <div style={{ display: "flex", gap: "6px", color: "#D98A9C" }}>
-                    <Heart size={26} fill="#D98A9C" />
-                    <Heart size={26} fill="#D98A9C" />
-                    <Heart size={26} fill="#D98A9C" />
-                    <Heart size={26} fill="#D98A9C" />
-                    <Heart size={26} color="#3F3B38" />
-                  </div>
-                </div>
-
-                {reviewsExpanded1 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    <div className="review-box">
-                      <span className="font-serif reviewer-name">Aditi Roy</span>
-                      <p className="font-sans review-text">
-                        A beautiful Rakhi frame that will remind my brother of our bond forever. The details are absolutely stunning.
-                      </p>
-                      <div style={{ display: "flex", gap: "6px", color: "#D98A9C" }}>
-                        <Heart size={26} fill="#D98A9C" />
-                        <Heart size={26} fill="#D98A9C" />
-                        <Heart size={26} fill="#D98A9C" />
-                        <Heart size={26} fill="#D98A9C" />
-                        <Heart size={26} fill="#D98A9C" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div style={{ display: "flex", justifyContent: "center" }}>
-                  <button
-                    onClick={() => setReviewsExpanded1(!reviewsExpanded1)}
-                    className="review-toggle"
-                  >
-                    <ChevronDown size={22} style={{ transform: reviewsExpanded1 ? "rotate(180deg)" : "none", transition: "transform 0.3s" }} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ═══════════════════════════════════════════════════════
-              PRODUCT ROW 2: Details Left (Right aligned), Image Right
-              ═══════════════════════════════════════════════════════ */}
-          <div className="product-row row-align-right">
-            {/* Left Column: Details & Reviews (renders first in desktop DOM but placed on left) */}
-            <div className="product-details-container detail-order-first">
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <span className="font-sans" style={{ fontSize: "16px", color: "#D98A9C", letterSpacing: "2px", fontWeight: 600 }}>
-                  FESTIVAL SPECIALS
-                </span>
-                <h2 className="font-serif detail-title">
-                  {product2.title}
-                </h2>
-              </div>
-
-              <p className="font-sans detail-desc">
-                {product2.description}
-              </p>
-
-              <span className="font-serif detail-price">
-                ₹{product2.price}
-              </span>
-
-              <div>
-                <button
-                  onClick={() => addToBag(product2)}
-                  className="font-sans cart-button"
-                >
-                  ADD TO CART
-                </button>
-              </div>
-
-              {/* Collapsible Reviews block */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
-                <span className="font-serif review-section-label">Reviews</span>
-
-                <div className="review-box">
-                  <span className="font-serif reviewer-name">Ayush Sharma</span>
-                  <p className="font-sans review-text">
-                    Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts. Top-rated options include customized text frames, elegant tabletop glass and pearl designs.
-                  </p>
-                  <div style={{ display: "flex", gap: "6px", color: "#D98A9C" }}>
-                    <Heart size={26} fill="#D98A9C" />
-                    <Heart size={26} fill="#D98A9C" />
-                    <Heart size={26} fill="#D98A9C" />
-                    <Heart size={26} fill="#D98A9C" />
-                    <Heart size={26} color="#3F3B38" />
-                  </div>
-                </div>
-
-                {reviewsExpanded2 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    <div className="review-box">
-                      <span className="font-serif reviewer-name">Aditi Roy</span>
-                      <p className="font-sans review-text">
-                        A beautiful Rakhi frame that will remind my brother of our bond forever. The details are absolutely stunning.
-                      </p>
-                      <div style={{ display: "flex", gap: "6px", color: "#D98A9C" }}>
-                        <Heart size={26} fill="#D98A9C" />
-                        <Heart size={26} fill="#D98A9C" />
-                        <Heart size={26} fill="#D98A9C" />
-                        <Heart size={26} fill="#D98A9C" />
-                        <Heart size={26} fill="#D98A9C" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div style={{ display: "flex", justifyContent: "center" }}>
-                  <button
-                    onClick={() => setReviewsExpanded2(!reviewsExpanded2)}
-                    className="review-toggle"
-                  >
-                    <ChevronDown size={22} style={{ transform: reviewsExpanded2 ? "rotate(180deg)" : "none", transition: "transform 0.3s" }} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Product Image */}
-            <div className="product-image-container detail-order-second">
-              {product2.image ? (
-                <img src={product2.image} alt={product2.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                "Rakhi Product Image"
-              )}
-            </div>
-          </div>
-
-          {/* ═══════════════════════════════════════════════════════
-              "You may also Like:" SECTION
-              ═══════════════════════════════════════════════════════ */}
-          <div style={{ borderTop: "1px solid #EBE5DB", paddingTop: "60px" }}>
-            <h2 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
-              You may also Like:
-            </h2>
-
-            <div className="related-grid">
-              {relatedProducts.map((prod) => (
-                <div key={prod.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {/* Carousel Dots */}
+            {banners.length > 1 && (
+              <div className="carousel-dots">
+                {banners.map((_, idx) => (
                   <div
-                    style={{
-                      width: "100%",
-                      aspectRatio: "338/422",
-                      backgroundColor: "#F5EDE8",
-                      borderRadius: "15px",
-                      boxShadow: "0px 4px 4px rgba(0,0,0,0.15)",
-                      marginBottom: "16px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#BCAEA2",
-                      fontSize: "14px",
-                    }}
-                  >
-                    Product Image
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-                    <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0 }}>
-                      {prod.title}
-                    </h4>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                      <span className="font-sans" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
-                        ₹{prod.price}
-                      </span>
-                      <button
-                        onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.price, image: "" })}
-                        className="font-sans"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          borderBottom: "1px solid #3F3B38",
-                          fontSize: "20px",
-                          color: "#3F3B38",
-                          cursor: "pointer",
-                          padding: "0 0 2px 0",
-                        }}
-                      >
-                        Add to bag
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    key={idx}
+                    className={`dot ${idx === currentBannerIndex ? "active" : ""}`}
+                    onClick={() => setCurrentBannerIndex(idx)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
+          {/* ═══════════════════════════════════════════════════════
+              MAIN LAYOUT: Festive Specials (Left) + Bestsellers Sidebar (Right)
+              ═══════════════════════════════════════════════════════ */}
+          <div className="layout-grid">
+            
+            {/* Left Column: Festive Specials Products */}
+            <div className="main-content">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "40px", borderBottom: "1px solid #EBE5DB", paddingBottom: "16px" }}>
+                <h2 className="font-serif" style={{ fontSize: "32px", color: "#3F3B38", margin: 0 }}>
+                  Festive Specials
+                </h2>
+                <span className="font-sans" style={{ color: "#8FB9A8", fontSize: "16px", fontWeight: 600 }}>
+                  {products.length} Products
+                </span>
+              </div>
+
+              {products.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "60px 20px", color: "#BCAEA2", fontSize: "18px" }}>
+                  No festive specials available at the moment. Please check back later!
+                </div>
+              ) : (
+                <div className="festive-products-list">
+                  {products.map((prod, index) => {
+                    const isEven = index % 2 === 0;
+                    return (
+                      <div key={prod.id} className={`product-row ${isEven ? 'row-align-left' : 'row-align-right'}`}>
+                        {/* Image Column */}
+                        <div className={`product-image-container ${!isEven ? 'detail-order-second' : ''}`}>
+                          {prod.image ? (
+                            <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            "Product Image"
+                          )}
+                        </div>
+
+                        {/* Details Column */}
+                        <div className={`product-details-container ${!isEven ? 'detail-order-first' : ''}`}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                            <span className="font-sans" style={{ fontSize: "14px", color: "#D98A9C", letterSpacing: "2px", fontWeight: 600 }}>
+                              FESTIVAL COLLECTION
+                            </span>
+                            <h2 className="font-serif detail-title">{prod.title}</h2>
+                          </div>
+
+                          <p className="font-sans detail-desc">
+                            {prod.description || "A beautiful piece for your celebrations."}
+                          </p>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            {prod.discount_price ? (
+                              <>
+                                <span className="font-serif detail-price">₹{prod.discount_price}</span>
+                                <span className="font-sans" style={{ textDecoration: "line-through", color: "#BCAEA2", fontSize: "20px" }}>₹{prod.base_price}</span>
+                              </>
+                            ) : (
+                              <span className="font-serif detail-price">₹{prod.base_price}</span>
+                            )}
+                          </div>
+
+                          <div>
+                            <button onClick={() => addToBag(prod)} className="font-sans cart-button">
+                              ADD TO CART
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Right Column: Bestsellers Sidebar */}
+            <aside className="sidebar">
+              <h3 className="font-serif sidebar-title">Best Sellers</h3>
+              
+              {bestsellers.length === 0 ? (
+                <p style={{ color: "#BCAEA2", fontSize: "14px" }}>No bestsellers found.</p>
+              ) : (
+                <div className="sidebar-products">
+                  {bestsellers.map((prod) => (
+                    <div key={prod.id} className="sidebar-product-card">
+                      <div className="sidebar-img-wrapper">
+                        {prod.image ? (
+                          <img src={prod.image} alt={prod.title} />
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', backgroundColor: '#F5EDE8' }} />
+                        )}
+                      </div>
+                      <div className="sidebar-info">
+                        <h4 className="font-serif">{prod.title}</h4>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                          {prod.discount_price ? (
+                            <>
+                              <span className="price-active">₹{prod.discount_price}</span>
+                              <span className="price-strike">₹{prod.base_price}</span>
+                            </>
+                          ) : (
+                            <span className="price-active">₹{prod.base_price}</span>
+                          )}
+                        </div>
+                        <button onClick={() => addToBag(prod)} className="sidebar-add-btn">
+                          + Add
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </aside>
+
+          </div>
         </div>
       </main>
 
@@ -382,20 +275,25 @@ export default function FestivalSpecials() {
         .fest-container {
           max-width: 1920px;
           margin: 0 auto;
-          padding: 0 120px;
+          padding: 0 80px;
+        }
+
+        /* Carousel Styles */
+        .carousel-wrapper {
+          position: relative;
+          margin-bottom: 60px;
         }
         .rakhi-banner {
           position: relative;
           width: 100%;
           aspect-ratio: 1781/723;
-          background-color: #3F3B38;
           border-radius: 15px;
           display: flex;
           align-items: center;
           padding: 80px 100px;
-          box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
-          margin-bottom: 80px;
+          box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
           overflow: hidden;
+          transition: background-image 0.5s ease-in-out;
         }
         .banner-svg-medallion {
           position: absolute;
@@ -409,40 +307,98 @@ export default function FestivalSpecials() {
           flex-direction: column;
           gap: 16px;
           z-index: 2;
+          align-items: flex-start;
         }
         .banner-sub {
-          fontSize: 22px;
+          font-size: 20px;
           color: #D9A85C;
-          letterSpacing: 2px;
+          letter-spacing: 2px;
         }
         .banner-title {
-          font-size: 72px;
+          font-size: 64px;
           color: #fff;
           margin: 0;
           font-weight: 400;
         }
+        .carousel-btn {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 50px;
+          height: 50px;
+          border-radius: 25px;
+          background-color: rgba(255,255,255,0.8);
+          border: none;
+          color: #3F3B38;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          z-index: 10;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          transition: all 0.2s;
+        }
+        .carousel-btn:hover {
+          background-color: #fff;
+          color: #D98A9C;
+        }
+        .left-btn { left: -25px; }
+        .right-btn { right: -25px; }
+        .carousel-dots {
+          position: absolute;
+          bottom: 30px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 12px;
+          z-index: 10;
+        }
+        .dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background-color: rgba(255,255,255,0.4);
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+        .dot.active {
+          background-color: #D9A85C;
+          transform: scale(1.2);
+        }
+
+        /* Layout Grid */
+        .layout-grid {
+          display: grid;
+          grid-template-columns: 1fr 380px;
+          gap: 60px;
+          align-items: start;
+        }
+
+        /* Festive Products List */
+        .festive-products-list {
+          display: flex;
+          flex-direction: column;
+          gap: 80px;
+        }
         .product-row {
           display: grid;
           grid-template-columns: 1fr 1.2fr;
-          gap: 100px;
-          align-items: start;
-          margin-bottom: 80px;
+          gap: 60px;
+          align-items: center;
         }
         .row-align-right {
           grid-template-columns: 1.2fr 1fr;
         }
         .product-image-container {
           width: 100%;
-          max-width: 536px;
-          aspect-ratio: 536/715;
+          aspect-ratio: 4/5;
           background-color: #F5EDE8;
           border-radius: 15px;
-          box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+          box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.08);
           display: flex;
           align-items: center;
           justify-content: center;
           color: #BCAEA2;
-          font-size: 16px;
           overflow: hidden;
         }
         .row-align-left .product-image-container {
@@ -454,9 +410,7 @@ export default function FestivalSpecials() {
         .product-details-container {
           display: flex;
           flex-direction: column;
-          gap: 24px;
-          max-width: 600px;
-          width: 100%;
+          gap: 20px;
         }
         .row-align-right .product-details-container {
           justify-self: end;
@@ -464,31 +418,30 @@ export default function FestivalSpecials() {
           align-items: flex-end;
         }
         .detail-title {
-          font-size: 36px;
-          line-height: 44px;
+          font-size: 32px;
+          line-height: 40px;
           color: #3F3B38;
           margin: 0;
           font-weight: 400;
         }
         .detail-desc {
-          font-size: 22px;
-          line-height: 32px;
+          font-size: 18px;
+          line-height: 28px;
           color: #8FB9A8;
           margin: 0;
         }
         .detail-price {
-          font-size: 40px;
-          line-height: 48px;
+          font-size: 32px;
           color: #3F3B38;
         }
         .cart-button {
-          width: 100%;
-          height: 56px;
-          border-radius: 28px;
+          width: 220px;
+          height: 50px;
+          border-radius: 25px;
           border: 1.5px solid #D9A85C;
           background-color: transparent;
           color: #D98A9C;
-          font-size: 20px;
+          font-size: 16px;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.3s ease;
@@ -499,140 +452,113 @@ export default function FestivalSpecials() {
         .cart-button:hover {
           background-color: rgba(217, 138, 156, 0.05);
         }
-        .review-section-label {
-          font-size: 22px;
-          color: #3F3B38;
+
+        /* Sidebar Styles */
+        .sidebar {
+          background-color: #FCFAF7;
+          border-radius: 20px;
+          padding: 30px;
+          border: 1px solid #EBE5DB;
         }
-        .review-box {
-          border: 1px solid #D9A85C;
-          border-radius: 15px;
-          padding: 24px;
+        .sidebar-title {
+          font-size: 24px;
+          color: #3F3B38;
+          margin: 0 0 24px 0;
+          padding-bottom: 16px;
+          border-bottom: 2px dashed #EBE5DB;
+          text-align: center;
+        }
+        .sidebar-products {
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 20px;
         }
-        .row-align-right .review-box {
-          align-items: flex-end;
-          text-align: right;
-        }
-        .reviewer-name {
-          font-size: 24px;
-          color: #D98A9C;
-          font-weight: 500;
-        }
-        .review-text {
-          font-size: 20px;
-          line-height: 30px;
-          color: #8FB9A8;
-          margin: 0;
-        }
-        .review-toggle {
-          background: none;
-          border: 1px solid #EBE5DB;
-          width: 100%;
-          height: 44px;
-          border-radius: 22px;
+        .sidebar-product-card {
           display: flex;
+          gap: 16px;
           align-items: center;
-          justify-content: center;
-          color: #8FB9A8;
-          cursor: pointer;
+          padding-bottom: 20px;
+          border-bottom: 1px solid #EBE5DB;
         }
-        .related-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 30px;
+        .sidebar-product-card:last-child {
+          border-bottom: none;
+          padding-bottom: 0;
+        }
+        .sidebar-img-wrapper {
+          width: 90px;
+          height: 110px;
+          border-radius: 10px;
+          overflow: hidden;
+          flex-shrink: 0;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        .sidebar-img-wrapper img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .sidebar-info {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .sidebar-info h4 {
+          margin: 0;
+          font-size: 16px;
+          color: #3F3B38;
+          line-height: 22px;
+        }
+        .price-active {
+          font-family: sans-serif;
+          font-size: 16px;
+          color: #D98A9C;
+          font-weight: 600;
+        }
+        .price-strike {
+          font-family: sans-serif;
+          font-size: 12px;
+          color: #BCAEA2;
+          text-decoration: line-through;
+        }
+        .sidebar-add-btn {
+          align-self: flex-start;
+          background: none;
+          border: none;
+          color: #8FB9A8;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 4px 0;
+          border-bottom: 1px solid transparent;
+          transition: all 0.2s;
+          margin-top: 4px;
+        }
+        .sidebar-add-btn:hover {
+          color: #4E8E76;
+          border-bottom: 1px solid #4E8E76;
         }
 
         @media (max-width: 1200px) {
-          .fest-container {
-            padding: 0 40px;
-          }
-          .rakhi-banner {
-            padding: 60px;
-          }
-          .banner-title {
-            font-size: 56px;
-          }
-          .product-row {
-            gap: 40px;
-          }
+          .fest-container { padding: 0 40px; }
+          .layout-grid { grid-template-columns: 1fr 300px; gap: 40px; }
         }
         @media (max-width: 992px) {
-          .rakhi-banner {
-            aspect-ratio: auto;
-            padding: 80px 40px;
-            justify-content: center;
-            text-align: center;
-          }
-          .banner-svg-medallion {
-            position: relative;
-            right: 0;
-            top: 0;
-            transform: none;
-            margin-bottom: 20px;
-            width: 160px;
-            height: 160px;
-          }
-          .banner-content {
-            align-items: center;
-          }
-          .product-row {
-            grid-template-columns: 1fr !important;
-            gap: 30px;
-          }
-          .detail-order-first {
-            order: 2;
-          }
-          .detail-order-second {
-            order: 1;
-          }
-          .product-image-container {
-            max-width: 320px;
-            margin: 0 auto !important;
-            justify-self: center !important;
-          }
-          .product-details-container {
-            max-width: 100%;
-            text-align: center !important;
-            align-items: center !important;
-          }
-          .row-align-right .review-box {
-            align-items: center;
-            text-align: center;
-          }
-          .related-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
+          .layout-grid { grid-template-columns: 1fr; gap: 60px; }
+          .rakhi-banner { aspect-ratio: auto; padding: 60px 40px; text-align: center; justify-content: center; }
+          .banner-content { align-items: center; }
+          .banner-svg-medallion { display: none; }
+          .product-row { grid-template-columns: 1fr !important; gap: 30px; }
+          .detail-order-first { order: 2; }
+          .detail-order-second { order: 1; }
+          .product-image-container { max-width: 400px; margin: 0 auto; }
+          .product-details-container { align-items: center !important; text-align: center !important; }
         }
         @media (max-width: 600px) {
-          .fest-container {
-            padding: 0 16px;
-          }
-          .banner-title {
-            font-size: 38px;
-          }
-          .banner-desc {
-            font-size: 18px !important;
-            line-height: 26px !important;
-          }
-          .detail-title {
-            font-size: 28px !important;
-          }
-          .detail-desc {
-            font-size: 18px !important;
-            line-height: 26px !important;
-          }
-          .review-text {
-            font-size: 16px !important;
-            line-height: 24px !important;
-          }
-          .reviewer-name {
-            font-size: 20px !important;
-          }
-          .related-grid {
-            grid-template-columns: 1fr;
-          }
+          .fest-container { padding: 0 20px; }
+          .banner-title { font-size: 42px; }
+          .banner-desc { font-size: 18px !important; }
+          .detail-title { font-size: 28px; }
+          .sidebar { padding: 20px 16px; }
         }
       `}</style>
     </div>
