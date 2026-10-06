@@ -123,9 +123,6 @@ export default function FestivalSpecials() {
                 ) : (
                   <div className="product-details-container detail-order-first">
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                      <span className="font-sans" style={{ fontSize: "16px", color: "#D98A9C", letterSpacing: "2px", fontWeight: 600 }}>
-                        FESTIVAL SPECIALS
-                      </span>
                       <h2 className="font-serif detail-title">{prod.title}</h2>
                     </div>
 
@@ -179,9 +176,6 @@ export default function FestivalSpecials() {
                 {isLeft ? (
                   <div className="product-details-container">
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                      <span className="font-sans" style={{ fontSize: "16px", color: "#D98A9C", letterSpacing: "2px", fontWeight: 600 }}>
-                        FESTIVAL SPECIALS
-                      </span>
                       <h2 className="font-serif detail-title">{prod.title}</h2>
                     </div>
 
@@ -462,6 +456,7 @@ export default function FestivalSpecials() {
           color: #3F3B38;
           margin: 0;
           font-weight: 400;
+          text-transform: uppercase;
         }
         .detail-desc {
           font-size: 22px;
