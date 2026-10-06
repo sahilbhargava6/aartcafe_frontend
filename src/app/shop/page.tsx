@@ -35,21 +35,18 @@ export default function Shop() {
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/categories")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setCategories(data.map((c: any) => c.name));
-        } else {
-          setCategories(["Personalized Frames", "Handmade Rakhis", "Gift Hampers"]);
         }
       })
       .catch((err) => {
         console.error("Error loading categories:", err);
-        setCategories(["Personalized Frames", "Handmade Rakhis", "Gift Hampers"]);
       });
 
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const formatted = data.map((p: any) => ({
             id: p.id,
             title: p.title,
@@ -65,17 +62,6 @@ export default function Shop() {
           }));
           setAllProducts(formatted);
           setFilteredProducts(formatted);
-        } else {
-          const defaultItems = [
-            { id: 1, title: "Wedding Frame", price: 2000, category: "Personalized Frames", categories: ["Personalized Frames"], image: "" },
-            { id: 2, title: "Baby Keepsake", price: 1500, category: "Personalized Frames", categories: ["Personalized Frames"], image: "" },
-            { id: 3, title: "Handmade Rakhi Set", price: 600, category: "Handmade Rakhis", categories: ["Handmade Rakhis"], image: "" },
-            { id: 4, title: "Lumba Rakhi", price: 400, category: "Handmade Rakhis", categories: ["Handmade Rakhis"], image: "" },
-            { id: 5, title: "Luxury Gift Hamper", price: 4500, category: "Gift Hampers", categories: ["Gift Hampers"], image: "" },
-            { id: 6, title: "Festive Joy Hamper", price: 3200, category: "Gift Hampers", categories: ["Gift Hampers"], image: "" }
-          ];
-          setAllProducts(defaultItems);
-          setFilteredProducts(defaultItems);
         }
       })
       .catch((err) => console.error("Error loading products:", err));
