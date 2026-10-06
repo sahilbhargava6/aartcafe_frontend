@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Plus, Edit2, Trash2, X, Upload, Check, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
 
+import imageCompression from "browser-image-compression";
+
 // Utility to compress and convert images to WebP
 async function compressImageToWebp(file: File): Promise<string> {
   // If it's an SVG, just read as data URL and return (don't rasterize it)
@@ -17,7 +19,7 @@ async function compressImageToWebp(file: File): Promise<string> {
   }
 
   // Handle HEIC/HEIF files if heic2any is installed
-  let blobToProcess: Blob = file;
+  let fileToProcess: File = file;
   if (
     file.type === "image/heic" ||
     file.type === "image/heif" ||
@@ -27,54 +29,40 @@ async function compressImageToWebp(file: File): Promise<string> {
     try {
       const heic2any = (await import("heic2any")).default;
       const converted = await heic2any({ blob: file, toType: "image/jpeg" });
-      blobToProcess = Array.isArray(converted) ? converted[0] : converted;
+      const blob = Array.isArray(converted) ? converted[0] : converted;
+      fileToProcess = new File([blob], file.name.replace(/\.heic|\.heif/i, ".jpg"), { type: "image/jpeg" });
     } catch (e) {
       console.warn("heic2any conversion failed or not available", e);
     }
   }
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const MAX_WIDTH = 1920;
-        const MAX_HEIGHT = 1920;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          resolve(event.target?.result as string);
-          return;
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Convert to WebP with 0.8 quality
-        const dataUrl = canvas.toDataURL("image/webp", 0.8);
-        resolve(dataUrl);
-      };
-      img.onerror = () => resolve(event.target?.result as string);
-      img.src = event.target?.result as string;
+  // Compress using browser-image-compression to output WebP
+  try {
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      fileType: "image/webp" as string,
+      initialQuality: 0.8,
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(blobToProcess);
-  });
+    const compressedFile = await imageCompression(fileToProcess, options);
+    
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(compressedFile);
+    });
+  } catch (err) {
+    console.error("Compression error:", err);
+    // Fallback to original file
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(fileToProcess);
+    });
+  }
 }
 
 export default function ProductsDashboard() {

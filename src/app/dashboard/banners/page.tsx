@@ -1,7 +1,63 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, X } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Plus, Edit2, Trash2, X, Upload, Loader2 } from "lucide-react";
+import imageCompression from "browser-image-compression";
+
+// Utility to compress and convert images to WebP
+async function compressImageToWebp(file: File): Promise<string> {
+  if (file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  let fileToProcess: File = file;
+  if (
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    file.name.toLowerCase().endsWith(".heic") ||
+    file.name.toLowerCase().endsWith(".heif")
+  ) {
+    try {
+      const heic2any = (await import("heic2any")).default;
+      const converted = await heic2any({ blob: file, toType: "image/jpeg" });
+      const blob = Array.isArray(converted) ? converted[0] : converted;
+      fileToProcess = new File([blob], file.name.replace(/\.heic|\.heif/i, ".jpg"), { type: "image/jpeg" });
+    } catch (e) {
+      console.warn("heic2any conversion failed or not available", e);
+    }
+  }
+
+  try {
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      fileType: "image/webp" as string,
+      initialQuality: 0.8,
+    };
+    const compressedFile = await imageCompression(fileToProcess, options);
+    
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(compressedFile);
+    });
+  } catch (err) {
+    console.error("Compression error:", err);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(fileToProcess);
+    });
+  }
+}
 
 export default function BannersDashboard() {
   const [banners, setBanners] = useState<any[]>([]);
@@ -18,6 +74,24 @@ export default function BannersDashboard() {
   const [imageUrl, setImageUrl] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+
+    setUploading(true);
+    try {
+      const dataUrl = await compressImageToWebp(file);
+      setImageUrl(dataUrl);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to process image.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const fetchBanners = () => {
     setLoading(true);
@@ -171,7 +245,13 @@ export default function BannersDashboard() {
                   <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{banner.id}</td>
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{banner.title}</td>
                   <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{banner.subtitle || "-"}</td>
-                  <td style={{ padding: "16px 24px", color: "#D98A9C" }}>{banner.image_url}</td>
+                  <td style={{ padding: "16px 24px", color: "#D98A9C" }}>
+                    {banner.image_url && banner.image_url.startsWith('data:') ? (
+                      <span style={{ fontSize: "12px", color: "#8FB9A8" }}>[Base64 Image]</span>
+                    ) : (
+                      <img src={banner.image_url} alt="Banner" style={{ width: "60px", height: "40px", objectFit: "cover", borderRadius: "4px" }} />
+                    )}
+                  </td>
                   <td style={{ padding: "16px 24px" }}>
                     <span
                       style={{
@@ -266,18 +346,45 @@ export default function BannersDashboard() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Image URL</label>
-                <input
-                  type="text"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  style={{
-                    height: "40px", borderRadius: "8px", border: "1px solid #8FB9A8",
-                    padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38",
-                  }}
-                  placeholder="e.g. /images/banner.jpg"
-                  required
-                />
+                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Banner Image</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <input
+                    type="file"
+                    accept="image/*,.heic,.heif"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px",
+                      backgroundColor: "#F5EDE8", color: "#8FB9A8", border: "1px dashed #8FB9A8",
+                      borderRadius: "8px", cursor: uploading ? "not-allowed" : "pointer",
+                      fontSize: "14px", fontWeight: 500, flex: 1, justifyContent: "center"
+                    }}
+                  >
+                    {uploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+                    {uploading ? "Compressing..." : "Upload Image"}
+                  </button>
+                </div>
+                {imageUrl && (
+                  <div style={{ marginTop: "10px", position: "relative", width: "100%", height: "120px", borderRadius: "8px", overflow: "hidden" }}>
+                    <img src={imageUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl("")}
+                      style={{
+                        position: "absolute", top: "5px", right: "5px", background: "rgba(255,255,255,0.8)",
+                        border: "none", borderRadius: "50%", padding: "4px", cursor: "pointer", color: "#E05A47"
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
