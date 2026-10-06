@@ -73,6 +73,7 @@ export default function BannersDashboard() {
   const [subtitle, setSubtitle] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
+  const [position, setPosition] = useState("all");
   const [isActive, setIsActive] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -121,6 +122,7 @@ export default function BannersDashboard() {
     setSubtitle("");
     setImageUrl("");
     setLinkUrl("");
+    setPosition("all");
     setIsActive(true);
     setIsModalOpen(true);
   };
@@ -131,6 +133,7 @@ export default function BannersDashboard() {
     setSubtitle(banner.subtitle || "");
     setImageUrl(banner.image_url || "");
     setLinkUrl(banner.link_url || "");
+    setPosition(banner.position || "all");
     setIsActive(!!banner.is_active);
     setIsModalOpen(true);
   };
@@ -158,6 +161,7 @@ export default function BannersDashboard() {
         subtitle,
         image_url: imageUrl,
         link_url: linkUrl,
+        position: position,
         is_active: isActive,
       }),
     })
@@ -399,6 +403,23 @@ export default function BannersDashboard() {
                   }}
                   placeholder="e.g. /shop"
                 />
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Page Location</label>
+                <select
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  style={{
+                    height: "40px", borderRadius: "8px", border: "1px solid #8FB9A8",
+                    padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38", backgroundColor: "#fff"
+                  }}
+                >
+                  <option value="all">All Pages</option>
+                  <option value="home">Home Page</option>
+                  <option value="festival-specials">Festival Specials</option>
+                  <option value="special-offers">Special Offers</option>
+                </select>
               </div>
 
               <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "14px", color: "#3F3B38" }}>

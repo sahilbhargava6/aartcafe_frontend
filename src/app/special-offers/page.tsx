@@ -20,7 +20,8 @@ export default function SpecialOffers() {
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          setBanners(data);
+          const activeBanners = data.filter((b: any) => b.is_active && (!b.position || b.position === 'all' || b.position === 'special-offers'));
+          setBanners(activeBanners.length > 0 ? activeBanners : data);
         }
       })
       .catch((err) => console.error("Error loading banners:", err));

@@ -12,40 +12,38 @@ export default function FestivalSpecials() {
   const [banners, setBanners] = useState<any[]>([]);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   
-  const [products, setProducts] = useState<any[]>([]);
+  const [activeCollection, setActiveCollection] = useState<"festive" | "wedding" | "new" | "bestsellers">("festive");
+  
+  const [festiveProducts, setFestiveProducts] = useState<any[]>([]);
+  const [weddingProducts, setWeddingProducts] = useState<any[]>([]);
+  const [newProducts, setNewProducts] = useState<any[]>([]);
   const [bestsellers, setBestsellers] = useState<any[]>([]);
 
   useEffect(() => {
-    // 1. Fetch All Active Banners
+    // Fetch Banners
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/banners")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          const activeBanners = data.filter((b: any) => b.is_active);
+          const activeBanners = data.filter((b: any) => b.is_active && (!b.position || b.position === 'all' || b.position === 'festival-specials'));
           setBanners(activeBanners.length > 0 ? activeBanners : [data[0]]);
         }
       })
       .catch((err) => console.error("Error loading banners:", err));
 
-    // 2. Fetch Festive Specials Products
-    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/festive-specials")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setProducts(data);
-        }
-      })
-      .catch((err) => console.error("Error loading festive products:", err));
+    // Fetch All Collections
+    Promise.all([
+      fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/festive-specials").then(res => res.json()),
+      fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/wedding-specials").then(res => res.json()),
+      fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/new-discoveries").then(res => res.json()),
+      fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/bestsellers").then(res => res.json())
+    ]).then(([festive, wedding, newDisc, best]) => {
+      setFestiveProducts(Array.isArray(festive) ? festive : []);
+      setWeddingProducts(Array.isArray(wedding) ? wedding : []);
+      setNewProducts(Array.isArray(newDisc) ? newDisc : []);
+      setBestsellers(Array.isArray(best) ? best : []);
+    }).catch(err => console.error("Error fetching collections", err));
 
-    // 3. Fetch Bestsellers for Sidebar
-    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/bestsellers")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setBestsellers(data);
-        }
-      })
-      .catch((err) => console.error("Error loading bestsellers:", err));
   }, []);
 
   // Auto-slide carousel
@@ -65,6 +63,19 @@ export default function FestivalSpecials() {
   };
 
   const activeBanner = banners[currentBannerIndex];
+
+  // Helper to get active collection data
+  const getActiveData = () => {
+    switch (activeCollection) {
+      case "wedding": return { title: "Wedding Specials", data: weddingProducts };
+      case "new": return { title: "New Discoveries", data: newProducts };
+      case "bestsellers": return { title: "Best Sellers", data: bestsellers };
+      case "festive":
+      default: return { title: "Festive Specials", data: festiveProducts };
+    }
+  };
+
+  const { title: displayTitle, data: displayProducts } = getActiveData();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#fff" }}>
@@ -119,12 +130,12 @@ export default function FestivalSpecials() {
               )}
 
               <div className="banner-content">
-                <span className="font-serif banner-sub">FESTIVAL SPECIALS</span>
+                <span className="font-serif banner-sub">SPECIAL COLLECTIONS</span>
                 <h1 className="font-serif banner-title">
                   {activeBanner?.title || "Celebrate The Bond"}
                 </h1>
                 <p className="font-sans banner-desc" style={{ fontSize: "24px", lineHeight: "34px", color: "#BCAEA2", margin: 0 }}>
-                  {activeBanner?.subtitle || "Explore our handcrafted collection."}
+                  {activeBanner?.subtitle || "Explore our handcrafted collections."}
                 </p>
                 {activeBanner?.button_url && activeBanner?.button_text && (
                   <a href={activeBanner.button_url} style={{ marginTop: "16px", padding: "12px 30px", backgroundColor: "#D9A85C", color: "#fff", borderRadius: "30px", fontSize: "18px", fontWeight: 600, textDecoration: "none", display: "inline-block" }}>
@@ -155,115 +166,130 @@ export default function FestivalSpecials() {
           </div>
 
           {/* ═══════════════════════════════════════════════════════
-              MAIN LAYOUT: Festive Specials (Left) + Bestsellers Sidebar (Right)
+              MAIN LAYOUT: Navigation Sidebar (Left) + Collection Products (Right)
               ═══════════════════════════════════════════════════════ */}
           <div className="layout-grid">
             
-            {/* Left Column: Festive Specials Products */}
+            {/* Left Column: Navigation Sidebar */}
+            <aside className="sidebar-nav">
+              <h3 className="font-serif sidebar-nav-title">Collections</h3>
+              <ul className="sidebar-menu">
+                <li 
+                  className={`sidebar-item ${activeCollection === 'festive' ? 'active' : ''}`}
+                  onClick={() => setActiveCollection('festive')}
+                >
+                  <span className="sidebar-icon">✨</span> Festive Specials
+                </li>
+                <li 
+                  className={`sidebar-item ${activeCollection === 'wedding' ? 'active' : ''}`}
+                  onClick={() => setActiveCollection('wedding')}
+                >
+                  <span className="sidebar-icon">💍</span> Wedding Specials
+                </li>
+                <li 
+                  className={`sidebar-item ${activeCollection === 'bestsellers' ? 'active' : ''}`}
+                  onClick={() => setActiveCollection('bestsellers')}
+                >
+                  <span className="sidebar-icon">🌟</span> Best Sellers
+                </li>
+                <li 
+                  className={`sidebar-item ${activeCollection === 'new' ? 'active' : ''}`}
+                  onClick={() => setActiveCollection('new')}
+                >
+                  <span className="sidebar-icon">🌿</span> New Discoveries
+                </li>
+              </ul>
+
+              {/* Keep a small mini-showcase of 3 top bestsellers below navigation */}
+              <div className="sidebar-bestseller-mini">
+                <h4 className="font-serif" style={{ fontSize: "18px", color: "#3F3B38", marginBottom: "16px", marginTop: "40px", borderBottom: "1px solid #EBE5DB", paddingBottom: "8px" }}>
+                  Trending Now
+                </h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {bestsellers.slice(0, 3).map((prod) => (
+                    <div key={prod.id} style={{ display: "flex", gap: "12px", alignItems: "center", cursor: "pointer" }} onClick={() => addToBag(prod)}>
+                      <div style={{ width: "60px", height: "60px", borderRadius: "8px", overflow: "hidden", backgroundColor: "#F5EDE8", flexShrink: 0 }}>
+                        {prod.image && <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                      </div>
+                      <div>
+                        <h5 className="font-serif" style={{ margin: "0 0 4px 0", fontSize: "14px", color: "#3F3B38" }}>{prod.title}</h5>
+                        <span className="font-sans" style={{ fontSize: "14px", color: "#D98A9C", fontWeight: 600 }}>₹{prod.discount_price || prod.base_price}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+
+            {/* Right Column: Active Collection Products */}
             <div className="main-content">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "40px", borderBottom: "1px solid #EBE5DB", paddingBottom: "16px" }}>
-                <h2 className="font-serif" style={{ fontSize: "32px", color: "#3F3B38", margin: 0 }}>
-                  Festive Specials
+                <h2 className="font-serif" style={{ fontSize: "36px", color: "#3F3B38", margin: 0 }}>
+                  {displayTitle}
                 </h2>
                 <span className="font-sans" style={{ color: "#8FB9A8", fontSize: "16px", fontWeight: 600 }}>
-                  {products.length} Products
+                  {displayProducts.length} Products
                 </span>
               </div>
 
-              {products.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "60px 20px", color: "#BCAEA2", fontSize: "18px" }}>
-                  No festive specials available at the moment. Please check back later!
+              {displayProducts.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "80px 20px", backgroundColor: "#FCFAF7", borderRadius: "15px", border: "1px dashed #D9A85C" }}>
+                  <span style={{ fontSize: "40px" }}>🍃</span>
+                  <p className="font-sans" style={{ color: "#8FB9A8", fontSize: "18px", marginTop: "16px" }}>
+                    We are currently crafting new pieces for {displayTitle}.<br/>Please check back soon!
+                  </p>
                 </div>
               ) : (
-                <div className="festive-products-list">
-                  {products.map((prod, index) => {
-                    const isEven = index % 2 === 0;
-                    return (
-                      <div key={prod.id} className={`product-row ${isEven ? 'row-align-left' : 'row-align-right'}`}>
-                        {/* Image Column */}
-                        <div className={`product-image-container ${!isEven ? 'detail-order-second' : ''}`}>
-                          {prod.image ? (
-                            <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          ) : (
-                            "Product Image"
-                          )}
-                        </div>
-
-                        {/* Details Column */}
-                        <div className={`product-details-container ${!isEven ? 'detail-order-first' : ''}`}>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                            <span className="font-sans" style={{ fontSize: "14px", color: "#D98A9C", letterSpacing: "2px", fontWeight: 600 }}>
-                              FESTIVAL COLLECTION
-                            </span>
-                            <h2 className="font-serif detail-title">{prod.title}</h2>
-                          </div>
-
-                          <p className="font-sans detail-desc">
-                            {prod.description || "A beautiful piece for your celebrations."}
-                          </p>
-
-                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            {prod.discount_price ? (
-                              <>
-                                <span className="font-serif detail-price">₹{prod.discount_price}</span>
-                                <span className="font-sans" style={{ textDecoration: "line-through", color: "#BCAEA2", fontSize: "20px" }}>₹{prod.base_price}</span>
-                              </>
-                            ) : (
-                              <span className="font-serif detail-price">₹{prod.base_price}</span>
-                            )}
-                          </div>
-
-                          <div>
-                            <button onClick={() => addToBag(prod)} className="font-sans cart-button">
-                              ADD TO CART
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Right Column: Bestsellers Sidebar */}
-            <aside className="sidebar">
-              <h3 className="font-serif sidebar-title">Best Sellers</h3>
-              
-              {bestsellers.length === 0 ? (
-                <p style={{ color: "#BCAEA2", fontSize: "14px" }}>No bestsellers found.</p>
-              ) : (
-                <div className="sidebar-products">
-                  {bestsellers.map((prod) => (
-                    <div key={prod.id} className="sidebar-product-card">
-                      <div className="sidebar-img-wrapper">
+                <div className="collection-products-grid">
+                  {displayProducts.map((prod) => (
+                    <div key={prod.id} className="collection-product-card">
+                      {/* Image Column */}
+                      <div className="collection-product-image">
                         {prod.image ? (
                           <img src={prod.image} alt={prod.title} />
                         ) : (
-                          <div style={{ width: '100%', height: '100%', backgroundColor: '#F5EDE8' }} />
+                          <span>Product Image</span>
                         )}
+                        
+                        {/* Tags over image */}
+                        <div className="product-tags">
+                          {activeCollection === 'festive' && <span className="tag tag-festive">Festive Special</span>}
+                          {activeCollection === 'wedding' && <span className="tag tag-wedding">Wedding Special</span>}
+                          {activeCollection === 'new' && <span className="tag tag-new">New Discovery</span>}
+                          {activeCollection === 'bestsellers' && <span className="tag tag-bestseller">Best Seller</span>}
+                        </div>
                       </div>
-                      <div className="sidebar-info">
-                        <h4 className="font-serif">{prod.title}</h4>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+
+                      {/* Details Column */}
+                      <div className="collection-product-details">
+                        <h3 className="font-serif detail-title">{prod.title}</h3>
+
+                        <p className="font-sans detail-desc">
+                          {prod.description || "A beautiful piece handcrafted with love and care."}
+                        </p>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "auto", paddingTop: "20px" }}>
                           {prod.discount_price ? (
                             <>
-                              <span className="price-active">₹{prod.discount_price}</span>
-                              <span className="price-strike">₹{prod.base_price}</span>
+                              <span className="font-serif detail-price">₹{prod.discount_price}</span>
+                              <span className="font-sans detail-strike">₹{prod.base_price}</span>
                             </>
                           ) : (
-                            <span className="price-active">₹{prod.base_price}</span>
+                            <span className="font-serif detail-price">₹{prod.base_price}</span>
                           )}
                         </div>
-                        <button onClick={() => addToBag(prod)} className="sidebar-add-btn">
-                          + Add
-                        </button>
+
+                        <div style={{ marginTop: "20px" }}>
+                          <button onClick={() => addToBag(prod)} className="font-sans cart-button">
+                            ADD TO CART
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </aside>
+            </div>
 
           </div>
         </div>
@@ -281,7 +307,7 @@ export default function FestivalSpecials() {
         /* Carousel Styles */
         .carousel-wrapper {
           position: relative;
-          margin-bottom: 60px;
+          margin-bottom: 80px;
         }
         .rakhi-banner {
           position: relative;
@@ -369,70 +395,151 @@ export default function FestivalSpecials() {
         /* Layout Grid */
         .layout-grid {
           display: grid;
-          grid-template-columns: 1fr 380px;
+          grid-template-columns: 280px 1fr;
           gap: 60px;
           align-items: start;
         }
 
-        /* Festive Products List */
-        .festive-products-list {
+        /* Sidebar Navigation */
+        .sidebar-nav {
+          position: sticky;
+          top: 40px;
+          background-color: #FCFAF7;
+          border-radius: 20px;
+          padding: 30px;
+          border: 1px solid #EBE5DB;
+        }
+        .sidebar-nav-title {
+          font-size: 24px;
+          color: #3F3B38;
+          margin: 0 0 20px 0;
+          padding-bottom: 16px;
+          border-bottom: 2px dashed #EBE5DB;
+        }
+        .sidebar-menu {
+          list-style: none;
+          padding: 0;
+          margin: 0;
           display: flex;
           flex-direction: column;
-          gap: 80px;
+          gap: 8px;
         }
-        .product-row {
-          display: grid;
-          grid-template-columns: 1fr 1.2fr;
-          gap: 60px;
+        .sidebar-item {
+          display: flex;
           align-items: center;
+          gap: 12px;
+          padding: 14px 20px;
+          border-radius: 12px;
+          font-family: sans-serif;
+          font-size: 16px;
+          font-weight: 500;
+          color: #6E6E6E;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          border: 1px solid transparent;
         }
-        .row-align-right {
-          grid-template-columns: 1.2fr 1fr;
+        .sidebar-item:hover {
+          background-color: rgba(217, 168, 92, 0.05);
+          color: #D9A85C;
         }
-        .product-image-container {
+        .sidebar-item.active {
+          background-color: #fff;
+          border: 1px solid #D9A85C;
+          color: #D9A85C;
+          box-shadow: 0 4px 10px rgba(217, 168, 92, 0.1);
+        }
+        .sidebar-icon {
+          font-size: 18px;
+        }
+
+        /* Collection Products List */
+        .collection-products-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 60px;
+        }
+        .collection-product-card {
+          display: grid;
+          grid-template-columns: 1fr 1.5fr;
+          gap: 40px;
+          background-color: #fff;
+          border-radius: 15px;
+          border: 1px solid #F5EDE8;
+          padding: 24px;
+          transition: box-shadow 0.3s ease;
+        }
+        .collection-product-card:hover {
+          box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        
+        .collection-product-image {
           width: 100%;
           aspect-ratio: 4/5;
           background-color: #F5EDE8;
-          border-radius: 15px;
-          box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.08);
+          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
           color: #BCAEA2;
           overflow: hidden;
+          position: relative;
         }
-        .row-align-left .product-image-container {
-          justify-self: end;
+        .collection-product-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.5s ease;
         }
-        .row-align-right .product-image-container {
-          justify-self: start;
+        .collection-product-card:hover .collection-product-image img {
+          transform: scale(1.05);
         }
-        .product-details-container {
+
+        .product-tags {
+          position: absolute;
+          top: 16px;
+          left: 16px;
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 8px;
         }
-        .row-align-right .product-details-container {
-          justify-self: end;
-          text-align: right;
-          align-items: flex-end;
+        .tag {
+          padding: 6px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
+          font-family: sans-serif;
         }
+        .tag-festive { background-color: #FFF0F4; color: #D946EF; }
+        .tag-wedding { background-color: #F0F4FF; color: #3B82F6; }
+        .tag-new { background-color: #F0FFF4; color: #10B981; }
+        .tag-bestseller { background-color: #FFF9F0; color: #F59E0B; }
+
+        .collection-product-details {
+          display: flex;
+          flex-direction: column;
+        }
+        
         .detail-title {
           font-size: 32px;
           line-height: 40px;
           color: #3F3B38;
-          margin: 0;
+          margin: 0 0 16px 0;
           font-weight: 400;
         }
         .detail-desc {
-          font-size: 18px;
-          line-height: 28px;
+          font-size: 16px;
+          line-height: 26px;
           color: #8FB9A8;
           margin: 0;
         }
         .detail-price {
           font-size: 32px;
           color: #3F3B38;
+        }
+        .detail-strike {
+          text-decoration: line-through;
+          color: #BCAEA2;
+          font-size: 20px;
         }
         .cart-button {
           width: 220px;
@@ -450,115 +557,35 @@ export default function FestivalSpecials() {
           justify-content: center;
         }
         .cart-button:hover {
-          background-color: rgba(217, 138, 156, 0.05);
-        }
-
-        /* Sidebar Styles */
-        .sidebar {
-          background-color: #FCFAF7;
-          border-radius: 20px;
-          padding: 30px;
-          border: 1px solid #EBE5DB;
-        }
-        .sidebar-title {
-          font-size: 24px;
-          color: #3F3B38;
-          margin: 0 0 24px 0;
-          padding-bottom: 16px;
-          border-bottom: 2px dashed #EBE5DB;
-          text-align: center;
-        }
-        .sidebar-products {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-        .sidebar-product-card {
-          display: flex;
-          gap: 16px;
-          align-items: center;
-          padding-bottom: 20px;
-          border-bottom: 1px solid #EBE5DB;
-        }
-        .sidebar-product-card:last-child {
-          border-bottom: none;
-          padding-bottom: 0;
-        }
-        .sidebar-img-wrapper {
-          width: 90px;
-          height: 110px;
-          border-radius: 10px;
-          overflow: hidden;
-          flex-shrink: 0;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-        }
-        .sidebar-img-wrapper img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .sidebar-info {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .sidebar-info h4 {
-          margin: 0;
-          font-size: 16px;
-          color: #3F3B38;
-          line-height: 22px;
-        }
-        .price-active {
-          font-family: sans-serif;
-          font-size: 16px;
-          color: #D98A9C;
-          font-weight: 600;
-        }
-        .price-strike {
-          font-family: sans-serif;
-          font-size: 12px;
-          color: #BCAEA2;
-          text-decoration: line-through;
-        }
-        .sidebar-add-btn {
-          align-self: flex-start;
-          background: none;
-          border: none;
-          color: #8FB9A8;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          padding: 4px 0;
-          border-bottom: 1px solid transparent;
-          transition: all 0.2s;
-          margin-top: 4px;
-        }
-        .sidebar-add-btn:hover {
-          color: #4E8E76;
-          border-bottom: 1px solid #4E8E76;
+          background-color: #D9A85C;
+          color: #fff;
         }
 
         @media (max-width: 1200px) {
           .fest-container { padding: 0 40px; }
-          .layout-grid { grid-template-columns: 1fr 300px; gap: 40px; }
+          .layout-grid { grid-template-columns: 240px 1fr; gap: 40px; }
+          .collection-product-card { grid-template-columns: 1fr 1fr; }
         }
         @media (max-width: 992px) {
           .layout-grid { grid-template-columns: 1fr; gap: 60px; }
+          .sidebar-nav { position: static; display: flex; flex-direction: column; }
+          .sidebar-menu { flex-direction: row; flex-wrap: wrap; }
+          .sidebar-item { flex: 1; min-width: 200px; justify-content: center; }
+          .sidebar-bestseller-mini { display: none; }
+          
           .rakhi-banner { aspect-ratio: auto; padding: 60px 40px; text-align: center; justify-content: center; }
           .banner-content { align-items: center; }
           .banner-svg-medallion { display: none; }
-          .product-row { grid-template-columns: 1fr !important; gap: 30px; }
-          .detail-order-first { order: 2; }
-          .detail-order-second { order: 1; }
-          .product-image-container { max-width: 400px; margin: 0 auto; }
-          .product-details-container { align-items: center !important; text-align: center !important; }
+          .collection-product-card { grid-template-columns: 1fr; }
+          .collection-product-image { max-width: 400px; margin: 0 auto; }
         }
         @media (max-width: 600px) {
           .fest-container { padding: 0 20px; }
           .banner-title { font-size: 42px; }
           .banner-desc { font-size: 18px !important; }
           .detail-title { font-size: 28px; }
-          .sidebar { padding: 20px 16px; }
+          .sidebar-nav { padding: 20px 16px; }
+          .sidebar-item { min-width: 100%; }
         }
       `}</style>
     </div>
