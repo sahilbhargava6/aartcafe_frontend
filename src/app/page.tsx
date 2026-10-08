@@ -712,7 +712,6 @@ export default function Home() {
                     <a href={`/shop/${currentProduct.slug || currentProduct.id}`} style={{ textDecoration: "none", display: "block" }}>
                       <div
                         style={{
-                          position: "relative",
                           width: "100%",
                           maxWidth: "452px",
                           aspectRatio: "452/603",
