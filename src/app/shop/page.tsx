@@ -31,40 +31,53 @@ export default function Shop() {
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch categories and products from API with resilient fallback
+  // Fetch categories and products with ultra-fast parallel race
   useEffect(() => {
     let isMounted = true;
 
-    const fetchWithTimeout = async (url: string, ms = 4000) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), ms);
+    const fetchFast = async (endpoint: string) => {
+      const urls = [
+        "http://localhost:8000/api/" + endpoint,
+        process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}` : null,
+        "https://aartcafe-backend-production-rjudvs.laravel.cloud/api/" + endpoint,
+      ].filter(Boolean) as string[];
+
+      // Fast parallel fetch: return whichever succeeds first!
       try {
-        const res = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) return await res.json();
+        const data = await Promise.any(
+          urls.map(async (url) => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 2500);
+            try {
+              const res = await fetch(url, { signal: controller.signal });
+              clearTimeout(timer);
+              if (res.ok) {
+                const json = await res.json();
+                if (Array.isArray(json)) return json;
+              }
+            } catch (e) {
+              clearTimeout(timer);
+            }
+            throw new Error("Endpoint failed");
+          })
+        );
+        return data;
       } catch (e) {
-        clearTimeout(timeoutId);
+        return [];
       }
-      return null;
     };
 
     const loadData = async () => {
-      const primaryApi = process.env.NEXT_PUBLIC_API_URL || "https://aartcafe-backend-production-rjudvs.laravel.cloud/api";
-      const fallbackApi = "http://localhost:8000/api";
-
-      // 1. Fetch categories
-      let catData = await fetchWithTimeout(`${primaryApi}/categories`, 4000);
-      if (!catData) catData = await fetchWithTimeout(`${fallbackApi}/categories`, 3000);
-      
-      if (isMounted && Array.isArray(catData)) {
-        setCategories(catData.map((c: any) => c.name));
-      }
-
-      // 2. Fetch products
-      let prodData = await fetchWithTimeout(`${primaryApi}/products`, 4000);
-      if (!prodData) prodData = await fetchWithTimeout(`${fallbackApi}/products`, 3000);
+      const [catData, prodData] = await Promise.all([
+        fetchFast("categories"),
+        fetchFast("products"),
+      ]);
 
       if (isMounted) {
+        if (Array.isArray(catData) && catData.length > 0) {
+          setCategories(catData.map((c: any) => c.name));
+        }
+
         if (Array.isArray(prodData) && prodData.length > 0) {
           const formatted = prodData.map((p: any) => ({
             id: p.id,

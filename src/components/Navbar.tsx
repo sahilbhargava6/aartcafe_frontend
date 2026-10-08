@@ -27,39 +27,46 @@ export default function Navbar() {
   ];
 
   // Fetch products once for live search with fallback logic
+  // Fetch products once for live search with parallel race
   useEffect(() => {
-    const primaryUrl = process.env.NEXT_PUBLIC_API_URL 
-      ? `${process.env.NEXT_PUBLIC_API_URL}/products`
-      : "https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products";
+    let isMounted = true;
+    const urls = [
+      "http://localhost:8000/api/products",
+      process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/products` : null,
+      "https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products",
+    ].filter(Boolean) as string[];
 
     const fetchProducts = async () => {
       try {
-        const res = await fetch(primaryUrl);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            setAllProducts(data);
-            return;
-          }
+        const data = await Promise.any(
+          urls.map(async (url) => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 2500);
+            try {
+              const res = await fetch(url, { signal: controller.signal });
+              clearTimeout(timer);
+              if (res.ok) {
+                const json = await res.json();
+                if (Array.isArray(json)) return json;
+              }
+            } catch (e) {
+              clearTimeout(timer);
+            }
+            throw new Error("Failed");
+          })
+        );
+        if (isMounted && Array.isArray(data)) {
+          setAllProducts(data);
         }
       } catch (e) {
-        // Primary URL failed, attempt localhost fallback
-      }
-
-      try {
-        const res = await fetch("http://localhost:8000/api/products");
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            setAllProducts(data);
-          }
-        }
-      } catch (e) {
-        // Silent fallback if both endpoints fail
+        // Fallback
       }
     };
 
     fetchProducts();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Filter search results in real time
