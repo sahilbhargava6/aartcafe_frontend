@@ -332,23 +332,24 @@ export default function ProductDetailsPage() {
           {/* Two-Column Grid */}
           <div className="details-layout">
             
-            {/* LEFT COLUMN: Modern Bento Grid Gallery */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* LEFT COLUMN: Seamless Edge-to-Edge Cover Bento Grid Gallery */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: "16px",
-                  alignItems: "start",
+                  gap: "18px",
+                  alignItems: "stretch",
                 }}
               >
                 {galleryImages.map((imgUrl: string, idx: number) => {
-                  // Bento Layout Rules:
-                  // idx 0 -> Full width Hero (span 2)
-                  // idx 1, 2 -> Half width side-by-side (span 1)
-                  // idx 3 -> Full width wide banner (span 2)
-                  // idx 4, 5 -> Half width side-by-side (span 1), etc.
+                  // Bento Grid Pattern:
+                  // idx 0 -> Feature Hero Card (span 2, tall)
+                  // idx 1, 2 -> Dual Side-by-Side Cards (span 1, square)
+                  // idx 3 -> Panoramic Wide Card (span 2, banner)
+                  // idx 4, 5... -> Repeating pattern
                   const isFullWidth = idx % 3 === 0;
+                  const isSelected = selectedImageIndex === idx;
 
                   return (
                     <div
@@ -357,35 +358,53 @@ export default function ProductDetailsPage() {
                       style={{
                         gridColumn: isFullWidth ? "span 2" : "span 1",
                         width: "100%",
-                        borderRadius: "16px",
+                        height: isFullWidth ? (idx === 0 ? "440px" : "300px") : "280px",
+                        borderRadius: "18px",
                         overflow: "hidden",
                         backgroundColor: "#FAF6F0",
                         cursor: "pointer",
-                        boxShadow:
-                          selectedImageIndex === idx
-                            ? "0px 6px 18px rgba(217, 138, 156, 0.25)"
-                            : "0px 3px 10px rgba(0,0,0,0.05)",
-                        border: selectedImageIndex === idx ? "2.5px solid #D98A9C" : "1.5px solid transparent",
-                        transition: "all 0.25s ease-in-out",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: isFullWidth ? "6px" : "4px",
+                        position: "relative",
+                        boxShadow: isSelected
+                          ? "0px 8px 24px rgba(217, 138, 156, 0.35)"
+                          : "0px 4px 14px rgba(0,0,0,0.06)",
+                        border: isSelected ? "3px solid #D98A9C" : "1.5px solid transparent",
+                        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                       }}
-                      className="bento-tile"
+                      className="bento-tile-card"
                     >
                       <img
                         src={imgUrl}
                         alt={`${productData.title} - View ${idx + 1}`}
                         style={{
                           width: "100%",
-                          maxHeight: isFullWidth ? "460px" : "320px",
-                          height: "auto",
+                          height: "100%",
                           display: "block",
-                          objectFit: "contain",
-                          borderRadius: "12px",
+                          objectFit: "cover",
+                          objectPosition: "center",
+                          transition: "transform 0.5s ease-out",
                         }}
+                        className="bento-tile-img"
                       />
+                      {isSelected && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "12px",
+                            right: "12px",
+                            backgroundColor: "#D98A9C",
+                            color: "#fff",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            padding: "4px 10px",
+                            borderRadius: "20px",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                            boxShadow: "0px 2px 6px rgba(0,0,0,0.2)",
+                          }}
+                        >
+                          Main View
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -861,6 +880,12 @@ export default function ProductDetailsPage() {
           max-width: 1920px;
           margin: 0 auto;
           padding: 0 120px;
+        }
+        .bento-tile-card:hover .bento-tile-img {
+          transform: scale(1.05);
+        }
+        .bento-tile-card:hover {
+          box-shadow: 0px 10px 28px rgba(0, 0, 0, 0.12) !important;
         }
         .details-layout {
           display: grid;

@@ -31,24 +31,42 @@ export default function Shop() {
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch categories and products from Laravel API
+  // Fetch categories and products from API with resilient fallback
   useEffect(() => {
-    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/categories")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setCategories(data.map((c: any) => c.name));
-        }
-      })
-      .catch((err) => {
-        console.error("Error loading categories:", err);
-      });
+    let isMounted = true;
 
-    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (Array.isArray(data)) {
-          const formatted = data.map((p: any) => ({
+    const fetchWithTimeout = async (url: string, ms = 4000) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), ms);
+      try {
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) return await res.json();
+      } catch (e) {
+        clearTimeout(timeoutId);
+      }
+      return null;
+    };
+
+    const loadData = async () => {
+      const primaryApi = process.env.NEXT_PUBLIC_API_URL || "https://aartcafe-backend-production-rjudvs.laravel.cloud/api";
+      const fallbackApi = "http://localhost:8000/api";
+
+      // 1. Fetch categories
+      let catData = await fetchWithTimeout(`${primaryApi}/categories`, 4000);
+      if (!catData) catData = await fetchWithTimeout(`${fallbackApi}/categories`, 3000);
+      
+      if (isMounted && Array.isArray(catData)) {
+        setCategories(catData.map((c: any) => c.name));
+      }
+
+      // 2. Fetch products
+      let prodData = await fetchWithTimeout(`${primaryApi}/products`, 4000);
+      if (!prodData) prodData = await fetchWithTimeout(`${fallbackApi}/products`, 3000);
+
+      if (isMounted) {
+        if (Array.isArray(prodData) && prodData.length > 0) {
+          const formatted = prodData.map((p: any) => ({
             id: p.id,
             title: p.title,
             slug: p.slug,
@@ -65,11 +83,14 @@ export default function Shop() {
           setFilteredProducts(formatted);
         }
         setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error loading products:", err);
-        setLoading(false);
-      });
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const priceRanges = [
