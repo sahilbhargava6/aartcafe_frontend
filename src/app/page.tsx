@@ -205,7 +205,7 @@ export default function Home() {
           <div
             style={{
               position: "absolute",
-              bottom: "10px",
+              bottom: "-50px",
               right: "0px",
               width: "760px",
               zIndex: 5,

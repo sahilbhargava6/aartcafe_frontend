@@ -13,11 +13,11 @@ interface SlotStyle {
 }
 
 const SLOTS: SlotStyle[] = [
-  { width: 169, height: 211, left: 0,   top: 59, opacity: 0.5,  zIndex: 1 }, // far left
-  { width: 255, height: 255, left: 85,  top: 29, opacity: 0.75, zIndex: 2 }, // left-center
-  { width: 225, height: 300, left: 227, top: 0,  opacity: 1,    zIndex: 3 }, // center (front)
-  { width: 255, height: 255, left: 340, top: 29, opacity: 0.75, zIndex: 2 }, // right-center
-  { width: 169, height: 211, left: 510, top: 59, opacity: 0.5,  zIndex: 1 }, // far right
+  { width: 211, height: 264, left: 0,   top: 74, opacity: 0.5,  zIndex: 1 }, // far left
+  { width: 319, height: 319, left: 106, top: 36, opacity: 0.75, zIndex: 2 }, // left-center
+  { width: 281, height: 375, left: 284, top: 0,  opacity: 1,    zIndex: 3 }, // center (front)
+  { width: 319, height: 319, left: 425, top: 36, opacity: 0.75, zIndex: 2 }, // right-center
+  { width: 211, height: 264, left: 638, top: 74, opacity: 0.5,  zIndex: 1 }, // far right
 ];
 
 const DEFAULT_IMAGES = [
@@ -138,8 +138,8 @@ export default function HeroCarousel() {
       <style jsx>{`
         .carousel-wrapper {
           position: relative;
-          width: 680px;
-          height: 400px;
+          width: 850px;
+          height: 380px;
           flex-shrink: 0;
           margin-left: auto;
           margin-right: 100px;
@@ -150,8 +150,8 @@ export default function HeroCarousel() {
         }
         .carousel-inner {
           position: relative;
-          width: 680px;
-          height: 400px;
+          width: 850px;
+          height: 380px;
           transform-origin: center center;
         }
 
