@@ -714,7 +714,7 @@ export default function Home() {
                         title: festiveDetails[activeFestiveTab].title,
                         price: festiveDetails[activeFestiveTab].price,
                         image: "",
-                        category: "Festival Specials",
+                        category: "Festive Specials",
                       })
                     }
                     className="font-sans"

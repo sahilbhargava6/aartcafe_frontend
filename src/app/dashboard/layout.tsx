@@ -73,7 +73,7 @@ export default function DashboardLayout({
     { name: "Hero Banner", path: "/dashboard/hero-featured" },
     { name: "Bestsellers", path: "/dashboard/best-sellers" },
     { name: "Special Offers", path: "/dashboard/special-offers" },
-    { name: "Festival Specials", path: "/dashboard/festive-specials" },
+    { name: "Festive Specials", path: "/dashboard/festive-specials" },
   ];
 
   const currentItem = menuItems.find((item) => item.path === pathname) || menuItems[3];

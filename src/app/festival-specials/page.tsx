@@ -133,7 +133,7 @@ export default function FestivalSpecials() {
             )}
 
             <div className="banner-content">
-              <span className="font-serif banner-sub">FESTIVAL SPECIALS</span>
+              <span className="font-serif banner-sub">FESTIVE SPECIALS</span>
               <h1 className="font-serif banner-title">
                 {banner?.title || "Raksha Bandhan"}
               </h1>

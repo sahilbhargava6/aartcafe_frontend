@@ -417,7 +417,7 @@ export default function BannersDashboard() {
                 >
                   <option value="all">All Pages</option>
                   <option value="home">Home Page</option>
-                  <option value="festival-specials">Festival Specials</option>
+                  <option value="festival-specials">Festive Specials</option>
                   <option value="special-offers">Special Offers</option>
                 </select>
               </div>
