@@ -736,7 +736,7 @@ export default function FestivalSpecials() {
           color: #3F3B38;
         }
         .cart-button {
-          width: 100%;
+          width: 280px;
           height: 56px;
           border-radius: 28px;
           border: 1.5px solid #D9A85C;

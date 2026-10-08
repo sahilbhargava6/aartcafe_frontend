@@ -22,7 +22,7 @@ export default function Navbar() {
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "Shop", path: "/shop" },
-    { name: "Festive Specials", path: "/festival-specials" },
+    { name: "Festive Specials", path: "/festive-specials" },
     { name: "Special offers", path: "/special-offers" },
   ];
 
@@ -244,25 +244,7 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Profile/User */}
-            <button
-              onClick={() => setUserMenuOpen(true)}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: "4px",
-                color: "#000",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "opacity 0.2s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.6")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-            >
-              <User size={28} strokeWidth={1.2} />
-            </button>
+
 
             {/* Bag/Cart */}
             <Link
@@ -566,65 +548,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* User Menu Modal */}
-      {userMenuOpen && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0, 0, 0, 0.4)",
-            zIndex: 1000,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-          onClick={() => setUserMenuOpen(false)}
-        >
-          <div
-            style={{
-              backgroundColor: "#FFF",
-              padding: "30px",
-              borderRadius: "20px",
-              maxWidth: "400px",
-              width: "90%",
-              boxShadow: "0px 10px 30px rgba(0,0,0,0.15)",
-              textAlign: "center",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="font-serif" style={{ fontSize: "24px", color: "#3F3B38", marginBottom: "16px" }}>Aartcafe Account</h3>
-            <p className="font-sans" style={{ color: "#6E6E6E", fontSize: "15px", marginBottom: "24px", lineHeight: "22px" }}>
-              Access administrative dashboard or track your custom orders.
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
 
-              <Link
-                href="/signin"
-                onClick={() => setUserMenuOpen(false)}
-                style={{
-                  height: "44px",
-                  borderRadius: "22px",
-                  border: "1.5px solid #D9A85C",
-                  backgroundColor: "transparent",
-                  color: "#D98A9C",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textDecoration: "none",
-                  fontSize: "14px",
-                }}
-              >
-                ADMIN DASHBOARD SIGN IN
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Global CSS for media queries */}
       <style jsx>{`

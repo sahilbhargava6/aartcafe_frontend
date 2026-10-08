@@ -499,6 +499,7 @@ export default function Home() {
                   >
                     <div
                       style={{
+                        position: "relative",
                         width: "100%",
                         maxWidth: "676px",
                         aspectRatio: "676/844",
@@ -514,8 +515,24 @@ export default function Home() {
                         transition: "all 0.5s ease-in-out"
                       }}
                     >
-                      {leftProduct?.image ? (
-                        <img src={leftProduct.image} alt={leftProduct.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "opacity 0.5s ease-in-out" }} key={leftProduct.id} />
+                      {newDiscoveryProducts.length > 0 ? (
+                        newDiscoveryProducts.map((p) => (
+                          <img
+                            key={p.id}
+                            src={p.image}
+                            alt={p.title}
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              opacity: leftProduct?.id === p.id ? 1 : 0,
+                              transition: "opacity 0.6s ease-in-out"
+                            }}
+                          />
+                        ))
                       ) : (
                         "Large Product Image"
                       )}
@@ -545,6 +562,7 @@ export default function Home() {
                     >
                       <div
                         style={{
+                          position: "relative",
                           width: "354px",
                           height: "442px",
                           backgroundColor: "#F5EDE8",
@@ -560,8 +578,24 @@ export default function Home() {
                           transition: "all 0.5s ease-in-out"
                         }}
                       >
-                        {rightProduct?.image ? (
-                          <img src={rightProduct.image} alt={rightProduct.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "opacity 0.5s ease-in-out" }} key={rightProduct.id} />
+                        {newDiscoveryProducts.length > 0 ? (
+                          newDiscoveryProducts.map((p) => (
+                            <img
+                              key={p.id}
+                              src={p.image}
+                              alt={p.title}
+                              style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                                opacity: rightProduct?.id === p.id ? 1 : 0,
+                                transition: "opacity 0.6s ease-in-out"
+                              }}
+                            />
+                          ))
                         ) : (
                           "Product Image"
                         )}
@@ -584,7 +618,6 @@ export default function Home() {
                             margin: "0 0 12px 0",
                             transition: "all 0.5s ease-in-out"
                           }}
-                          key={rightProduct?.id}
                         >
                           {rightProduct ? rightProduct.title : "Wedding Frame"}
                         </h3>
@@ -602,7 +635,6 @@ export default function Home() {
                           marginRight: "auto",
                           transition: "all 0.5s ease-in-out"
                         }}
-                        key={`desc-${rightProduct?.id}`}
                       >
                         {rightProduct?.description
                           ? rightProduct.description
@@ -680,6 +712,7 @@ export default function Home() {
                     <a href={`/shop/${currentProduct.slug || currentProduct.id}`} style={{ textDecoration: "none", display: "block" }}>
                       <div
                         style={{
+                          position: "relative",
                           width: "100%",
                           maxWidth: "452px",
                           aspectRatio: "452/603",
@@ -1019,19 +1052,7 @@ export default function Home() {
               <path fill="url(#dupatta1Highlights)" d="M 0,410 C 480,60 960,740 1440,410 L 1440,680 C 960,1030 480,320 0,680 Z" />
               <path fill="url(#dupatta1Shadow)" d="M 0,400 C 480,50 960,750 1440,400 L 1440,700 C 960,1050 480,300 0,700 Z" />
 
-              {/* GOLDEN ZARI / GOTA PATTI BORDER (Top Edge) */}
-              <path fill="none" stroke="url(#zariGold1)" strokeWidth="16" d="M 0,400 C 480,50 960,750 1440,400" />
-              <path fill="none" stroke="#50000B" strokeWidth="3" d="M 0,408 C 480,58 960,758 1440,408" />
-              <path fill="none" stroke="#FFF5C0" strokeWidth="2.5" strokeDasharray="8 6" d="M 0,394 C 480,44 960,744 1440,394" />
-              <path fill="none" stroke="#FFF5C0" strokeWidth="2.5" strokeDasharray="8 6" d="M 0,406 C 480,56 960,756 1440,406" />
 
-              {/* GOLDEN ZARI BORDER (Bottom Edge) */}
-              <path fill="none" stroke="url(#zariGold1)" strokeWidth="12" d="M 0,700 C 480,300 960,1050 1440,700" />
-              <path fill="none" stroke="#FFF5C0" strokeWidth="2" strokeDasharray="6 4" d="M 0,695 C 480,295 960,1045 1440,695" />
-
-              {/* Gold Thread Pleat Folds */}
-              <path fill="none" stroke="url(#zariGold1)" strokeWidth="2" strokeOpacity="0.6" d="M 0,480 C 480,130 960,830 1440,480" />
-              <path fill="none" stroke="url(#zariGold1)" strokeWidth="1.5" strokeOpacity="0.4" d="M 0,560 C 480,210 960,910 1440,560" />
             </svg>
           </div>
 
@@ -1092,19 +1113,7 @@ export default function Home() {
               <path fill="url(#dupatta2Specular)" d="M 0,610 C 480,960 960,260 1440,610 L 1440,835 C 960,485 480,1185 0,835 Z" />
               <path fill="url(#dupatta2Shadow)" d="M 0,600 C 480,950 960,250 1440,600 L 1440,850 C 960,500 480,1200 0,850 Z" />
 
-              {/* GOLDEN ZARI / GOTA PATTI BORDER (Top Edge) */}
-              <path fill="none" stroke="url(#zariGold2)" strokeWidth="18" d="M 0,600 C 480,950 960,250 1440,600" />
-              <path fill="none" stroke="#60000C" strokeWidth="3.5" d="M 0,608 C 480,958 960,258 1440,608" />
-              <path fill="none" stroke="#FFFDF0" strokeWidth="2.5" strokeDasharray="10 6" d="M 0,593 C 480,943 960,243 1440,593" />
-              <path fill="none" stroke="#FFFDF0" strokeWidth="2.5" strokeDasharray="10 6" d="M 0,606 C 480,956 960,256 1440,606" />
 
-              {/* GOLDEN ZARI BORDER (Bottom Edge) */}
-              <path fill="none" stroke="url(#zariGold2)" strokeWidth="14" d="M 0,850 C 480,1200 960,500 1440,850" />
-              <path fill="none" stroke="#FFFDF0" strokeWidth="2" strokeDasharray="8 5" d="M 0,844 C 480,1194 960,494 1440,844" />
-
-              {/* Gold Thread Pleat Accent Lines */}
-              <path fill="none" stroke="url(#zariGold2)" strokeWidth="2" strokeOpacity="0.65" d="M 0,670 C 480,1020 960,320 1440,670" />
-              <path fill="none" stroke="url(#zariGold2)" strokeWidth="1.5" strokeOpacity="0.45" d="M 0,750 C 480,1100 960,400 1440,750" />
             </svg>
           </div>
 
