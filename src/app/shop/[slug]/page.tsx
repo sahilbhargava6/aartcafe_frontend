@@ -442,33 +442,28 @@ export default function ProductDetailsPage() {
                     ₹{calculateTotalPrice().toLocaleString("en-IN")}
                   </span>
                   {productData.discount_price && (
-                    <span style={{ fontSize: "20px", textDecoration: "line-through", color: "#999" }}>
+                    <span style={{ fontSize: "18px", textDecoration: "line-through", color: "#999" }}>
                       ₹{calculateOriginalTotalPrice().toLocaleString("en-IN")}
+                    </span>
+                  )}
+                  {productData.is_free_delivery && (
+                    <span 
+                      className="font-sans"
+                      style={{ 
+                        fontSize: "13px", 
+                        fontWeight: 600, 
+                        color: "#2E7D32", 
+                        marginTop: "4px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      }}
+                    >
+                      <Truck size={14} color="#2E7D32" /> Free Delivery
                     </span>
                   )}
                 </div>
               </div>
-
-              {/* Free Delivery Banner */}
-              {productData.is_free_delivery && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    backgroundColor: "rgba(78, 142, 118, 0.12)",
-                    border: "1px solid #8FB9A8",
-                    padding: "12px 18px",
-                    borderRadius: "12px",
-                    color: "#2E7D32",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                  }}
-                >
-                  <Truck size={20} color="#4E8E76" />
-                  <span>🚚 <b>Free Delivery:</b> Included on this handcrafted product!</span>
-                </div>
-              )}
 
               {/* Dynamic Attribute Customizers */}
               {productData.attributes && productData.attributes.length > 0 && (
