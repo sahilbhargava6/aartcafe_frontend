@@ -52,7 +52,7 @@ export default function Home() {
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          setReviews(data);
+          setReviews(data.slice(0, 18));
         }
       })
       .catch((err) => console.error("Error fetching reviews:", err));
@@ -1211,7 +1211,7 @@ export default function Home() {
                 }}
               >
                 {(reviews.length > 0
-                  ? reviews
+                  ? reviews.slice(0, 18)
                   : [
                       { id: 1, reviewer_name: "Mohit Sharma", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
                       { id: 2, reviewer_name: "Ananya Roy", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
@@ -1252,8 +1252,10 @@ export default function Home() {
                       </div>
 
                       {rev.rating && (
-                        <div style={{ color: "#D9A85C", fontSize: "18px", marginTop: "16px" }}>
-                          {"★".repeat(Number(rev.rating))}
+                        <div style={{ display: "flex", gap: "3px", justifyContent: "center", marginTop: "16px" }}>
+                          {Array.from({ length: Number(rev.rating) }).map((_, i) => (
+                            <span key={i} style={{ color: "#D98A9C", fontSize: "16px" }}>❤️</span>
+                          ))}
                         </div>
                       )}
                     </div>
