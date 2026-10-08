@@ -509,9 +509,20 @@ export default function Navbar() {
                             {prod.category?.name || "General"}
                           </div>
                         </div>
-                        <div style={{ fontSize: "16px", fontWeight: 700, color: "#D9A85C" }}>
-                          ₹{Number(prod.base_price || 0).toLocaleString("en-IN")}
-                        </div>
+                        {prod.discount_price && Number(prod.discount_price) > 0 && Number(prod.discount_price) < Number(prod.base_price || 0) ? (
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                            <div style={{ fontSize: "16px", fontWeight: 700, color: "#D9A85C" }}>
+                              ₹{Number(prod.discount_price).toLocaleString("en-IN")}
+                            </div>
+                            <div style={{ fontSize: "12px", color: "#999", textDecoration: "line-through", marginTop: "1px" }}>
+                              ₹{Number(prod.base_price || 0).toLocaleString("en-IN")}
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: "16px", fontWeight: 700, color: "#D9A85C" }}>
+                            ₹{Number(prod.discount_price || prod.base_price || 0).toLocaleString("en-IN")}
+                          </div>
+                        )}
                       </Link>
                     ))}
                   </div>

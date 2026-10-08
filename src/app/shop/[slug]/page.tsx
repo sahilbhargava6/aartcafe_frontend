@@ -248,10 +248,46 @@ export default function ProductDetailsPage() {
     );
   }
 
-  // Gallery images array
-  const galleryImages: string[] = [productData.image, ...(Array.isArray(productData.images) ? productData.images : [])].filter(Boolean);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
 
-  const mainImage = galleryImages[0] || "";
+  // Robust parsing for gallery images array
+  const getGalleryImages = (): string[] => {
+    if (!productData) return [];
+    const list: string[] = [];
+
+    if (productData.image && typeof productData.image === "string") {
+      const trimmed = productData.image.trim();
+      if (trimmed && !trimmed.startsWith("[")) {
+        list.push(trimmed);
+      }
+    }
+
+    let extra: any = productData.images;
+    if (typeof extra === "string") {
+      try {
+        extra = JSON.parse(extra);
+      } catch (e) {
+        if (extra.includes(",")) {
+          extra = extra.split(",").map((s: string) => s.trim());
+        } else if (extra.trim() && !extra.trim().startsWith("[")) {
+          extra = [extra.trim()];
+        }
+      }
+    }
+
+    if (Array.isArray(extra)) {
+      extra.forEach((img: any) => {
+        if (typeof img === "string" && img.trim() && !list.includes(img.trim())) {
+          list.push(img.trim());
+        }
+      });
+    }
+
+    return list.filter(Boolean);
+  };
+
+  const galleryImages = getGalleryImages();
+  const currentMainImage = galleryImages[selectedImageIndex] || galleryImages[0] || productData?.image || "";
   const subImages = galleryImages.slice(1);
 
   return (
@@ -313,8 +349,8 @@ export default function ProductDetailsPage() {
                   justifyContent: "center",
                 }}
               >
-                {mainImage ? (
-                  <img src={mainImage} alt={productData.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                {currentMainImage ? (
+                  <img src={currentMainImage} alt={productData.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
                   <div style={{ color: "#BCAEA2", fontSize: "16px", textAlign: "center", padding: "20px" }}>
                     {productData.title}
@@ -322,25 +358,61 @@ export default function ProductDetailsPage() {
                 )}
               </div>
 
-              {/* Sub-gallery grid matching design mockup */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                {subImages.length >= 2 ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                    <div style={{ height: "200px", borderRadius: "12px", overflow: "hidden", backgroundColor: "#FAF6F0" }}>
-                      <img src={subImages[0]} alt="Gallery 1" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    </div>
-                    <div style={{ height: "200px", borderRadius: "12px", overflow: "hidden", backgroundColor: "#FAF6F0" }}>
-                      <img src={subImages[1]} alt="Gallery 2" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    </div>
-                  </div>
-                ) : null}
+              {/* Interactive Thumbnail Strip */}
+              {galleryImages.length > 1 && (
+                <div style={{ display: "flex", gap: "12px", overflowX: "auto", padding: "4px 0 8px 0", scrollbarWidth: "none" }}>
+                  {galleryImages.map((imgUrl: string, idx: number) => {
+                    const isActive = idx === selectedImageIndex;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedImageIndex(idx)}
+                        style={{
+                          width: "80px",
+                          height: "80px",
+                          borderRadius: "10px",
+                          overflow: "hidden",
+                          border: isActive ? "2.5px solid #D98A9C" : "1px solid #E5D5C5",
+                          backgroundColor: "#FAF6F0",
+                          cursor: "pointer",
+                          flexShrink: 0,
+                          padding: 0,
+                          transition: "all 0.2s ease",
+                          boxShadow: isActive ? "0px 4px 10px rgba(217,138,156,0.3)" : "none",
+                        }}
+                      >
+                        <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-                {subImages.slice(2).map((imgUrl: string, idx: number) => (
-                  <div key={idx} style={{ height: "200px", borderRadius: "12px", overflow: "hidden", backgroundColor: "#FAF6F0" }}>
-                    <img src={imgUrl} alt={`Gallery ${idx + 3}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {/* Sub-gallery grid */}
+              {galleryImages.length > 1 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: subImages.length > 1 ? "1fr 1fr" : "1fr", gap: "20px" }}>
+                    {subImages.map((imgUrl: string, idx: number) => (
+                      <div
+                        key={idx}
+                        onClick={() => setSelectedImageIndex(idx + 1)}
+                        style={{
+                          height: "220px",
+                          borderRadius: "12px",
+                          overflow: "hidden",
+                          backgroundColor: "#FAF6F0",
+                          cursor: "pointer",
+                          border: selectedImageIndex === idx + 1 ? "2.5px solid #D98A9C" : "1px solid transparent",
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        <img src={imgUrl} alt={`Gallery sub-image ${idx + 2}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* RIGHT COLUMN: Configurator & Reviews */}

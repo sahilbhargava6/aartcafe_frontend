@@ -107,36 +107,23 @@ export default function Home() {
           <div
             style={{
               position: "absolute",
-              top: "-40px",
-              left: "-62px",
-              width: "333px",
-              height: "333px",
-              zIndex: 2,
+              top: "0px",
+              left: "0px",
+              width: "240px",
+              zIndex: 5,
               pointerEvents: "none",
             }}
           >
-            {/* Placeholder for magnolia flower images — replace with <Image /> */}
-            <div style={{
-              position: "absolute", width: "222px", height: "222px",
-              left: "111px", top: "0px",
-              background: "radial-gradient(ellipse at center, rgba(239,211,199,0.4) 0%, rgba(239,211,199,0.1) 60%, transparent 80%)",
-              borderRadius: "50%",
-              transform: "scaleX(-1)",
-            }} />
-            <div style={{
-              position: "absolute", width: "222px", height: "222px",
-              left: "20px", top: "56px",
-              background: "radial-gradient(ellipse at center, rgba(239,211,199,0.35) 0%, rgba(239,211,199,0.1) 60%, transparent 80%)",
-              borderRadius: "50%",
-              transform: "scaleX(-1)",
-            }} />
-            <div style={{
-              position: "absolute", width: "222px", height: "222px",
-              left: "90px", top: "72px",
-              background: "radial-gradient(ellipse at center, rgba(239,211,199,0.3) 0%, rgba(239,211,199,0.08) 60%, transparent 80%)",
-              borderRadius: "50%",
-              transform: "scaleX(-1)",
-            }} />
+            <img
+              src="/images/Group 3.png"
+              alt="Magnolia flowers top-left decoration"
+              style={{
+                width: "100%",
+                height: "auto",
+                display: "block",
+                filter: "drop-shadow(0px 8px 16px rgba(0,0,0,0.15))",
+              }}
+            />
           </div>
 
           {/* ── Hero content layout ── */}
@@ -196,27 +183,23 @@ export default function Home() {
           <div
             style={{
               position: "absolute",
-              bottom: "-80px",
+              bottom: "-40px",
               right: "0px",
-              width: "651px",
-              height: "400px",
-              zIndex: 0,
+              width: "750px",
+              zIndex: 5,
               pointerEvents: "none",
             }}
           >
-            <div style={{
-              position: "absolute", width: "561px", height: "561px",
-              left: "0px", top: "0px",
-              background: "radial-gradient(ellipse at center, rgba(239,211,199,0.2) 0%, transparent 70%)",
-              borderRadius: "50%",
-              transform: "scaleX(-1)",
-            }} />
-            <div style={{
-              position: "absolute", width: "522px", height: "522px",
-              right: "0px", top: "40px",
-              background: "radial-gradient(ellipse at center, rgba(239,211,199,0.15) 0%, transparent 70%)",
-              borderRadius: "50%",
-            }} />
+            <img
+              src="/images/Group 2.png"
+              alt="Magnolia flower branch bottom-right decoration"
+              style={{
+                width: "100%",
+                height: "auto",
+                display: "block",
+                filter: "drop-shadow(0px 10px 20px rgba(0,0,0,0.12))",
+              }}
+            />
           </div>
         </section>
 
