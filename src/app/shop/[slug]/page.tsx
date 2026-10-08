@@ -446,22 +446,6 @@ export default function ProductDetailsPage() {
                       ₹{calculateOriginalTotalPrice().toLocaleString("en-IN")}
                     </span>
                   )}
-                  {productData.is_free_delivery && (
-                    <span 
-                      className="font-sans"
-                      style={{ 
-                        fontSize: "13px", 
-                        fontWeight: 600, 
-                        color: "#2E7D32", 
-                        marginTop: "4px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px"
-                      }}
-                    >
-                      <Truck size={14} color="#2E7D32" /> Free Delivery
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -512,10 +496,6 @@ export default function ProductDetailsPage() {
                               return (
                                 <label
                                   key={opt.id || opt.value}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    toggleCheckboxAttribute(attr.name, opt.value, validValues);
-                                  }}
                                   style={{
                                     display: "flex",
                                     alignItems: "center",
@@ -535,7 +515,7 @@ export default function ProductDetailsPage() {
                                   <input
                                     type="checkbox"
                                     checked={isChecked}
-                                    onChange={() => {}}
+                                    onChange={() => toggleCheckboxAttribute(attr.name, opt.value, validValues)}
                                     style={{ accentColor: "#D9A85C", width: "16px", height: "16px", cursor: "pointer" }}
                                   />
                                   <span>{opt.value}</span>

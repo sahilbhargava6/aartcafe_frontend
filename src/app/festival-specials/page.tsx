@@ -430,9 +430,11 @@ export default function FestivalSpecials() {
           {/* "More off-festival items:" SECTION */}
           {relatedProducts.length > 0 && (
             <div style={{ borderTop: "1px solid #EBE5DB", paddingTop: "60px" }}>
-              <h2 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
-                More off-festival items:
-              </h2>
+              <Link href="/shop" style={{ textDecoration: "none" }}>
+                <h2 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
+                  More off-festival items:
+                </h2>
+              </Link>
               <div className="related-grid">
                 {relatedProducts.slice(0, 4).map((prod) => {
                   const productUrl = `/shop/${prod.slug || prod.id}`;
@@ -500,61 +502,70 @@ export default function FestivalSpecials() {
           {/* "You may also Like:" SECTION */}
           {relatedProducts.length > 4 && (
             <div style={{ borderTop: "1px solid #EBE5DB", paddingTop: "60px", marginTop: "80px" }}>
-              <h2 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
-                You may also Like:
-              </h2>
+              <Link href="/shop" style={{ textDecoration: "none" }}>
+                <h2 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
+                  You may also Like:
+                </h2>
+              </Link>
               <div className="related-grid">
-                {relatedProducts.slice(4, 8).map((prod) => (
+                {relatedProducts.slice(4, 8).map((prod) => {
+                  const productUrl = `/shop/${prod.slug || prod.id}`;
+                  return (
                   <div key={prod.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <div
-                      style={{
-                        width: "100%",
-                        aspectRatio: "338/422",
-                        backgroundColor: "#F5EDE8",
-                        borderRadius: "15px",
-                        boxShadow: "0px 4px 4px rgba(0,0,0,0.15)",
-                        marginBottom: "16px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#BCAEA2",
-                        fontSize: "14px",
-                        overflow: "hidden"
-                      }}
-                    >
-                      {prod.image ? (
-                        <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        "Product Image"
-                      )}
-                    </div>
+                    <Link href={productUrl} style={{ width: "100%", textDecoration: "none" }}>
+                      <div
+                        style={{
+                          width: "100%",
+                          aspectRatio: "338/422",
+                          backgroundColor: "#F5EDE8",
+                          borderRadius: "15px",
+                          boxShadow: "0px 4px 4px rgba(0,0,0,0.15)",
+                          marginBottom: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#BCAEA2",
+                          fontSize: "14px",
+                          overflow: "hidden"
+                        }}
+                      >
+                        {prod.image ? (
+                          <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          "Product Image"
+                        )}
+                      </div>
+                    </Link>
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-                      <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0 }}>
-                        {prod.title}
-                      </h4>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                        <span className="font-sans" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
-                          ₹{prod.discount_price || prod.base_price}
-                        </span>
-                        <button
-                          onClick={() => addToBag(prod)}
-                          className="font-sans"
-                          style={{
-                            background: "none",
-                            border: "none",
-                            borderBottom: "1px solid #3F3B38",
-                            fontSize: "20px",
-                            color: "#3F3B38",
-                            cursor: "pointer",
-                            padding: "0 0 2px 0",
-                          }}
-                        >
-                          Add to bag
-                        </button>
+                      <Link href={productUrl} style={{ textDecoration: "none" }}>
+                        <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0, cursor: "pointer" }}>
+                          {prod.title}
+                        </h4>
+                      </Link>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                          <span className="font-sans" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
+                            ₹{prod.discount_price || prod.base_price}
+                          </span>
+                          <button
+                            onClick={() => addToBag(prod)}
+                            className="font-sans"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              borderBottom: "1px solid #3F3B38",
+                              fontSize: "20px",
+                              color: "#3F3B38",
+                              cursor: "pointer",
+                              padding: "0 0 2px 0",
+                            }}
+                          >
+                            Add to bag
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

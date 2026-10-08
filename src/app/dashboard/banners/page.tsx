@@ -256,6 +256,7 @@ export default function BannersDashboard() {
                       {banner.position === "special_offers_main" ? "Special Offers - Main Big Banner" :
                        banner.position === "special_offers_top_right" ? "Special Offers - Top Right Card" :
                        banner.position === "special_offers_bottom_right" ? "Special Offers - Bottom Right Card" :
+                       banner.position === "festival_specials" ? "Festival Specials Banner" :
                        banner.position === "home_top" ? "Home Page Top Banner" :
                        banner.position || "All Pages"}
                     </span>
@@ -429,6 +430,7 @@ export default function BannersDashboard() {
                   <option value="special_offers_main">🌟 Special Offers - Main Big Banner (Left)</option>
                   <option value="special_offers_top_right">🏆 Special Offers - Top Right Card (Gold 50% OFF)</option>
                   <option value="special_offers_bottom_right">✨ Special Offers - Bottom Right Card (Green Special Offer)</option>
+                  <option value="festival_specials">🎉 Festival Specials Banner</option>
                   <option value="home_top">🏠 Home Page Top Banner</option>
                   <option value="all">🌐 All Pages / General</option>
                 </select>

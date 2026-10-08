@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 
 interface SlotStyle {
   width: number;
@@ -20,11 +21,11 @@ const SLOTS: SlotStyle[] = [
 ];
 
 const DEFAULT_IMAGES = [
-  { id: "def-0", label: "Image 1", bg: "#F5EDE8", url: "" },
-  { id: "def-1", label: "Image 2", bg: "#F0E6DF", url: "" },
-  { id: "def-2", label: "Image 3", bg: "#EBE0D8", url: "" },
-  { id: "def-3", label: "Image 4", bg: "#F5EDE8", url: "" },
-  { id: "def-4", label: "Image 5", bg: "#F0E6DF", url: "" },
+  { id: "def-0", label: "Image 1", bg: "#F5EDE8", url: "", slug: "" },
+  { id: "def-1", label: "Image 2", bg: "#F0E6DF", url: "", slug: "" },
+  { id: "def-2", label: "Image 3", bg: "#EBE0D8", url: "", slug: "" },
+  { id: "def-3", label: "Image 4", bg: "#F5EDE8", url: "", slug: "" },
+  { id: "def-4", label: "Image 5", bg: "#F0E6DF", url: "", slug: "" },
 ];
 
 const AUTO_INTERVAL = 3000;
@@ -72,6 +73,7 @@ export default function HeroCarousel() {
       label: p.title,
       bg: "#F5EDE8",
       url: p.image || "",
+      slug: p.slug || "",
     }));
 
     let items = [...fetchedItems];
@@ -99,7 +101,8 @@ export default function HeroCarousel() {
           const slot = SLOTS[slotIdx] || SLOTS[0];
 
           return (
-            <div
+            <Link
+              href={image.slug ? `/shop/${image.slug}` : "/shop"}
               key={`${image.id}-${index}`}
               style={{
                 position: "absolute",
@@ -119,6 +122,7 @@ export default function HeroCarousel() {
                 fontSize: "11px",
                 background: image.bg,
                 transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+                textDecoration: "none"
               }}
             >
               {image.url ? (
@@ -126,7 +130,7 @@ export default function HeroCarousel() {
               ) : (
                 <span>{image.label}</span>
               )}
-            </div>
+            </Link>
           );
         })}
       </div>

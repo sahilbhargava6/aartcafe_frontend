@@ -13,6 +13,7 @@ export default function CartPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [attachedImage, setAttachedImage] = useState<File | null>(null);
   const [relatedItems, setRelatedItems] = useState<any[]>([]);
 
   useEffect(() => {
@@ -108,6 +109,10 @@ export default function CartPage() {
     const message = messageLines.join("\n");
     const encoded = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encoded}`;
+
+    if (attachedImage) {
+      alert("Since WhatsApp web links don't allow automatic image attachments, please attach your image manually once WhatsApp opens, or paste it into the chat!");
+    }
 
     window.open(whatsappUrl, "_blank");
   };
@@ -315,6 +320,38 @@ export default function CartPage() {
                 />
                 .
               </p>
+
+              {/* Attach Image Option */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "10px" }}>
+                <span className="font-sans" style={{ fontSize: "16px", color: "#6E6E6E", fontWeight: 500 }}>
+                  Attach Reference Image (Optional)
+                </span>
+                <label
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                    padding: "10px", borderRadius: "10px", border: "1.5px dashed #D9A85C",
+                    backgroundColor: "#FFFDF9", cursor: "pointer", color: "#D9A85C", fontSize: "14px", fontWeight: 500
+                  }}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setAttachedImage(e.target.files[0]);
+                      }
+                    }}
+                  />
+                  <Plus size={16} />
+                  {attachedImage ? attachedImage.name : "Choose an Image"}
+                </label>
+                {attachedImage && (
+                  <span style={{ fontSize: "12px", color: "#8FB9A8" }}>
+                    * Image will need to be manually sent in WhatsApp.
+                  </span>
+                )}
+              </div>
 
               {/* Order spec list */}
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", borderLeft: "2px solid #D9A85C", paddingLeft: "20px" }}>
