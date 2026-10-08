@@ -513,8 +513,6 @@ export default function ProductDetailsPage() {
                           /* CHECKBOX MULTI-SELECT OPTIONS */
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
                             {validValues.map((opt: any) => {
-                              const mod = parseFloat(opt.price_modifier || "0");
-                              const modText = mod > 0 ? ` (+₹${parseInt(mod.toString())})` : mod < 0 ? ` (-₹${Math.abs(parseInt(mod.toString()))})` : "";
                               const isChecked = checkedList.includes(opt.value);
                               return (
                                 <label
@@ -545,7 +543,7 @@ export default function ProductDetailsPage() {
                                     onChange={() => {}}
                                     style={{ accentColor: "#D9A85C", width: "16px", height: "16px", cursor: "pointer" }}
                                   />
-                                  <span>{opt.value}{modText}</span>
+                                  <span>{opt.value}</span>
                                 </label>
                               );
                             })}
@@ -554,8 +552,6 @@ export default function ProductDetailsPage() {
                           /* PILL / RADIO SINGLE-SELECT OPTIONS */
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
                             {validValues.map((opt: any) => {
-                              const mod = parseFloat(opt.price_modifier || "0");
-                              const modText = mod > 0 ? ` (+₹${parseInt(mod.toString())})` : mod < 0 ? ` (-₹${Math.abs(parseInt(mod.toString()))})` : "";
                               const isSelected = selectedAttributes[attr.name]?.value === opt.value;
                               return (
                                 <button
@@ -574,7 +570,7 @@ export default function ProductDetailsPage() {
                                     transition: "all 0.2s",
                                   }}
                                 >
-                                  {opt.value}{modText}
+                                  {opt.value}
                                 </button>
                               );
                             })}

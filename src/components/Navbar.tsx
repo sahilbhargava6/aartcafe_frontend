@@ -41,13 +41,13 @@ export default function Navbar() {
         const data = await Promise.any(
           urls.map(async (url) => {
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 2500);
+            const timer = setTimeout(() => controller.abort(), 10000); // 10s timeout
             try {
               const res = await fetch(url, { signal: controller.signal });
               clearTimeout(timer);
               if (res.ok) {
                 const json = await res.json();
-                if (Array.isArray(json)) return json;
+                if (Array.isArray(json) && json.length > 0) return json;
               }
             } catch (e) {
               clearTimeout(timer);
