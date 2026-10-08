@@ -809,7 +809,13 @@ export default function ProductDetailsPage() {
                       }}
                     >
                       {prod.image ? (
-                        <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img
+                          src={prod.image}
+                          alt={prod.title}
+                          loading="lazy"
+                          decoding="async"
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
                       ) : (
                         <div style={{ color: "#BCAEA2", fontSize: "14px", padding: "12px", textAlign: "center" }}>
                           {prod.title}

@@ -275,8 +275,21 @@ export default function Shop() {
 
               {/* Product Grid */}
               {loading ? (
-                <div style={{ padding: "80px 0", textAlign: "center", color: "#8FB9A8", fontSize: "22px" }}>
-                  Loading products...
+                <div className="shop-products-grid">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="shop-product-card-wrapper" style={{ opacity: 0.6 }}>
+                      <div
+                        style={{
+                          width: "100%",
+                          aspectRatio: "364/455",
+                          backgroundColor: "#FAF6F0",
+                          borderRadius: "15px",
+                        }}
+                      />
+                      <div style={{ marginTop: "14px", height: "22px", backgroundColor: "#FAF6F0", borderRadius: "6px", width: "75%" }} />
+                      <div style={{ marginTop: "8px", height: "18px", backgroundColor: "#FAF6F0", borderRadius: "6px", width: "40%" }} />
+                    </div>
+                  ))}
                 </div>
               ) : filteredProducts.length === 0 ? (
                 <div style={{ padding: "80px 0", textAlign: "center", color: "#6E6E6E" }}>
@@ -378,7 +391,13 @@ export default function Shop() {
                           )}
 
                           {prod.image ? (
-                            <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <img
+                              src={prod.image}
+                              alt={prod.title}
+                              loading="lazy"
+                              decoding="async"
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
                           ) : (
                             <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#BCAEA2", fontSize: "14px" }}>
                               Product Image
