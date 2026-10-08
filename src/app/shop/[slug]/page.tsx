@@ -19,6 +19,7 @@ export default function ProductDetailsPage() {
   const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: { value: string; modifier: number } }>({});
   const [reviewsList, setReviewsList] = useState<any[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
 
   // Review Form State
   const [showReviewForm, setShowReviewForm] = useState(false);

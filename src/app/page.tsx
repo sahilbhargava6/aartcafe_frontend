@@ -98,8 +98,9 @@ export default function Home() {
           style={{
             position: "relative",
             width: "100%",
-            minHeight: "480px",
-            overflow: "hidden",
+            minHeight: "680px",
+            paddingBottom: "160px",
+            overflow: "visible",
             background: "#fff",
           }}
         >
@@ -136,7 +137,7 @@ export default function Home() {
               display: "flex",
               alignItems: "flex-start",
               position: "relative",
-              zIndex: 1,
+              zIndex: 2,
             }}
           >
             {/* Left: Text content */}
@@ -183,9 +184,9 @@ export default function Home() {
           <div
             style={{
               position: "absolute",
-              bottom: "-40px",
+              bottom: "10px",
               right: "0px",
-              width: "750px",
+              width: "760px",
               zIndex: 5,
               pointerEvents: "none",
             }}
