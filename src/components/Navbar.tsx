@@ -26,14 +26,40 @@ export default function Navbar() {
     { name: "Special offers", path: "/special-offers" },
   ];
 
-  // Fetch products once for live search
+  // Fetch products once for live search with fallback logic
   useEffect(() => {
-    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (Array.isArray(data)) setAllProducts(data);
-      })
-      .catch((err) => console.error("Error loading products for search:", err));
+    const primaryUrl = process.env.NEXT_PUBLIC_API_URL 
+      ? `${process.env.NEXT_PUBLIC_API_URL}/products`
+      : "https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products";
+
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch(primaryUrl);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setAllProducts(data);
+            return;
+          }
+        }
+      } catch (e) {
+        // Primary URL failed, attempt localhost fallback
+      }
+
+      try {
+        const res = await fetch("http://localhost:8000/api/products");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setAllProducts(data);
+          }
+        }
+      } catch (e) {
+        // Silent fallback if both endpoints fail
+      }
+    };
+
+    fetchProducts();
   }, []);
 
   // Filter search results in real time

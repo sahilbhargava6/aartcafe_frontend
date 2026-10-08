@@ -332,126 +332,64 @@ export default function ProductDetailsPage() {
           {/* Two-Column Grid */}
           <div className="details-layout">
             
-            {/* LEFT COLUMN: Gallery Stack */}
+            {/* LEFT COLUMN: Modern Bento Grid Gallery */}
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {/* Main product image - 100% full view with adjusted height */}
               <div
                 style={{
-                  width: "100%",
-                  maxHeight: "440px",
-                  backgroundColor: "#FAF6F0",
-                  borderRadius: "14px",
-                  boxShadow: "0px 4px 12px rgba(0,0,0,0.08)",
-                  overflow: "hidden",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gap: "16px",
+                  alignItems: "start",
                 }}
               >
-                {currentMainImage ? (
-                  <img
-                    src={currentMainImage}
-                    alt={productData.title}
-                    style={{ width: "100%", maxHeight: "440px", objectFit: "contain", display: "block" }}
-                  />
-                ) : (
-                  <div style={{ color: "#BCAEA2", fontSize: "16px", textAlign: "center", padding: "20px" }}>
-                    {productData.title}
-                  </div>
-                )}
-              </div>
+                {galleryImages.map((imgUrl: string, idx: number) => {
+                  // Bento Layout Rules:
+                  // idx 0 -> Full width Hero (span 2)
+                  // idx 1, 2 -> Half width side-by-side (span 1)
+                  // idx 3 -> Full width wide banner (span 2)
+                  // idx 4, 5 -> Half width side-by-side (span 1), etc.
+                  const isFullWidth = idx % 3 === 0;
 
-              {/* Sub-gallery grid & stack with 100% full uncropped image displays */}
-              {subImages.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                  {subImages.length >= 2 ? (
-                    <>
-                      {/* First row: 2 side-by-side images shown fully */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", alignItems: "start" }}>
-                        <div
-                          onClick={() => setSelectedImageIndex(1)}
-                          style={{
-                            width: "100%",
-                            borderRadius: "12px",
-                            overflow: "hidden",
-                            backgroundColor: "#FAF6F0",
-                            cursor: "pointer",
-                            boxShadow: "0px 2px 8px rgba(0,0,0,0.06)",
-                            border: selectedImageIndex === 1 ? "2.5px solid #D98A9C" : "1px solid transparent",
-                          }}
-                        >
-                          <img
-                            src={subImages[0]}
-                            alt="Gallery 1"
-                            style={{ width: "100%", height: "auto", display: "block", objectFit: "contain" }}
-                          />
-                        </div>
-                        <div
-                          onClick={() => setSelectedImageIndex(2)}
-                          style={{
-                            width: "100%",
-                            borderRadius: "12px",
-                            overflow: "hidden",
-                            backgroundColor: "#FAF6F0",
-                            cursor: "pointer",
-                            boxShadow: "0px 2px 8px rgba(0,0,0,0.06)",
-                            border: selectedImageIndex === 2 ? "2.5px solid #D98A9C" : "1px solid transparent",
-                          }}
-                        >
-                          <img
-                            src={subImages[1]}
-                            alt="Gallery 2"
-                            style={{ width: "100%", height: "auto", display: "block", objectFit: "contain" }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Stack remaining subImages (3rd onwards) full width shown 100% fully */}
-                      {subImages.slice(2).map((imgUrl: string, idx: number) => (
-                        <div
-                          key={idx}
-                          onClick={() => setSelectedImageIndex(idx + 3)}
-                          style={{
-                            width: "100%",
-                            borderRadius: "12px",
-                            overflow: "hidden",
-                            backgroundColor: "#FAF6F0",
-                            cursor: "pointer",
-                            boxShadow: "0px 2px 8px rgba(0,0,0,0.06)",
-                            border: selectedImageIndex === idx + 3 ? "2.5px solid #D98A9C" : "1px solid transparent",
-                          }}
-                        >
-                          <img
-                            src={imgUrl}
-                            alt={`Gallery ${idx + 3}`}
-                            style={{ width: "100%", height: "auto", display: "block", objectFit: "contain" }}
-                          />
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    /* Single subImage full width shown fully */
+                  return (
                     <div
-                      onClick={() => setSelectedImageIndex(1)}
+                      key={idx}
+                      onClick={() => setSelectedImageIndex(idx)}
                       style={{
+                        gridColumn: isFullWidth ? "span 2" : "span 1",
                         width: "100%",
-                        borderRadius: "12px",
+                        borderRadius: "16px",
                         overflow: "hidden",
                         backgroundColor: "#FAF6F0",
                         cursor: "pointer",
-                        boxShadow: "0px 2px 8px rgba(0,0,0,0.06)",
-                        border: selectedImageIndex === 1 ? "2.5px solid #D98A9C" : "1px solid transparent",
+                        boxShadow:
+                          selectedImageIndex === idx
+                            ? "0px 6px 18px rgba(217, 138, 156, 0.25)"
+                            : "0px 3px 10px rgba(0,0,0,0.05)",
+                        border: selectedImageIndex === idx ? "2.5px solid #D98A9C" : "1.5px solid transparent",
+                        transition: "all 0.25s ease-in-out",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: isFullWidth ? "6px" : "4px",
                       }}
+                      className="bento-tile"
                     >
                       <img
-                        src={subImages[0]}
-                        alt="Gallery 1"
-                        style={{ width: "100%", height: "auto", display: "block", objectFit: "contain" }}
+                        src={imgUrl}
+                        alt={`${productData.title} - View ${idx + 1}`}
+                        style={{
+                          width: "100%",
+                          maxHeight: isFullWidth ? "460px" : "320px",
+                          height: "auto",
+                          display: "block",
+                          objectFit: "contain",
+                          borderRadius: "12px",
+                        }}
                       />
                     </div>
-                  )}
-                </div>
-              )}
+                  );
+                })}
+              </div>
             </div>
 
             {/* RIGHT COLUMN: Configurator & Reviews */}
