@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { Plus, Edit2, Trash2, X, Upload, Check, Loader2 } from "lucide-react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { Plus, Edit2, Trash2, X, Upload, Check, Loader2, Search, Filter } from "lucide-react";
 import * as XLSX from "xlsx";
 
 import imageCompression from "browser-image-compression";
@@ -70,6 +70,70 @@ export default function ProductsDashboard() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Search, Filter & Sort State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterTag, setFilterTag] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+
+  const filteredAndSortedProducts = useMemo(() => {
+    let result = [...products];
+
+    // Text search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter((prod) => {
+        const titleMatch = prod.title?.toLowerCase().includes(q);
+        const idMatch = String(prod.id) === q;
+        const catMatch =
+          prod.categories?.some((c: any) => c.name?.toLowerCase().includes(q)) ||
+          prod.category?.name?.toLowerCase().includes(q);
+        const priceMatch = String(prod.base_price).includes(q) || String(prod.discount_price || "").includes(q);
+        return titleMatch || idMatch || catMatch || priceMatch;
+      });
+    }
+
+    // Category filter
+    if (filterCategory !== "all") {
+      result = result.filter((prod) => {
+        if (prod.categories && prod.categories.length > 0) {
+          return prod.categories.some((c: any) => String(c.id) === filterCategory || c.name === filterCategory);
+        }
+        return String(prod.category_id) === filterCategory || prod.category?.name === filterCategory;
+      });
+    }
+
+    // Tag / Status filter
+    if (filterTag !== "all") {
+      result = result.filter((prod) => {
+        if (filterTag === "bestseller") return prod.is_bestseller;
+        if (filterTag === "new_discovery") return prod.is_new_discovery;
+        if (filterTag === "wedding_special") return prod.is_wedding_special;
+        if (filterTag === "hero_featured") return prod.is_hero_featured;
+        if (filterTag === "festive_special") return prod.is_festive_special;
+        if (filterTag === "free_delivery") return prod.is_free_delivery;
+        if (filterTag === "active") return prod.is_active;
+        if (filterTag === "inactive") return !prod.is_active;
+        return true;
+      });
+    }
+
+    // Sorting
+    result.sort((a, b) => {
+      const priceA = parseFloat(a.discount_price || a.base_price || "0");
+      const priceB = parseFloat(b.discount_price || b.base_price || "0");
+
+      if (sortBy === "price_low") return priceA - priceB;
+      if (sortBy === "price_high") return priceB - priceA;
+      if (sortBy === "name_asc") return (a.title || "").localeCompare(b.title || "");
+      if (sortBy === "name_desc") return (b.title || "").localeCompare(a.title || "");
+      if (sortBy === "oldest") return a.id - b.id;
+      return b.id - a.id;
+    });
+
+    return result;
+  }, [products, searchQuery, filterCategory, filterTag, sortBy]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -634,12 +698,185 @@ export default function ProductsDashboard() {
 
       {error && <div style={{ color: "#E05A47", fontSize: "16px", fontWeight: 500 }}>{error}</div>}
 
+      {/* ── SEARCH, FILTER & SORT TOOLBAR ── */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "12px",
+          alignItems: "center",
+          backgroundColor: "#F9F6F0",
+          padding: "16px",
+          borderRadius: "15px",
+          border: "1.5px solid #D9A85C",
+          justifyContent: "space-between",
+        }}
+      >
+        {/* Search input field */}
+        <div style={{ position: "relative", flex: "1 1 260px" }}>
+          <Search size={18} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#8B7E74" }} />
+          <input
+            type="text"
+            placeholder="Search by title, ID, price, or category..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: "100%",
+              height: "40px",
+              paddingLeft: "40px",
+              paddingRight: "32px",
+              borderRadius: "10px",
+              border: "1px solid #D9A85C",
+              fontSize: "14px",
+              outline: "none",
+              backgroundColor: "#fff",
+              color: "#3F3B38",
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{
+                position: "absolute",
+                right: "10px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                color: "#999",
+                cursor: "pointer",
+              }}
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Filter Dropdowns & Sorting */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+          {/* Filter by Category */}
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            style={{
+              height: "40px",
+              borderRadius: "10px",
+              border: "1px solid #D9A85C",
+              padding: "0 12px",
+              fontSize: "13px",
+              outline: "none",
+              backgroundColor: "#fff",
+              color: "#3F3B38",
+              cursor: "pointer",
+            }}
+          >
+            <option value="all">📁 All Categories</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={String(cat.id)}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Filter by Tag / Status */}
+          <select
+            value={filterTag}
+            onChange={(e) => setFilterTag(e.target.value)}
+            style={{
+              height: "40px",
+              borderRadius: "10px",
+              border: "1px solid #D9A85C",
+              padding: "0 12px",
+              fontSize: "13px",
+              outline: "none",
+              backgroundColor: "#fff",
+              color: "#3F3B38",
+              cursor: "pointer",
+            }}
+          >
+            <option value="all">🏷️ All Tags & Status</option>
+            <option value="bestseller">🔥 Bestseller</option>
+            <option value="new_discovery">✨ New Discovery</option>
+            <option value="wedding_special">💍 Wedding Special</option>
+            <option value="hero_featured">🌟 Hero Featured</option>
+            <option value="festive_special">🎉 Festive Special</option>
+            <option value="free_delivery">🚚 Free Delivery</option>
+            <option value="active">🟢 Active Only</option>
+            <option value="inactive">🔴 Inactive Only</option>
+          </select>
+
+          {/* Sort By Dropdown */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{
+              height: "40px",
+              borderRadius: "10px",
+              border: "1px solid #D9A85C",
+              padding: "0 12px",
+              fontSize: "13px",
+              fontWeight: 500,
+              outline: "none",
+              backgroundColor: "#fff",
+              color: "#3F3B38",
+              cursor: "pointer",
+            }}
+          >
+            <option value="newest">⬇️ Sort: Newest First</option>
+            <option value="oldest">⬆️ Sort: Oldest First</option>
+            <option value="price_low">💰 Price: Low to High</option>
+            <option value="price_high">💎 Price: High to Low</option>
+            <option value="name_asc">🔤 Name: A to Z</option>
+            <option value="name_desc">🔤 Name: Z to A</option>
+          </select>
+
+          {/* Clear Filters Button */}
+          {(searchQuery || filterCategory !== "all" || filterTag !== "all" || sortBy !== "newest") && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setFilterCategory("all");
+                setFilterTag("all");
+                setSortBy("newest");
+              }}
+              style={{
+                height: "40px",
+                padding: "0 12px",
+                borderRadius: "10px",
+                border: "1px solid #E05A47",
+                backgroundColor: "#FFF5F5",
+                color: "#E05A47",
+                fontSize: "13px",
+                fontWeight: 500,
+                cursor: "pointer",
+              }}
+            >
+              Reset Filters
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Results Count Badge */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "14px", color: "#6E6E6E", padding: "0 4px" }}>
+        <span>
+          Showing <b>{filteredAndSortedProducts.length}</b> of <b>{products.length}</b> Products
+        </span>
+        {searchQuery && (
+          <span>
+            Search results for &quot;<b>{searchQuery}</b>&quot;
+          </span>
+        )}
+      </div>
+
       {/* Products List Table Wrapper with Horizontal Scroll for Mobile */}
       <div style={{ border: "2px solid #D98A9C", borderRadius: "15px", overflowX: "auto", backgroundColor: "#fff", width: "100%" }}>
         {loading ? (
           <div style={{ padding: "40px", textAlign: "center", color: "#8FB9A8" }}>Loading products...</div>
-        ) : products.length === 0 ? (
-          <div style={{ padding: "40px", textAlign: "center", color: "#8FB9A8" }}>No products found. Add one above!</div>
+        ) : filteredAndSortedProducts.length === 0 ? (
+          <div style={{ padding: "40px", textAlign: "center", color: "#8FB9A8" }}>
+            {products.length === 0 ? "No products found. Add one above!" : "No products match your search or filters."}
+          </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
@@ -656,7 +893,7 @@ export default function ProductsDashboard() {
               </tr>
             </thead>
             <tbody>
-              {products.map((prod) => (
+              {filteredAndSortedProducts.map((prod) => (
                 <tr key={prod.id} style={{ borderBottom: "1px solid #EBE5DB" }}>
                   <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{prod.id}</td>
                   <td style={{ padding: "16px 24px" }}>
