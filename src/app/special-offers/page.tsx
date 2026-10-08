@@ -56,9 +56,24 @@ export default function SpecialOffers() {
       .catch((err) => console.error("Error loading wedding specials:", err));
   }, []);
 
-  const banner1 = banners[0] || null;
-  const banner2 = banners[1] || null;
-  const banner3 = banners[2] || null;
+  const [mainBannerIdx, setMainBannerIdx] = React.useState(0);
+
+  const mainBanners = React.useMemo(() => {
+    const list = banners.filter((b: any) => b.position === "special_offers_main");
+    return list.length > 0 ? list : banners;
+  }, [banners]);
+
+  React.useEffect(() => {
+    if (mainBanners.length <= 1) return;
+    const timer = setInterval(() => {
+      setMainBannerIdx((prev) => (prev + 1) % mainBanners.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [mainBanners.length]);
+
+  const banner1 = mainBanners[mainBannerIdx] || banners[0] || null;
+  const banner2 = banners.find((b: any) => b.position === "special_offers_top_right") || banners[1] || null;
+  const banner3 = banners.find((b: any) => b.position === "special_offers_bottom_right") || banners[2] || null;
 
   const defaultProducts = [
     { id: "so-1", title: "HANDMADE RAKHI", base_price: 2000, price: 2000, image: "", description: "Handcrafted with love, designed to celebrate the timeless bond between siblings." },
@@ -88,63 +103,92 @@ export default function SpecialOffers() {
           <div className="banner-grid">
             
             {/* Left Box: Spring Sale Banner */}
-            <div
-              className="spring-banner"
-              style={
-                banner1?.image_url
-                  ? {
-                      backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url("${banner1.image_url}")`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }
-                  : {}
-              }
-            >
-              {/* Corner Floral SVGs */}
-              <svg className="floral-svg-left" width="120" height="120" viewBox="0 0 100 100">
-                <path d="M10 90 Q30 60 40 40 T90 10" stroke="#8FB9A8" strokeWidth="2" fill="none" />
-                <circle cx="30" cy="70" r="10" fill="#D98A9C" opacity="0.8" />
-                <circle cx="45" cy="55" r="8" fill="#D98A9C" opacity="0.8" />
-                <circle cx="20" cy="80" r="12" fill="#D98A9C" opacity="0.8" />
-              </svg>
-              <svg className="floral-svg-right" width="120" height="120" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="25" fill="#EFD3C7" opacity="0.75" />
-                <circle cx="65" cy="35" r="15" fill="#D98A9C" opacity="0.7" />
-                <path d="M20 80 Q40 50 60 40" stroke="#8FB9A8" strokeWidth="2" fill="none" />
-              </svg>
-
-              <span className="font-sans font-bold" style={{ fontSize: "16px", letterSpacing: "3px", color: "#3F3B38", marginBottom: "16px" }}>
-                SPECIAL OFFER
-              </span>
-              <h1 className="font-serif spring-title">
-                {banner1?.title || "SPRING SALE"}
-              </h1>
-              <p className="font-sans banner-desc" style={{ fontSize: "16px", color: "#8FB9A8", maxWidth: "600px", lineHeight: "26px", margin: "0 0 24px 0" }}>
-                {banner1?.subtitle || "Spring has arrived when you can stand on three daisies. Put a discount in your shopping basket."}
-              </p>
-              <div
+            <div style={{ position: "relative", width: "100%" }}>
+              <Link
+                href={banner1?.button_url || banner1?.link_url || "/shop"}
+                className="spring-banner"
                 style={{
-                  border: "1px solid #D9A85C",
-                  borderRadius: "4px",
-                  padding: "8px 24px",
-                  fontSize: "16px",
-                  color: "#D9A85C",
-                  display: "inline-block",
-                  marginBottom: "20px",
+                  textDecoration: "none",
+                  color: "inherit",
+                  display: "block",
+                  position: "relative",
+                  ...(banner1?.image_url
+                    ? {
+                        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url("${banner1.image_url}")`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : {}),
                 }}
               >
-                23 September - 22 December
-              </div>
-              <span className="font-sans" style={{ fontSize: "14px", color: "#3F3B38", opacity: 0.7 }}>
-                @reallygreatsite
-              </span>
+                {/* Corner Floral SVGs */}
+                <svg className="floral-svg-left" width="120" height="120" viewBox="0 0 100 100">
+                  <path d="M10 90 Q30 60 40 40 T90 10" stroke="#8FB9A8" strokeWidth="2" fill="none" />
+                  <circle cx="30" cy="70" r="10" fill="#D98A9C" opacity="0.8" />
+                  <circle cx="45" cy="55" r="8" fill="#D98A9C" opacity="0.8" />
+                  <circle cx="20" cy="80" r="12" fill="#D98A9C" opacity="0.8" />
+                </svg>
+                <svg className="floral-svg-right" width="120" height="120" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="25" fill="#EFD3C7" opacity="0.75" />
+                  <circle cx="65" cy="35" r="15" fill="#D98A9C" opacity="0.7" />
+                  <path d="M20 80 Q40 50 60 40" stroke="#8FB9A8" strokeWidth="2" fill="none" />
+                </svg>
+
+                <span className="font-sans font-bold" style={{ fontSize: "16px", letterSpacing: "3px", color: "#3F3B38", marginBottom: "16px", display: "inline-block" }}>
+                  SPECIAL OFFER
+                </span>
+                <h1 className="font-serif spring-title">
+                  {banner1?.title || "MADE BY HANDS. MEANT FOR THE HEART."}
+                </h1>
+                <p className="font-sans banner-desc" style={{ fontSize: "16px", color: "#8FB9A8", maxWidth: "600px", lineHeight: "26px", margin: "0 0 24px 0" }}>
+                  {banner1?.subtitle || "Personalized handmade frames and keepsakes that tell your story."}
+                </p>
+                <div
+                  style={{
+                    border: "1px solid #D9A85C",
+                    borderRadius: "4px",
+                    padding: "8px 24px",
+                    fontSize: "16px",
+                    color: "#D9A85C",
+                    display: "inline-block",
+                    marginBottom: "20px",
+                  }}
+                >
+                  23 September - 22 December
+                </div>
+                <span className="font-sans" style={{ fontSize: "14px", color: "#3F3B38", opacity: 0.7, display: "block" }}>
+                  @reallygreatsite
+                </span>
+              </Link>
+
+              {/* Main Banner Carousel Dots */}
+              {mainBanners.length > 1 && (
+                <div style={{ position: "absolute", bottom: "16px", right: "24px", display: "flex", gap: "6px", zIndex: 10 }}>
+                  {mainBanners.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setMainBannerIdx(idx)}
+                      style={{
+                        width: idx === mainBannerIdx ? "20px" : "8px",
+                        height: "8px",
+                        borderRadius: "4px",
+                        backgroundColor: idx === mainBannerIdx ? "#D98A9C" : "#BCAEA2",
+                        border: "none",
+                        cursor: "pointer",
+                        transition: "all 0.3s ease"
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Right Column: Stacked 2 Cards */}
             <div className="cards-stack">
               
               {/* Card 1: Gold 50% OFF */}
-              <div
+              <Link
+                href={banner2?.button_url || banner2?.link_url || "/shop"}
                 style={{
                   flex: 1,
                   backgroundColor: "#D9A85C",
@@ -156,6 +200,8 @@ export default function SpecialOffers() {
                   justifyContent: "space-between",
                   boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
                   overflow: "hidden",
+                  textDecoration: "none",
+                  color: "inherit",
                   ...(banner2?.image_url
                     ? {
                         backgroundImage: `linear-gradient(rgba(217, 168, 92, 0.75), rgba(217, 168, 92, 0.75)), url("${banner2.image_url}")`,
@@ -176,23 +222,24 @@ export default function SpecialOffers() {
                   <span className="font-sans" style={{ fontSize: "14px", color: "#fff", letterSpacing: "2px" }}>OFF</span>
                 </div>
 
-                {/* Center Shoes Image / Title */}
+                {/* Center Image / Title */}
                 <div style={{ display: "flex", justifyContent: "center", margin: "10px 0" }}>
                   <div style={{ padding: "8px 16px", backgroundColor: "rgba(255,255,255,0.9)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "#D9A85C", fontSize: "14px", fontWeight: 600, textAlign: "center" }}>
-                    {banner2?.title || "Image"}
+                    {banner2?.title || "MADE BY HANDS. MEANT FOR THE HEART."}
                   </div>
                 </div>
 
                 {/* Bottom Shop Now action */}
                 <div style={{ display: "flex", justifyContent: "center" }}>
-                  <span className="font-sans" style={{ fontSize: "12px", color: "#fff", borderBottom: "1.5px solid #fff", paddingBottom: "2px", letterSpacing: "2px", cursor: "pointer", fontWeight: 600 }}>
+                  <span className="font-sans" style={{ fontSize: "12px", color: "#fff", borderBottom: "1.5px solid #fff", paddingBottom: "2px", letterSpacing: "2px", fontWeight: 600 }}>
                     SHOP NOW
                   </span>
                 </div>
-              </div>
+              </Link>
 
               {/* Card 2: Green Special Offer */}
-              <div
+              <Link
+                href={banner3?.button_url || banner3?.link_url || "/shop"}
                 style={{
                   flex: 1,
                   backgroundColor: "#8FB9A8",
@@ -203,6 +250,8 @@ export default function SpecialOffers() {
                   alignItems: "center",
                   justifyContent: "center",
                   boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
+                  textDecoration: "none",
+                  color: "inherit",
                   ...(banner3?.image_url
                     ? {
                         backgroundImage: `linear-gradient(rgba(143, 185, 168, 0.75), rgba(143, 185, 168, 0.75)), url("${banner3.image_url}")`,
@@ -232,6 +281,7 @@ export default function SpecialOffers() {
                     {banner3?.subtitle || "SAVE UP TO 40%"}
                   </p>
                 </div>
+              </Link>
             </div>
           </div>
 
@@ -527,7 +577,6 @@ export default function SpecialOffers() {
             </div>
           </div>
         </div>
-      </div>
       </main>
 
       <Footer />

@@ -11,7 +11,8 @@ import { Heart, ChevronDown } from "lucide-react";
 export default function FestivalSpecials() {
   const { addToBag } = useCart();
   const [expandedReviews, setExpandedReviews] = useState<Record<string, boolean>>({});
-  const [banner, setBanner] = useState<any>(null);
+  const [banners, setBanners] = useState<any[]>([]);
+  const [currentBannerIdx, setCurrentBannerIdx] = useState(0);
   const [products, setProducts] = useState<any[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
 
@@ -26,8 +27,8 @@ export default function FestivalSpecials() {
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          const active = data.find((b: any) => b.is_active && (!b.position || b.position === 'all' || b.position === 'festival-specials')) || data[0];
-          setBanner(active);
+          const active = data.filter((b: any) => b.is_active && (!b.position || b.position === 'all' || b.position === 'festival-specials' || b.position === 'festival_specials'));
+          setBanners(active.length > 0 ? active : data);
         }
       })
       .catch((err) => console.error("Error loading banners:", err));
@@ -51,6 +52,17 @@ export default function FestivalSpecials() {
         if (Array.isArray(data)) setRelatedProducts(data.slice(0, 8));
       });
   }, []);
+
+  // Auto rotate banners if more than 1
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentBannerIdx((prev) => (prev + 1) % banners.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [banners.length]);
+
+  const activeBanner = banners[currentBannerIdx] || null;
 
   const toggleReview = (id: string) => {
     setExpandedReviews(prev => ({ ...prev, [id]: !prev[id] }));
@@ -97,20 +109,23 @@ export default function FestivalSpecials() {
       <main style={{ flex: 1, backgroundColor: "#fff", padding: "40px 0 80px 0" }}>
         <div className="fest-container">
           
-          {/* HERO BANNER SECTION */}
+          {/* HERO BANNER CAROUSEL SECTION */}
           <div
             className="rakhi-banner"
-            style={
-              banner?.image_url
+            style={{
+              position: "relative",
+              overflow: "hidden",
+              ...(activeBanner?.image_url
                 ? {
-                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url("${banner.image_url}")`,
+                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url("${activeBanner.image_url}")`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
+                    transition: "background-image 0.5s ease-in-out",
                   }
-                : {}
-            }
+                : {}),
+            }}
           >
-            {!banner?.image_url && (
+            {!activeBanner?.image_url && (
               <svg className="banner-svg-medallion" width="300" height="300" viewBox="0 0 200 200">
                 <circle cx="100" cy="100" r="85" fill="#EFD3C7" opacity="0.1" />
                 <path d="M5 100 Q 50 80, 100 100 T 195 100" stroke="#D9A85C" strokeWidth="3" fill="none" />
@@ -133,10 +148,10 @@ export default function FestivalSpecials() {
               </svg>
             )}
 
-            <div className="banner-content">
+            <div className="banner-content" key={activeBanner?.id || currentBannerIdx} style={{ animation: "fadeIn 0.4s ease" }}>
               <span className="font-serif banner-sub">FESTIVE SPECIALS</span>
               <h1 className="font-serif banner-title">
-                {banner?.title || "Raksha Bandhan"}
+                {activeBanner?.title || "Raksha Bandhan"}
               </h1>
               <p
                 className="font-sans banner-desc"
@@ -148,9 +163,73 @@ export default function FestivalSpecials() {
                   margin: 0,
                 }}
               >
-                {banner?.subtitle || "Celebrating the Bond of Siblings"}
+                {activeBanner?.subtitle || "Celebrating the Bond of Siblings"}
               </p>
+              {(activeBanner?.button_url || activeBanner?.link_url) && (
+                <div style={{ marginTop: "20px" }}>
+                  <Link
+                    href={activeBanner.button_url || activeBanner.link_url}
+                    style={{
+                      display: "inline-block",
+                      padding: "10px 24px",
+                      backgroundColor: "#D98A9C",
+                      color: "#fff",
+                      borderRadius: "8px",
+                      textDecoration: "none",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {activeBanner.button_text || "Explore Collection"}
+                  </Link>
+                </div>
+              )}
             </div>
+
+            {/* Carousel Navigation & Indicators */}
+            {banners.length > 1 && (
+              <>
+                <button
+                  onClick={() => setCurrentBannerIdx((prev) => (prev - 1 + banners.length) % banners.length)}
+                  style={{
+                    position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)",
+                    background: "rgba(0,0,0,0.3)", border: "none", color: "#fff", borderRadius: "50%",
+                    width: "40px", height: "40px", cursor: "pointer", fontSize: "20px", zIndex: 10,
+                    display: "flex", alignItems: "center", justifyContent: "center"
+                  }}
+                >
+                  ‹
+                </button>
+                <button
+                  onClick={() => setCurrentBannerIdx((prev) => (prev + 1) % banners.length)}
+                  style={{
+                    position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)",
+                    background: "rgba(0,0,0,0.3)", border: "none", color: "#fff", borderRadius: "50%",
+                    width: "40px", height: "40px", cursor: "pointer", fontSize: "20px", zIndex: 10,
+                    display: "flex", alignItems: "center", justifyContent: "center"
+                  }}
+                >
+                  ›
+                </button>
+                <div style={{ position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "8px", zIndex: 10 }}>
+                  {banners.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentBannerIdx(idx)}
+                      style={{
+                        width: idx === currentBannerIdx ? "24px" : "10px",
+                        height: "10px",
+                        borderRadius: "5px",
+                        backgroundColor: idx === currentBannerIdx ? "#D98A9C" : "rgba(255,255,255,0.5)",
+                        border: "none",
+                        cursor: "pointer",
+                        transition: "all 0.3s ease"
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* PRODUCTS LIST */}

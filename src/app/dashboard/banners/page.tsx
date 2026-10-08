@@ -237,8 +237,8 @@ export default function BannersDashboard() {
               <tr style={{ backgroundColor: "#F9F6F0", borderBottom: "2px solid #8FB9A8" }}>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>ID</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Title</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Subtitle</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Image URL</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Location Placement</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Image</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Status</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Actions</th>
               </tr>
@@ -248,12 +248,23 @@ export default function BannersDashboard() {
                 <tr key={banner.id} style={{ borderBottom: "1px solid #EBE5DB" }}>
                   <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{banner.id}</td>
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{banner.title}</td>
-                  <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{banner.subtitle || "-"}</td>
+                  <td style={{ padding: "16px 24px" }}>
+                    <span style={{
+                      padding: "4px 10px", borderRadius: "10px", fontSize: "12px", fontWeight: 600,
+                      backgroundColor: "rgba(217, 168, 92, 0.15)", color: "#D9A85C", display: "inline-block"
+                    }}>
+                      {banner.position === "special_offers_main" ? "Special Offers - Main Big Banner" :
+                       banner.position === "special_offers_top_right" ? "Special Offers - Top Right Card" :
+                       banner.position === "special_offers_bottom_right" ? "Special Offers - Bottom Right Card" :
+                       banner.position === "home_top" ? "Home Page Top Banner" :
+                       banner.position || "All Pages"}
+                    </span>
+                  </td>
                   <td style={{ padding: "16px 24px", color: "#D98A9C" }}>
-                    {banner.image_url && banner.image_url.startsWith('data:') ? (
-                      <span style={{ fontSize: "12px", color: "#8FB9A8" }}>[Base64 Image]</span>
-                    ) : (
+                    {banner.image_url ? (
                       <img src={banner.image_url} alt="Banner" style={{ width: "60px", height: "40px", objectFit: "cover", borderRadius: "4px" }} />
+                    ) : (
+                      <span style={{ fontSize: "12px", color: "#BCAEA2" }}>No Image</span>
                     )}
                   </td>
                   <td style={{ padding: "16px 24px" }}>
@@ -330,13 +341,13 @@ export default function BannersDashboard() {
                     height: "40px", borderRadius: "8px", border: "1px solid #8FB9A8",
                     padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38",
                   }}
-                  placeholder="e.g. Special Festive Collection"
+                  placeholder="e.g. MADE BY HANDS. MEANT FOR THE HEART."
                   required
                 />
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Subtitle</label>
+                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Subtitle / Description</label>
                 <input
                   type="text"
                   value={subtitle}
@@ -345,7 +356,7 @@ export default function BannersDashboard() {
                     height: "40px", borderRadius: "8px", border: "1px solid #8FB9A8",
                     padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38",
                   }}
-                  placeholder="e.g. 20% off all Rakhis"
+                  placeholder="e.g. Personalized handmade frames and keepsakes..."
                 />
               </div>
 
@@ -392,7 +403,7 @@ export default function BannersDashboard() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Link URL</label>
+                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Target Link URL (Button click destination)</label>
                 <input
                   type="text"
                   value={linkUrl}
@@ -401,24 +412,25 @@ export default function BannersDashboard() {
                     height: "40px", borderRadius: "8px", border: "1px solid #8FB9A8",
                     padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38",
                   }}
-                  placeholder="e.g. /shop"
+                  placeholder="e.g. /shop or /special-offers"
                 />
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Page Location</label>
+                <label style={{ fontSize: "14px", color: "#6E6E6E", fontWeight: 600 }}>Exact Location Placement</label>
                 <select
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   style={{
-                    height: "40px", borderRadius: "8px", border: "1px solid #8FB9A8",
-                    padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38", backgroundColor: "#fff"
+                    height: "42px", borderRadius: "8px", border: "2px solid #D9A85C",
+                    padding: "0 12px", fontSize: "15px", outline: "none", color: "#3F3B38", backgroundColor: "#FFFBF5", fontWeight: 500
                   }}
                 >
-                  <option value="all">All Pages</option>
-                  <option value="home">Home Page</option>
-                  <option value="festival-specials">Festive Specials</option>
-                  <option value="special-offers">Special Offers</option>
+                  <option value="special_offers_main">🌟 Special Offers - Main Big Banner (Left)</option>
+                  <option value="special_offers_top_right">🏆 Special Offers - Top Right Card (Gold 50% OFF)</option>
+                  <option value="special_offers_bottom_right">✨ Special Offers - Bottom Right Card (Green Special Offer)</option>
+                  <option value="home_top">🏠 Home Page Top Banner</option>
+                  <option value="all">🌐 All Pages / General</option>
                 </select>
               </div>
 
