@@ -637,7 +637,7 @@ export default function Home() {
                 const prodPrice = currentProduct.discount_price ? parseFloat(currentProduct.discount_price) : parseFloat(currentProduct.base_price);
                 return (
                   <div className="festive-grid" style={{ display: "grid", gridTemplateColumns: "452px 1.2fr 1fr", gap: "40px", alignItems: "center" }}>
-                    {/* Left: Festive product image */}
+                    {/* Left: Festive product image with zoom & fade effect */}
                     <a href={`/shop/${currentProduct.slug || currentProduct.id}`} style={{ textDecoration: "none", display: "block" }}>
                       <div
                         style={{
@@ -645,21 +645,37 @@ export default function Home() {
                           maxWidth: "452px",
                           aspectRatio: "452/603",
                           backgroundColor: "#F5EDE8",
-                          borderRadius: "15px",
-                          boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
+                          borderRadius: "18px",
+                          boxShadow: "0px 12px 30px rgba(63, 59, 56, 0.12)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           color: "#BCAEA2",
                           fontSize: "14px",
                           overflow: "hidden",
+                          position: "relative",
+                          transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "scale(1.02) translateY(-4px)";
+                          e.currentTarget.style.boxShadow = "0px 20px 40px rgba(217, 138, 156, 0.25)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "scale(1) translateY(0)";
+                          e.currentTarget.style.boxShadow = "0px 12px 30px rgba(63, 59, 56, 0.12)";
                         }}
                       >
                         {currentProduct.image ? (
                           <img
+                            key={currentProduct.id}
                             src={currentProduct.image}
                             alt={currentProduct.title}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              animation: "festiveImgFade 0.5s ease-in-out forwards",
+                            }}
                           />
                         ) : (
                           "Festive Product Image"
@@ -668,7 +684,7 @@ export default function Home() {
                     </a>
 
                     {/* Middle: Tab list of featured festive products */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "24px", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "20px", alignItems: "center", justifyContent: "center" }}>
                       {festiveSpecials.map((prod, idx) => {
                         const isActive = activeFestiveIndex === idx;
                         return (
@@ -679,46 +695,61 @@ export default function Home() {
                             style={{
                               background: "none",
                               border: "none",
-                              fontSize: "32px",
+                              fontSize: isActive ? "34px" : "26px",
                               lineHeight: "44px",
-                              fontWeight: 400,
+                              fontWeight: isActive ? 500 : 400,
                               color: isActive ? "#3F3B38" : "#BCAEA2",
                               cursor: "pointer",
                               textAlign: "center",
-                              padding: "4px 0",
-                              transition: "all 0.3s ease",
+                              padding: "6px 16px",
+                              borderRadius: "24px",
+                              backgroundColor: isActive ? "rgba(217, 138, 156, 0.1)" : "transparent",
+                              transform: isActive ? "scale(1.05)" : "scale(1)",
+                              transition: "all 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "10px",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isActive) {
+                                e.currentTarget.style.color = "#D98A9C";
+                                e.currentTarget.style.transform = "scale(1.02)";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isActive) {
+                                e.currentTarget.style.color = "#BCAEA2";
+                                e.currentTarget.style.transform = "scale(1)";
+                              }
                             }}
                           >
+                            {isActive && <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#D98A9C", display: "inline-block" }} />}
                             {prod.title}
                           </button>
                         );
                       })}
                     </div>
 
-                    {/* Right: Active tab details */}
+                    {/* Right: Active tab details with smooth fade */}
                     <div
+                      key={`details-${currentProduct.id}`}
                       style={{
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
                         justifyContent: "center",
                         textAlign: "center",
-                        gap: "14px",
-                        maxWidth: "320px",
+                        gap: "16px",
+                        maxWidth: "340px",
                         margin: "0 auto",
-                        animation: "fadeIn 0.4s ease",
+                        animation: "festiveTextFade 0.4s ease-in-out forwards",
                       }}
                     >
-                      <a href={`/shop/${currentProduct.slug || currentProduct.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                        <h3 className="font-serif" style={{ fontSize: "24px", margin: "0 0 8px 0", color: "#3F3B38" }}>
-                          {currentProduct.title}
-                        </h3>
-                      </a>
                       <p
                         className="font-sans"
                         style={{
                           fontSize: "16px",
-                          lineHeight: "24px",
+                          lineHeight: "26px",
                           fontWeight: 400,
                           color: "#6E6E6E",
                           margin: 0,
@@ -733,10 +764,10 @@ export default function Home() {
                       <span
                         className="font-sans"
                         style={{
-                          fontSize: "22px",
-                          lineHeight: "32px",
-                          fontWeight: 400,
-                          color: "#3F3B38",
+                          fontSize: "24px",
+                          lineHeight: "34px",
+                          fontWeight: 500,
+                          color: "#D98A9C",
                         }}
                       >
                         ₹{prodPrice}
@@ -754,15 +785,24 @@ export default function Home() {
                           }
                           className="font-sans"
                           style={{
-                            background: "none",
+                            background: "#D98A9C",
                             border: "none",
-                            borderBottom: "1px solid #000",
-                            fontSize: "18px",
-                            lineHeight: "26px",
-                            fontWeight: 400,
-                            color: "#3F3B38",
+                            borderRadius: "10px",
+                            fontSize: "16px",
+                            fontWeight: 500,
+                            color: "#fff",
                             cursor: "pointer",
-                            padding: "0 0 2px 0",
+                            padding: "10px 24px",
+                            boxShadow: "0 4px 12px rgba(217, 138, 156, 0.3)",
+                            transition: "all 0.2s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = "translateY(-2px)";
+                            e.currentTarget.style.boxShadow = "0 6px 16px rgba(217, 138, 156, 0.45)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.boxShadow = "0 4px 12px rgba(217, 138, 156, 0.3)";
                           }}
                         >
                           Add to Bag
@@ -1443,6 +1483,28 @@ export default function Home() {
           .festive-grid > div {
             max-width: 100% !important;
             justify-self: center !important;
+          }
+        }
+
+        @keyframes festiveImgFade {
+          from {
+            opacity: 0.3;
+            transform: scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes festiveTextFade {
+          from {
+            opacity: 0.2;
+            transform: translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
 
