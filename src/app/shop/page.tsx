@@ -166,8 +166,8 @@ export default function Shop() {
                 <h3 className="font-serif filter-box-title">
                   Categories
                 </h3>
-                <div style={{ overflowY: "auto", flex: 1, paddingRight: "4px" }}>
-                  <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div style={{ flex: 1 }}>
+                  <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "8px", padding: 0, margin: 0 }}>
                     {categories.map((cat) => (
                       <li key={cat}>
                         <button
@@ -524,11 +524,12 @@ export default function Shop() {
         .filter-box {
           box-sizing: border-box;
           width: 100%;
-          height: 300px;
+          min-height: 220px;
+          height: auto;
           border: 2px solid #D98A9C;
           border-radius: 15px;
           padding: 24px 22px;
-          backgroundColor: #fff;
+          background-color: #fff;
           display: flex;
           flex-direction: column;
         }
@@ -562,7 +563,8 @@ export default function Shop() {
             gap: 20px;
           }
           .filter-box {
-            height: 260px;
+            min-height: 200px;
+            height: auto;
           }
         }
         @media (max-width: 600px) {
@@ -574,7 +576,8 @@ export default function Shop() {
             gap: 20px;
           }
           .filter-box {
-            height: 240px;
+            min-height: 180px;
+            height: auto;
           }
           .filter-box-title {
             font-size: 26px;
