@@ -17,7 +17,17 @@ export default function Home() {
   const [festiveSpecials, setFestiveSpecials] = useState<any[]>([]);
   const [activeWeddingIndex, setActiveWeddingIndex] = useState(0);
   const [activeFestiveIndex, setActiveFestiveIndex] = useState(0);
+  const [discoveryIndex, setDiscoveryIndex] = useState(0);
   const [reviews, setReviews] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (newDiscoveryProducts.length > 1) {
+      const interval = setInterval(() => {
+        setDiscoveryIndex((prev) => (prev + 1) % newDiscoveryProducts.length);
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [newDiscoveryProducts]);
 
   const bestsellersRef = useRef<HTMLDivElement>(null);
   const reviewsRef = useRef<HTMLDivElement>(null);
@@ -110,7 +120,7 @@ export default function Home() {
             position: "relative",
             width: "100%",
             minHeight: "680px",
-            paddingBottom: "160px",
+            paddingBottom: "10px",
             overflow: "visible",
             background: "#fff",
           }}
@@ -221,7 +231,7 @@ export default function Home() {
         <section
           id="bestsellers"
           style={{
-            padding: "80px 0 60px 0",
+            padding: "40px 0 60px 0",
             background: "#fff",
           }}
         >
@@ -313,11 +323,11 @@ export default function Home() {
                 {(bestsellerProducts.length > 0
                   ? bestsellerProducts
                   : [
-                      { id: "fav-1", title: "Wedding Frame", base_price: 2000 },
-                      { id: "fav-2", title: "Wedding Frame", base_price: 2000 },
-                      { id: "fav-3", title: "Wedding Frame", base_price: 2000 },
-                      { id: "fav-4", title: "Wedding Frame", base_price: 2000 },
-                    ]
+                    { id: "fav-1", title: "Wedding Frame", base_price: 2000 },
+                    { id: "fav-2", title: "Wedding Frame", base_price: 2000 },
+                    { id: "fav-3", title: "Wedding Frame", base_price: 2000 },
+                    { id: "fav-4", title: "Wedding Frame", base_price: 2000 },
+                  ]
                 ).map((prod) => (
                   <div
                     key={prod.id}
@@ -473,129 +483,158 @@ export default function Home() {
             borderRadius: "50%",
           }} />
 
-          <div style={{ maxWidth: "1920px", margin: "0 auto", padding: "0 120px", position: "relative", zIndex: 1 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.05fr 0.95fr", gap: "80px", alignItems: "start", maxWidth: "1350px", margin: "0 auto" }}>
-              {/* Left: Large product frame image */}
-              <div
-                style={{
-                  width: "100%",
-                  maxWidth: "676px",
-                  aspectRatio: "676/844",
-                  backgroundColor: "#F5EDE8",
-                  borderRadius: "15px",
-                  boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#BCAEA2",
-                  fontSize: "14px",
-                  overflow: "hidden",
-                }}
-              >
-                {newDiscoveryProducts.length > 0 && newDiscoveryProducts[0].image ? (
-                  <img src={newDiscoveryProducts[0].image} alt={newDiscoveryProducts[0].title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  "Large Product Image"
-                )}
-              </div>
+          {(() => {
+            const rightProduct = newDiscoveryProducts.length > 0 ? newDiscoveryProducts[discoveryIndex] : null;
+            const leftProduct = newDiscoveryProducts.length > 1
+              ? newDiscoveryProducts[(discoveryIndex - 1 + newDiscoveryProducts.length) % newDiscoveryProducts.length]
+              : rightProduct;
 
-              {/* Right: Discover heading + smaller image + text */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "24px", paddingTop: "40px" }}>
-                <h2
-                  className="font-serif"
-                  style={{
-                    fontSize: "48px",
-                    lineHeight: "64px",
-                    fontWeight: 400,
-                    color: "#3F3B38",
-                    textAlign: "center",
-                    margin: 0,
-                  }}
-                >
-                  DISCOVER<br />NEW
-                </h2>
+            return (
+              <div style={{ maxWidth: "1920px", margin: "0 auto", padding: "0 120px", position: "relative", zIndex: 1 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1.05fr 0.95fr", gap: "80px", alignItems: "start", maxWidth: "1350px", margin: "0 auto" }}>
+                  {/* Left: Large product frame image */}
+                  <a
+                    href={leftProduct ? `/shop/${leftProduct.slug || leftProduct.id}` : "/shop"}
+                    style={{ textDecoration: "none" }}
+                  >
+                    <div
+                      style={{
+                        width: "100%",
+                        maxWidth: "676px",
+                        aspectRatio: "676/844",
+                        backgroundColor: "#F5EDE8",
+                        borderRadius: "15px",
+                        boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#BCAEA2",
+                        fontSize: "14px",
+                        overflow: "hidden",
+                        transition: "all 0.5s ease-in-out"
+                      }}
+                    >
+                      {leftProduct?.image ? (
+                        <img src={leftProduct.image} alt={leftProduct.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "opacity 0.5s ease-in-out" }} key={leftProduct.id} />
+                      ) : (
+                        "Large Product Image"
+                      )}
+                    </div>
+                  </a>
 
-                {/* Smaller product image */}
-                <div
-                  style={{
-                    width: "354px",
-                    height: "442px",
-                    backgroundColor: "#F5EDE8",
-                    borderRadius: "15px",
-                    boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#BCAEA2",
-                    fontSize: "14px",
-                    margin: "0 auto",
-                    overflow: "hidden",
-                  }}
-                >
-                  {newDiscoveryProducts.length > 0 && newDiscoveryProducts[0].image ? (
-                    <img src={newDiscoveryProducts[0].image} alt={newDiscoveryProducts[0].title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    "Product Image"
-                  )}
+                  {/* Right: Discover heading + smaller image + text */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "24px", paddingTop: "40px" }}>
+                    <h2
+                      className="font-serif"
+                      style={{
+                        fontSize: "48px",
+                        lineHeight: "64px",
+                        fontWeight: 400,
+                        color: "#3F3B38",
+                        textAlign: "center",
+                        margin: 0,
+                      }}
+                    >
+                      DISCOVER<br />NEW
+                    </h2>
+
+                    {/* Smaller product image */}
+                    <a
+                      href={rightProduct ? `/shop/${rightProduct.slug || rightProduct.id}` : "/shop"}
+                      style={{ textDecoration: "none" }}
+                    >
+                      <div
+                        style={{
+                          width: "354px",
+                          height: "442px",
+                          backgroundColor: "#F5EDE8",
+                          borderRadius: "15px",
+                          boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#BCAEA2",
+                          fontSize: "14px",
+                          margin: "0 auto",
+                          overflow: "hidden",
+                          transition: "all 0.5s ease-in-out"
+                        }}
+                      >
+                        {rightProduct?.image ? (
+                          <img src={rightProduct.image} alt={rightProduct.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "opacity 0.5s ease-in-out" }} key={rightProduct.id} />
+                        ) : (
+                          "Product Image"
+                        )}
+                      </div>
+                    </a>
+
+                    {/* Product details */}
+                    <div style={{ textAlign: "center" }}>
+                      <a
+                        href={rightProduct ? `/shop/${rightProduct.slug || rightProduct.id}` : "/shop"}
+                        style={{ textDecoration: "none" }}
+                      >
+                        <h3
+                          className="font-serif"
+                          style={{
+                            fontSize: "24px",
+                            lineHeight: "32px",
+                            fontWeight: 400,
+                            color: "#3F3B38",
+                            margin: "0 0 12px 0",
+                            transition: "all 0.5s ease-in-out"
+                          }}
+                          key={rightProduct?.id}
+                        >
+                          {rightProduct ? rightProduct.title : "Wedding Frame"}
+                        </h3>
+                      </a>
+                      <p
+                        className="font-sans"
+                        style={{
+                          fontSize: "22px",
+                          lineHeight: "32px",
+                          fontWeight: 400,
+                          color: "#3F3B38",
+                          margin: "0 0 12px 0",
+                          maxWidth: "422px",
+                          marginLeft: "auto",
+                          marginRight: "auto",
+                          transition: "all 0.5s ease-in-out"
+                        }}
+                        key={`desc-${rightProduct?.id}`}
+                      >
+                        {rightProduct?.description
+                          ? rightProduct.description
+                          : "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime"}
+                      </p>
+                      <button
+                        className="font-sans"
+                        onClick={() => {
+                          if (rightProduct) {
+                            addToBag({ id: rightProduct.id, title: rightProduct.title, price: rightProduct.base_price, image: rightProduct.image || "" });
+                          }
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          borderBottom: "1px solid #000",
+                          fontSize: "22px",
+                          lineHeight: "32px",
+                          fontWeight: 400,
+                          color: "#3F3B38",
+                          cursor: "pointer",
+                          padding: "0 0 2px 0",
+                        }}
+                      >
+                        Add to Bag
+                      </button>
+                    </div>
+                  </div>
                 </div>
-
-                {/* Product details */}
-                <div style={{ textAlign: "center" }}>
-                  <h3
-                    className="font-serif"
-                    style={{
-                      fontSize: "24px",
-                      lineHeight: "32px",
-                      fontWeight: 400,
-                      color: "#3F3B38",
-                      margin: "0 0 12px 0",
-                    }}
-                  >
-                    {newDiscoveryProducts.length > 0 ? newDiscoveryProducts[0].title : "Wedding Frame"}
-                  </h3>
-                  <p
-                    className="font-sans"
-                    style={{
-                      fontSize: "22px",
-                      lineHeight: "32px",
-                      fontWeight: 400,
-                      color: "#3F3B38",
-                      margin: "0 0 12px 0",
-                      maxWidth: "422px",
-                      marginLeft: "auto",
-                      marginRight: "auto",
-                    }}
-                  >
-                    {newDiscoveryProducts.length > 0 && newDiscoveryProducts[0].description
-                      ? newDiscoveryProducts[0].description
-                      : "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime"}
-                  </p>
-                  <button
-                    className="font-sans"
-                    onClick={() => {
-                      if (newDiscoveryProducts.length > 0) {
-                        const p = newDiscoveryProducts[0];
-                        addToBag({ id: p.id, title: p.title, price: p.base_price, image: p.image || "" });
-                      }
-                    }}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      borderBottom: "1px solid #000",
-                      fontSize: "22px",
-                      lineHeight: "32px",
-                      fontWeight: 400,
-                      color: "#3F3B38",
-                      cursor: "pointer",
-                      padding: "0 0 2px 0",
-                    }}
-                  >
-                    Add to Bag
-                  </button>
-                </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Rotated decorative image (background) */}
           <div style={{
@@ -921,7 +960,7 @@ export default function Home() {
               100% { transform: skewX(3deg) translateY(20px) scaleY(1.15); }
             }
           `}</style>
-          
+
           {/* Back Dupatta Layer */}
           <div style={{
             position: "absolute",
@@ -975,7 +1014,7 @@ export default function Home() {
 
               {/* Main Red Dupatta Body */}
               <path fill="url(#dupatta1Base)" d="M 0,400 C 480,50 960,750 1440,400 L 1440,700 C 960,1050 480,300 0,700 Z" />
-              
+
               {/* Dupatta Fabric Sheen Folds */}
               <path fill="url(#dupatta1Highlights)" d="M 0,410 C 480,60 960,740 1440,410 L 1440,680 C 960,1030 480,320 0,680 Z" />
               <path fill="url(#dupatta1Shadow)" d="M 0,400 C 480,50 960,750 1440,400 L 1440,700 C 960,1050 480,300 0,700 Z" />
@@ -1048,7 +1087,7 @@ export default function Home() {
 
               {/* Main Red Dupatta Body */}
               <path fill="url(#dupatta2Base)" d="M 0,600 C 480,950 960,250 1440,600 L 1440,850 C 960,500 480,1200 0,850 Z" />
-              
+
               {/* Specular & Shadow Sheen Folds */}
               <path fill="url(#dupatta2Specular)" d="M 0,610 C 480,960 960,260 1440,610 L 1440,835 C 960,485 480,1185 0,835 Z" />
               <path fill="url(#dupatta2Shadow)" d="M 0,600 C 480,950 960,250 1440,600 L 1440,850 C 960,500 480,1200 0,850 Z" />
@@ -1071,7 +1110,7 @@ export default function Home() {
 
           <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "0 120px", position: "relative", zIndex: 1 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", alignItems: "center", position: "relative" }}>
-              
+
               {/* Slider Left Arrow */}
               <button
                 style={{
@@ -1108,9 +1147,9 @@ export default function Home() {
                 <img
                   src="/images/Minimalist_Spring_Sale_Facebook_Post_6.png"
                   alt="Wedding Groom"
-                  style={{ 
-                    height: "100%", 
-                    width: "auto", 
+                  style={{
+                    height: "100%",
+                    width: "auto",
                     objectFit: "contain",
                     position: "absolute",
                     left: "-15%",
@@ -1122,9 +1161,9 @@ export default function Home() {
                 <img
                   src="/images/Minimalist_Spring_Sale_Facebook_Post_5.png"
                   alt="Wedding Bride"
-                  style={{ 
-                    height: "85%", 
-                    width: "auto", 
+                  style={{
+                    height: "85%",
+                    width: "auto",
                     objectFit: "contain",
                     position: "absolute",
                     left: "10%",
@@ -1358,10 +1397,10 @@ export default function Home() {
                 {(reviews.length > 0
                   ? reviews.slice(0, 18)
                   : [
-                      { id: 1, reviewer_name: "Mohit Sharma", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
-                      { id: 2, reviewer_name: "Ananya Roy", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
-                      { id: 3, reviewer_name: "Priya Patel", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
-                    ]
+                    { id: 1, reviewer_name: "Mohit Sharma", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
+                    { id: 2, reviewer_name: "Ananya Roy", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
+                    { id: 3, reviewer_name: "Priya Patel", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
+                  ]
                 ).map((rev, index) => {
                   const borderColors = ["#D98A9C", "#8FB9A8", "#D9A85C"];
                   const borderColor = borderColors[index % borderColors.length];
