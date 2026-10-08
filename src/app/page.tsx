@@ -14,13 +14,24 @@ export default function Home() {
   const [bestsellerProducts, setBestsellerProducts] = useState<any[]>([]);
   const [newDiscoveryProducts, setNewDiscoveryProducts] = useState<any[]>([]);
   const [weddingSpecials, setWeddingSpecials] = useState<any[]>([]);
+  const [festiveSpecials, setFestiveSpecials] = useState<any[]>([]);
   const [activeWeddingIndex, setActiveWeddingIndex] = useState(0);
+  const [activeFestiveIndex, setActiveFestiveIndex] = useState(0);
   const [reviews, setReviews] = useState<any[]>([]);
 
   const bestsellersRef = useRef<HTMLDivElement>(null);
   const reviewsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/festive-specials")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setFestiveSpecials(data);
+        }
+      })
+      .catch((err) => console.error("Error fetching festive specials:", err));
+
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/bestsellers")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
@@ -620,121 +631,215 @@ export default function Home() {
               FESTIVE TREASURES
             </h2>
 
-            <div className="festive-grid" style={{ display: "grid", gridTemplateColumns: "452px 1.2fr 1fr", gap: "40px", alignItems: "center" }}>
-              {/* Left: Festive product image */}
-              <div
-                style={{
-                  width: "100%",
-                  maxWidth: "452px",
-                  aspectRatio: "452/603",
-                  backgroundColor: "#F5EDE8",
-                  borderRadius: "15px",
-                  boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#BCAEA2",
-                  fontSize: "14px",
-                  overflow: "hidden",
-                }}
-              >
-                Festive Product Image
-              </div>
+            {festiveSpecials.length > 0 ? (
+              (() => {
+                const currentProduct = festiveSpecials[activeFestiveIndex % festiveSpecials.length];
+                const prodPrice = currentProduct.discount_price ? parseFloat(currentProduct.discount_price) : parseFloat(currentProduct.base_price);
+                return (
+                  <div className="festive-grid" style={{ display: "grid", gridTemplateColumns: "452px 1.2fr 1fr", gap: "40px", alignItems: "center" }}>
+                    {/* Left: Festive product image */}
+                    <a href={`/shop/${currentProduct.slug || currentProduct.id}`} style={{ textDecoration: "none", display: "block" }}>
+                      <div
+                        style={{
+                          width: "100%",
+                          maxWidth: "452px",
+                          aspectRatio: "452/603",
+                          backgroundColor: "#F5EDE8",
+                          borderRadius: "15px",
+                          boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#BCAEA2",
+                          fontSize: "14px",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {currentProduct.image ? (
+                          <img
+                            src={currentProduct.image}
+                            alt={currentProduct.title}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          "Festive Product Image"
+                        )}
+                      </div>
+                    </a>
 
-              {/* Middle: Tab list */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "32px", alignItems: "center", justifyContent: "center" }}>
-                {Object.keys(festiveDetails).map((tab) => {
-                  const isActive = activeFestiveTab === tab;
-                  return (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveFestiveTab(tab)}
-                      className="font-serif"
+                    {/* Middle: Tab list of featured festive products */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "24px", alignItems: "center", justifyContent: "center" }}>
+                      {festiveSpecials.map((prod, idx) => {
+                        const isActive = activeFestiveIndex === idx;
+                        return (
+                          <button
+                            key={prod.id}
+                            onClick={() => setActiveFestiveIndex(idx)}
+                            className="font-serif"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              fontSize: "32px",
+                              lineHeight: "44px",
+                              fontWeight: 400,
+                              color: isActive ? "#3F3B38" : "#BCAEA2",
+                              cursor: "pointer",
+                              textAlign: "center",
+                              padding: "4px 0",
+                              transition: "all 0.3s ease",
+                            }}
+                          >
+                            {prod.title}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Right: Active tab details */}
+                    <div
                       style={{
-                        background: "none",
-                        border: "none",
-                        fontSize: "36px",
-                        lineHeight: "48px",
-                        fontWeight: 400,
-                        color: isActive ? "#3F3B38" : "#BCAEA2",
-                        cursor: "pointer",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
                         textAlign: "center",
-                        padding: "8px 0",
-                        transition: "all 0.3s ease",
+                        gap: "14px",
+                        maxWidth: "320px",
+                        margin: "0 auto",
+                        animation: "fadeIn 0.4s ease",
                       }}
                     >
-                      {tab}
-                    </button>
-                  );
-                })}
-              </div>
+                      <a href={`/shop/${currentProduct.slug || currentProduct.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                        <h3 className="font-serif" style={{ fontSize: "24px", margin: "0 0 8px 0", color: "#3F3B38" }}>
+                          {currentProduct.title}
+                        </h3>
+                      </a>
+                      <p
+                        className="font-sans"
+                        style={{
+                          fontSize: "16px",
+                          lineHeight: "24px",
+                          fontWeight: 400,
+                          color: "#6E6E6E",
+                          margin: 0,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 4,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden"
+                        }}
+                      >
+                        {currentProduct.description || "Beautifully handcrafted festive special collection item, created with premium materials."}
+                      </p>
+                      <span
+                        className="font-sans"
+                        style={{
+                          fontSize: "22px",
+                          lineHeight: "32px",
+                          fontWeight: 400,
+                          color: "#3F3B38",
+                        }}
+                      >
+                        ₹{prodPrice}
+                      </span>
+                      <div>
+                        <button
+                          onClick={() =>
+                            addToBag({
+                              id: String(currentProduct.id),
+                              title: currentProduct.title,
+                              price: prodPrice,
+                              image: currentProduct.image || "",
+                              category: currentProduct.category?.name || "Festive Specials",
+                            })
+                          }
+                          className="font-sans"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            borderBottom: "1px solid #000",
+                            fontSize: "18px",
+                            lineHeight: "26px",
+                            fontWeight: 400,
+                            color: "#3F3B38",
+                            cursor: "pointer",
+                            padding: "0 0 2px 0",
+                          }}
+                        >
+                          Add to Bag
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="festive-grid" style={{ display: "grid", gridTemplateColumns: "452px 1.2fr 1fr", gap: "40px", alignItems: "center" }}>
+                {/* Fallback layout */}
+                <div
+                  style={{
+                    width: "100%", maxWidth: "452px", aspectRatio: "452/603",
+                    backgroundColor: "#F5EDE8", borderRadius: "15px", boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
+                    display: "flex", alignItems: "center", justifyContent: "center", color: "#BCAEA2", fontSize: "14px", overflow: "hidden",
+                  }}
+                >
+                  Festive Product Image
+                </div>
 
-              {/* Right: Active tab details */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center",
-                  gap: "12px",
-                  maxWidth: "320px",
-                  margin: "0 auto",
-                  animation: "fadeIn 0.4s ease",
-                }}
-              >
-                <p
-                  className="font-sans"
+                <div style={{ display: "flex", flexDirection: "column", gap: "32px", alignItems: "center", justifyContent: "center" }}>
+                  {Object.keys(festiveDetails).map((tab) => {
+                    const isActive = activeFestiveTab === tab;
+                    return (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveFestiveTab(tab)}
+                        className="font-serif"
+                        style={{
+                          background: "none", border: "none", fontSize: "36px", lineHeight: "48px",
+                          fontWeight: 400, color: isActive ? "#3F3B38" : "#BCAEA2", cursor: "pointer",
+                          textAlign: "center", padding: "8px 0", transition: "all 0.3s ease",
+                        }}
+                      >
+                        {tab}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div
                   style={{
-                    fontSize: "18px",
-                    lineHeight: "26px",
-                    fontWeight: 400,
-                    color: "#6E6E6E",
-                    margin: 0,
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                    textAlign: "center", gap: "12px", maxWidth: "320px", margin: "0 auto",
                   }}
                 >
-                  {festiveDetails[activeFestiveTab].desc}
-                </p>
-                <span
-                  className="font-sans"
-                  style={{
-                    fontSize: "22px",
-                    lineHeight: "32px",
-                    fontWeight: 400,
-                    color: "#3F3B38",
-                  }}
-                >
-                  ₹{festiveDetails[activeFestiveTab].price}
-                </span>
-                <div>
-                  <button
-                    onClick={() =>
-                      addToBag({
-                        id: `festive-${activeFestiveTab.toLowerCase().replace(/\s+/g, "-")}`,
-                        title: festiveDetails[activeFestiveTab].title,
-                        price: festiveDetails[activeFestiveTab].price,
-                        image: "",
-                        category: "Festive Specials",
-                      })
-                    }
-                    className="font-sans"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      borderBottom: "1px solid #000",
-                      fontSize: "18px",
-                      lineHeight: "26px",
-                      fontWeight: 400,
-                      color: "#3F3B38",
-                      cursor: "pointer",
-                      padding: "0 0 2px 0",
-                    }}
-                  >
-                    Add to Bag
-                  </button>
+                  <p className="font-sans" style={{ fontSize: "18px", lineHeight: "26px", fontWeight: 400, color: "#6E6E6E", margin: 0 }}>
+                    {festiveDetails[activeFestiveTab].desc}
+                  </p>
+                  <span className="font-sans" style={{ fontSize: "22px", lineHeight: "32px", fontWeight: 400, color: "#3F3B38" }}>
+                    ₹{festiveDetails[activeFestiveTab].price}
+                  </span>
+                  <div>
+                    <button
+                      onClick={() =>
+                        addToBag({
+                          id: `festive-${activeFestiveTab.toLowerCase().replace(/\s+/g, "-")}`,
+                          title: festiveDetails[activeFestiveTab].title,
+                          price: festiveDetails[activeFestiveTab].price,
+                          image: "",
+                          category: "Festive Specials",
+                        })
+                      }
+                      className="font-sans"
+                      style={{
+                        background: "none", border: "none", borderBottom: "1px solid #000",
+                        fontSize: "18px", lineHeight: "26px", fontWeight: 400, color: "#3F3B38", cursor: "pointer", padding: "0 0 2px 0",
+                      }}
+                    >
+                      Add to Bag
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </section>
 

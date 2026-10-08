@@ -67,8 +67,8 @@ export default function FestiveSpecialsDashboard() {
     return result;
   }, [products, searchQuery, filterCategory, filterStatus]);
 
-  const toggleFestiveSpecial = (prod: any) => {
-    const updatedStatus = !prod.is_festive_special;
+  const toggleStatus = (prod: any, field: "is_festive_special" | "is_active") => {
+    const updatedValue = !prod[field];
     const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
     fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/${prod.id}`, {
@@ -80,7 +80,7 @@ export default function FestiveSpecialsDashboard() {
       },
       body: JSON.stringify({
         ...prod,
-        is_festive_special: updatedStatus,
+        [field]: updatedValue,
       }),
     })
       .then((res) => {
@@ -96,12 +96,12 @@ export default function FestiveSpecialsDashboard() {
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", margin: 0, fontWeight: 400 }}>
-          FESTIVE SPECIALS
+          FESTIVE SPECIALS & TREASURES
         </h1>
       </div>
 
       <p className="font-sans" style={{ color: "#6E6E6E", fontSize: "16px", margin: 0 }}>
-        Quickly toggle which products appear in the "Festive Specials" collection on the Website. Featured products appear at the top.
+        Quickly feature/unfeature products for the <b>FESTIVE TREASURES</b> section on the homepage and toggle product Active / Inactive status.
       </p>
 
       {/* Filter Controls */}
@@ -133,8 +133,8 @@ export default function FestiveSpecialsDashboard() {
           onChange={(e) => setFilterStatus(e.target.value)}
           style={{ height: "42px", borderRadius: "10px", border: "1px solid #8FB9A8", padding: "0 14px", fontSize: "15px", outline: "none", backgroundColor: "#fff", color: "#3F3B38" }}
         >
-          <option value="all">All Status</option>
-          <option value="featured">Featured Only</option>
+          <option value="all">All Festive Status</option>
+          <option value="featured">Featured in Festive Treasures</option>
           <option value="unfeatured">Unfeatured Only</option>
         </select>
       </div>
@@ -154,8 +154,9 @@ export default function FestiveSpecialsDashboard() {
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Image</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Product Title</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Category</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Status</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Toggle Feature</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Active Status</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Festive Treasures</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -171,6 +172,22 @@ export default function FestiveSpecialsDashboard() {
                   </td>
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{prod.title}</td>
                   <td style={{ padding: "16px 24px", color: "#D98A9C" }}>{prod.category?.name || "Uncategorized"}</td>
+                  {/* Active Toggle Column */}
+                  <td style={{ padding: "16px 24px" }}>
+                    <button
+                      onClick={() => toggleStatus(prod, "is_active")}
+                      style={{
+                        padding: "4px 10px", borderRadius: "12px", fontSize: "13px", fontWeight: 500,
+                        border: "none", cursor: "pointer",
+                        backgroundColor: prod.is_active !== false ? "rgba(143, 185, 168, 0.2)" : "rgba(224, 90, 71, 0.15)",
+                        color: prod.is_active !== false ? "#4F8571" : "#E05A47",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      {prod.is_active !== false ? "Active" : "Inactive"}
+                    </button>
+                  </td>
+                  {/* Festive Status Column */}
                   <td style={{ padding: "16px 24px" }}>
                     <span
                       style={{
@@ -182,9 +199,10 @@ export default function FestiveSpecialsDashboard() {
                       {prod.is_festive_special ? "Featured" : "Not Featured"}
                     </span>
                   </td>
+                  {/* Actions Column */}
                   <td style={{ padding: "16px 24px", textAlign: "right" }}>
                     <button
-                      onClick={() => toggleFestiveSpecial(prod)}
+                      onClick={() => toggleStatus(prod, "is_festive_special")}
                       style={{
                         backgroundColor: prod.is_festive_special ? "#D98A9C" : "transparent",
                         color: prod.is_festive_special ? "#fff" : "#D98A9C",
