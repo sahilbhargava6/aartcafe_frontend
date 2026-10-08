@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, X, Star } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Heart } from "lucide-react";
 
 export default function ReviewsDashboard() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -173,9 +173,9 @@ export default function ReviewsDashboard() {
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{rev.product?.title || "General"}</td>
                   <td style={{ padding: "16px 24px", color: "#D98A9C", fontWeight: 500 }}>{rev.reviewer_name}</td>
                   <td style={{ padding: "16px 24px" }}>
-                    <div style={{ display: "flex", gap: "2px", color: "#D9A85C" }}>
+                    <div style={{ display: "flex", gap: "2px", color: "#D98A9C" }}>
                       {Array.from({ length: rev.rating }).map((_, i) => (
-                        <Star key={i} size={14} fill="#D9A85C" />
+                        <Heart key={i} size={14} fill="#D98A9C" color="#D98A9C" />
                       ))}
                     </div>
                   </td>
@@ -266,7 +266,7 @@ export default function ReviewsDashboard() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Rating (1 - 5 Stars)</label>
+                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Rating (1 - 5 Hearts)</label>
                 <select
                   value={rating}
                   onChange={(e) => setRating(parseInt(e.target.value))}
@@ -275,11 +275,11 @@ export default function ReviewsDashboard() {
                     padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38", backgroundColor: "#fff",
                   }}
                 >
-                  <option value="5">5 Stars</option>
-                  <option value="4">4 Stars</option>
-                  <option value="3">3 Stars</option>
-                  <option value="2">2 Stars</option>
-                  <option value="1">1 Star</option>
+                  <option value="5">5 Hearts</option>
+                  <option value="4">4 Hearts</option>
+                  <option value="3">3 Hearts</option>
+                  <option value="2">2 Hearts</option>
+                  <option value="1">1 Heart</option>
                 </select>
               </div>
 

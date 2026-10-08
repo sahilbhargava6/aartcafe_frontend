@@ -670,7 +670,7 @@ export default function ProductDetailsPage() {
 
                     <div>
                       <label className="font-sans" style={{ fontSize: "13px", color: "#6E6E6E", display: "block", marginBottom: "4px" }}>
-                        Rating (1 to 5 Stars) *
+                        Rating (1 to 5 Hearts) *
                       </label>
                       <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                         {[1, 2, 3, 4, 5].map((star) => (

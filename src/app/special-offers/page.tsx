@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
@@ -231,73 +232,77 @@ export default function SpecialOffers() {
                     {banner3?.subtitle || "SAVE UP TO 40%"}
                   </p>
                 </div>
-              </div>
-
             </div>
-
           </div>
 
           {/* ═══════════════════════════════════════════════════════
               PRODUCT GRID SECTION: 2x2 HANDMADE RAKHIS / OFFERS
               ═══════════════════════════════════════════════════════ */}
           <div className="products-grid">
-            {products.map((prod) => (
-              <div key={prod.id} className="prod-card">
-                
-                {/* Left side: Small Image Frame */}
-                <div className="prod-image-box" style={{ overflow: "hidden" }}>
-                  {prod.image ? (
-                    <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    "Image"
-                  )}
-                </div>
-
-                {/* Right side: Product details */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  <h3 className="font-serif" style={{ fontSize: "24px", color: "#3F3B38", margin: 0 }}>
-                    {prod.title}
-                  </h3>
-                  <p className="font-sans" style={{ fontSize: "14px", color: "#8FB9A8", lineHeight: "20px", margin: 0 }}>
-                    {prod.description || "Handcrafted with love, designed to celebrate the timeless bond."}
-                  </p>
-                  <span className="font-serif" style={{ fontSize: "28px", color: "#3F3B38" }}>
-                    ₹{prod.base_price ?? prod.price}
-                  </span>
+            {products.map((prod) => {
+              const productUrl = `/shop/${prod.slug || prod.id}`;
+              return (
+                <div key={prod.id} className="prod-card">
                   
-                  {/* Add to Cart Button */}
-                  <div>
-                    <button
-                      onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
-                      style={{
-                        width: "100%",
-                        height: "36px",
-                        borderRadius: "18px",
-                        border: "1px solid #D9A85C",
-                        backgroundColor: "transparent",
-                        color: "#D98A9C",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        transition: "all 0.3s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "rgba(217, 138, 156, 0.05)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                      }}
-                    >
-                      ADD TO CART
-                    </button>
-                  </div>
-                </div>
+                  {/* Left side: Small Image Frame */}
+                  <Link href={productUrl} style={{ display: "block", textDecoration: "none" }}>
+                    <div className="prod-image-box" style={{ overflow: "hidden", cursor: "pointer" }}>
+                      {prod.image ? (
+                        <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        "Image"
+                      )}
+                    </div>
+                  </Link>
 
-              </div>
-            ))}
+                  {/* Right side: Product details */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <Link href={productUrl} style={{ textDecoration: "none" }}>
+                      <h3 className="font-serif" style={{ fontSize: "24px", color: "#3F3B38", margin: 0, cursor: "pointer" }}>
+                        {prod.title}
+                      </h3>
+                    </Link>
+                    <p className="font-sans" style={{ fontSize: "14px", color: "#8FB9A8", lineHeight: "20px", margin: 0 }}>
+                      {prod.description || "Handcrafted with love, designed to celebrate the timeless bond."}
+                    </p>
+                    <span className="font-serif" style={{ fontSize: "28px", color: "#3F3B38" }}>
+                      ₹{prod.base_price ?? prod.price}
+                    </span>
+                    
+                    {/* Add to Cart Button */}
+                    <div>
+                      <button
+                        onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
+                        style={{
+                          width: "100%",
+                          height: "36px",
+                          borderRadius: "18px",
+                          border: "1px solid #D9A85C",
+                          backgroundColor: "transparent",
+                          color: "#D98A9C",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "all 0.3s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "rgba(217, 138, 156, 0.05)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "transparent";
+                        }}
+                      >
+                        ADD TO CART
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              );
+            })}
           </div>
 
           {/* ═══════════════════════════════════════════════════════
@@ -337,9 +342,18 @@ export default function SpecialOffers() {
               <span className="font-serif" style={{ fontSize: "28px", color: "#D9A85C", letterSpacing: "1px", margin: 0 }}>
                 WEDDING SPECIALS
               </span>
-              <h3 className="font-serif" style={{ fontSize: "36px", color: "#3F3B38", margin: 0 }}>
-                {weddingSpecials.length > 0 ? weddingSpecials[activeWeddingIdx]?.title : "WEDDING FRAMES"}
-              </h3>
+              
+              {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIdx] ? (
+                <Link href={`/shop/${weddingSpecials[activeWeddingIdx]?.slug || weddingSpecials[activeWeddingIdx]?.id}`} style={{ textDecoration: "none" }}>
+                  <h3 className="font-serif" style={{ fontSize: "36px", color: "#3F3B38", margin: 0, cursor: "pointer" }}>
+                    {weddingSpecials[activeWeddingIdx]?.title}
+                  </h3>
+                </Link>
+              ) : (
+                <h3 className="font-serif" style={{ fontSize: "36px", color: "#3F3B38", margin: 0 }}>
+                  WEDDING FRAMES
+                </h3>
+              )}
 
               {/* Row of 3 square couple thumbnails */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
@@ -450,66 +464,75 @@ export default function SpecialOffers() {
             </h2>
 
             <div className="related-grid">
-              {relatedItems.map((prod) => (
-                <div key={prod.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div
-                    style={{
-                      width: "100%",
-                      aspectRatio: "338/422",
-                      backgroundColor: "#F5EDE8",
-                      borderRadius: "15px",
-                      boxShadow: "0px 4px 4px rgba(0,0,0,0.15)",
-                      marginBottom: "16px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#BCAEA2",
-                      fontSize: "14px",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {prod.image ? (
-                      <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      "Product Image"
-                    )}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-                    <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0 }}>
-                      {prod.title}
-                    </h4>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                      <span className="font-sans" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
-                        ₹{prod.base_price ?? prod.price}
-                      </span>
-                      <button
-                        onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
-                        className="font-sans"
+              {relatedItems.map((prod) => {
+                const productUrl = `/shop/${prod.slug || prod.id}`;
+                return (
+                  <div key={prod.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <Link href={productUrl} style={{ width: "100%", textDecoration: "none" }}>
+                      <div
                         style={{
-                          background: "none",
-                          border: "none",
-                          borderBottom: "1px solid #3F3B38",
-                          fontSize: "20px",
-                          color: "#3F3B38",
+                          width: "100%",
+                          aspectRatio: "338/422",
+                          backgroundColor: "#F5EDE8",
+                          borderRadius: "15px",
+                          boxShadow: "0px 4px 4px rgba(0,0,0,0.15)",
+                          marginBottom: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#BCAEA2",
+                          fontSize: "14px",
+                          overflow: "hidden",
                           cursor: "pointer",
-                          padding: "0 0 2px 0",
                         }}
                       >
-                        Add to bag
-                      </button>
+                        {prod.image ? (
+                          <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          "Product Image"
+                        )}
+                      </div>
+                    </Link>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+                      <Link href={productUrl} style={{ textDecoration: "none" }}>
+                        <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0, cursor: "pointer" }}>
+                          {prod.title}
+                        </h4>
+                      </Link>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                        <span className="font-sans" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
+                          ₹{prod.base_price ?? prod.price}
+                        </span>
+                        <button
+                          onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
+                          className="font-sans"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            borderBottom: "1px solid #3F3B38",
+                            fontSize: "20px",
+                            color: "#3F3B38",
+                            cursor: "pointer",
+                            padding: "0 0 2px 0",
+                          }}
+                        >
+                          Add to bag
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-
         </div>
+      </div>
       </main>
 
       <Footer />
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .offers-container {
           max-width: 1920px;
           margin: 0 auto;
@@ -668,7 +691,7 @@ export default function SpecialOffers() {
             grid-template-columns: 1fr;
           }
         }
-      `}</style>
+      ` }} />
     </div>
   );
 }
