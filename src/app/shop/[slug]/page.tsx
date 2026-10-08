@@ -333,23 +333,27 @@ export default function ProductDetailsPage() {
           <div className="details-layout">
             
             {/* LEFT COLUMN: Gallery Stack */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              {/* Main large image */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Main product image - 100% full view with adjusted height */}
               <div
                 style={{
                   width: "100%",
-                  aspectRatio: "364/455",
+                  maxHeight: "440px",
                   backgroundColor: "#FAF6F0",
-                  borderRadius: "15px",
+                  borderRadius: "14px",
                   boxShadow: "0px 4px 12px rgba(0,0,0,0.08)",
                   overflow: "hidden",
                   display: "flex",
-                  alignItems: "center",
                   justifyContent: "center",
+                  alignItems: "center",
                 }}
               >
                 {currentMainImage ? (
-                  <img src={currentMainImage} alt={productData.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img
+                    src={currentMainImage}
+                    alt={productData.title}
+                    style={{ width: "100%", maxHeight: "440px", objectFit: "contain", display: "block" }}
+                  />
                 ) : (
                   <div style={{ color: "#BCAEA2", fontSize: "16px", textAlign: "center", padding: "20px" }}>
                     {productData.title}
@@ -357,59 +361,95 @@ export default function ProductDetailsPage() {
                 )}
               </div>
 
-              {/* Interactive Thumbnail Strip */}
-              {galleryImages.length > 1 && (
-                <div style={{ display: "flex", gap: "12px", overflowX: "auto", padding: "4px 0 8px 0", scrollbarWidth: "none" }}>
-                  {galleryImages.map((imgUrl: string, idx: number) => {
-                    const isActive = idx === selectedImageIndex;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setSelectedImageIndex(idx)}
-                        style={{
-                          width: "80px",
-                          height: "80px",
-                          borderRadius: "10px",
-                          overflow: "hidden",
-                          border: isActive ? "2.5px solid #D98A9C" : "1px solid #E5D5C5",
-                          backgroundColor: "#FAF6F0",
-                          cursor: "pointer",
-                          flexShrink: 0,
-                          padding: 0,
-                          transition: "all 0.2s ease",
-                          boxShadow: isActive ? "0px 4px 10px rgba(217,138,156,0.3)" : "none",
-                        }}
-                      >
-                        <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Sub-gallery grid */}
-              {galleryImages.length > 1 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: subImages.length > 1 ? "1fr 1fr" : "1fr", gap: "20px" }}>
-                    {subImages.map((imgUrl: string, idx: number) => (
-                      <div
-                        key={idx}
-                        onClick={() => setSelectedImageIndex(idx + 1)}
-                        style={{
-                          height: "220px",
-                          borderRadius: "12px",
-                          overflow: "hidden",
-                          backgroundColor: "#FAF6F0",
-                          cursor: "pointer",
-                          border: selectedImageIndex === idx + 1 ? "2.5px solid #D98A9C" : "1px solid transparent",
-                          transition: "all 0.2s ease",
-                        }}
-                      >
-                        <img src={imgUrl} alt={`Gallery sub-image ${idx + 2}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {/* Sub-gallery grid & stack with 100% full uncropped image displays */}
+              {subImages.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  {subImages.length >= 2 ? (
+                    <>
+                      {/* First row: 2 side-by-side images shown fully */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", alignItems: "start" }}>
+                        <div
+                          onClick={() => setSelectedImageIndex(1)}
+                          style={{
+                            width: "100%",
+                            borderRadius: "12px",
+                            overflow: "hidden",
+                            backgroundColor: "#FAF6F0",
+                            cursor: "pointer",
+                            boxShadow: "0px 2px 8px rgba(0,0,0,0.06)",
+                            border: selectedImageIndex === 1 ? "2.5px solid #D98A9C" : "1px solid transparent",
+                          }}
+                        >
+                          <img
+                            src={subImages[0]}
+                            alt="Gallery 1"
+                            style={{ width: "100%", height: "auto", display: "block", objectFit: "contain" }}
+                          />
+                        </div>
+                        <div
+                          onClick={() => setSelectedImageIndex(2)}
+                          style={{
+                            width: "100%",
+                            borderRadius: "12px",
+                            overflow: "hidden",
+                            backgroundColor: "#FAF6F0",
+                            cursor: "pointer",
+                            boxShadow: "0px 2px 8px rgba(0,0,0,0.06)",
+                            border: selectedImageIndex === 2 ? "2.5px solid #D98A9C" : "1px solid transparent",
+                          }}
+                        >
+                          <img
+                            src={subImages[1]}
+                            alt="Gallery 2"
+                            style={{ width: "100%", height: "auto", display: "block", objectFit: "contain" }}
+                          />
+                        </div>
                       </div>
-                    ))}
-                  </div>
+
+                      {/* Stack remaining subImages (3rd onwards) full width shown 100% fully */}
+                      {subImages.slice(2).map((imgUrl: string, idx: number) => (
+                        <div
+                          key={idx}
+                          onClick={() => setSelectedImageIndex(idx + 3)}
+                          style={{
+                            width: "100%",
+                            borderRadius: "12px",
+                            overflow: "hidden",
+                            backgroundColor: "#FAF6F0",
+                            cursor: "pointer",
+                            boxShadow: "0px 2px 8px rgba(0,0,0,0.06)",
+                            border: selectedImageIndex === idx + 3 ? "2.5px solid #D98A9C" : "1px solid transparent",
+                          }}
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`Gallery ${idx + 3}`}
+                            style={{ width: "100%", height: "auto", display: "block", objectFit: "contain" }}
+                          />
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    /* Single subImage full width shown fully */
+                    <div
+                      onClick={() => setSelectedImageIndex(1)}
+                      style={{
+                        width: "100%",
+                        borderRadius: "12px",
+                        overflow: "hidden",
+                        backgroundColor: "#FAF6F0",
+                        cursor: "pointer",
+                        boxShadow: "0px 2px 8px rgba(0,0,0,0.06)",
+                        border: selectedImageIndex === 1 ? "2.5px solid #D98A9C" : "1px solid transparent",
+                      }}
+                    >
+                      <img
+                        src={subImages[0]}
+                        alt="Gallery 1"
+                        style={{ width: "100%", height: "auto", display: "block", objectFit: "contain" }}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
