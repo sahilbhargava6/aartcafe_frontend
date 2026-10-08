@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, X, Heart } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Plus, Edit2, Trash2, X, Heart, Search, Filter, RotateCcw } from "lucide-react";
 
 export default function ReviewsDashboard() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -11,6 +11,12 @@ export default function ReviewsDashboard() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<any>(null);
+
+  // Filter & Search Controls
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRatingFilter, setSelectedRatingFilter] = useState("all");
+  const [selectedProductFilter, setSelectedProductFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest"); // "newest", "oldest", "rating_high", "rating_low", "reviewer_asc"
 
   // Form Fields
   const [productId, setProductId] = useState("");
@@ -48,6 +54,52 @@ export default function ReviewsDashboard() {
   useEffect(() => {
     fetchReviews();
   }, []);
+
+  // Filtered & Sorted Reviews calculation
+  const filteredAndSortedReviews = useMemo(() => {
+    return reviews
+      .filter((rev) => {
+        // Search filter: matching reviewer name, review text, or product title
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim();
+          const nameMatch = rev.reviewer_name?.toLowerCase().includes(q);
+          const textMatch = rev.review_text?.toLowerCase().includes(q);
+          const prodMatch = rev.product?.title?.toLowerCase().includes(q);
+          if (!nameMatch && !textMatch && !prodMatch) return false;
+        }
+
+        // Rating filter
+        if (selectedRatingFilter !== "all") {
+          const targetRating = parseInt(selectedRatingFilter, 10);
+          if (rev.rating !== targetRating) return false;
+        }
+
+        // Product filter
+        if (selectedProductFilter !== "all") {
+          const targetProdId = parseInt(selectedProductFilter, 10);
+          if (rev.product_id !== targetProdId) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === "rating_high") return b.rating - a.rating;
+        if (sortBy === "rating_low") return a.rating - b.rating;
+        if (sortBy === "reviewer_asc") return (a.reviewer_name || "").localeCompare(b.reviewer_name || "");
+        if (sortBy === "oldest") return a.id - b.id;
+        // Default "newest": highest ID first
+        return b.id - a.id;
+      });
+  }, [reviews, searchQuery, selectedRatingFilter, selectedProductFilter, sortBy]);
+
+  const hasActiveFilters = searchQuery !== "" || selectedRatingFilter !== "all" || selectedProductFilter !== "all" || sortBy !== "newest";
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setSelectedRatingFilter("all");
+    setSelectedProductFilter("all");
+    setSortBy("newest");
+  };
 
   const openAddModal = () => {
     setEditingReview(null);
@@ -131,7 +183,7 @@ export default function ReviewsDashboard() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
         <h1 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", margin: 0, fontWeight: 400 }}>
           REVIEWS
         </h1>
@@ -147,13 +199,109 @@ export default function ReviewsDashboard() {
         </button>
       </div>
 
+      {/* Filter and Search Controls Bar */}
+      <div style={{
+        backgroundColor: "#fff", border: "1px solid #D9A85C", borderRadius: "15px",
+        padding: "16px 20px", display: "flex", flexDirection: "column", gap: "14px"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#3F3B38", fontWeight: 600, fontSize: "16px" }}>
+          <Filter size={18} color="#D98A9C" /> Search & Filter Reviews
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+          {/* Search Box */}
+          <div style={{ position: "relative" }}>
+            <Search size={16} color="#BCAEA2" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
+            <input
+              type="text"
+              placeholder="Search reviewer or comment..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: "100%", height: "40px", paddingLeft: "36px", paddingRight: "12px",
+                borderRadius: "8px", border: "1px solid #EBE5DB", fontSize: "14px",
+                outline: "none", color: "#3F3B38", backgroundColor: "#F9F6F0"
+              }}
+            />
+          </div>
+
+          {/* Rating Filter */}
+          <select
+            value={selectedRatingFilter}
+            onChange={(e) => setSelectedRatingFilter(e.target.value)}
+            style={{
+              height: "40px", borderRadius: "8px", border: "1px solid #EBE5DB",
+              padding: "0 12px", fontSize: "14px", outline: "none", color: "#3F3B38", backgroundColor: "#F9F6F0"
+            }}
+          >
+            <option value="all">All Ratings (Hearts)</option>
+            <option value="5">5 Hearts ❤️❤️❤️❤️❤️</option>
+            <option value="4">4 Hearts ❤️❤️❤️❤️</option>
+            <option value="3">3 Hearts ❤️❤️❤️</option>
+            <option value="2">2 Hearts ❤️❤️</option>
+            <option value="1">1 Heart ❤️</option>
+          </select>
+
+          {/* Product Filter */}
+          <select
+            value={selectedProductFilter}
+            onChange={(e) => setSelectedProductFilter(e.target.value)}
+            style={{
+              height: "40px", borderRadius: "8px", border: "1px solid #EBE5DB",
+              padding: "0 12px", fontSize: "14px", outline: "none", color: "#3F3B38", backgroundColor: "#F9F6F0"
+            }}
+          >
+            <option value="all">All Products</option>
+            {products.map((prod) => (
+              <option key={prod.id} value={prod.id}>{prod.title}</option>
+            ))}
+          </select>
+
+          {/* Sort By Dropdown */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{
+              height: "40px", borderRadius: "8px", border: "1px solid #EBE5DB",
+              padding: "0 12px", fontSize: "14px", outline: "none", color: "#3F3B38", backgroundColor: "#F9F6F0"
+            }}
+          >
+            <option value="newest">Sort: Newest First</option>
+            <option value="oldest">Sort: Oldest First</option>
+            <option value="rating_high">Sort: Rating (High to Low)</option>
+            <option value="rating_low">Sort: Rating (Low to High)</option>
+            <option value="reviewer_asc">Sort: Reviewer Name (A-Z)</option>
+          </select>
+        </div>
+
+        {/* Active Filter Info & Reset */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "4px" }}>
+          <span style={{ fontSize: "14px", color: "#8FB9A8", fontWeight: 500 }}>
+            Showing {filteredAndSortedReviews.length} of {reviews.length} reviews
+          </span>
+          {hasActiveFilters && (
+            <button
+              onClick={handleResetFilters}
+              style={{
+                display: "flex", alignItems: "center", gap: "6px", background: "none",
+                border: "none", color: "#E05A47", fontSize: "14px", cursor: "pointer", fontWeight: 500
+              }}
+            >
+              <RotateCcw size={14} /> Reset Filters
+            </button>
+          )}
+        </div>
+      </div>
+
       {error && <div style={{ color: "#E05A47", fontSize: "16px", fontWeight: 500 }}>{error}</div>}
 
       <div style={{ border: "2px solid #D9A85C", borderRadius: "15px", overflowX: "auto", backgroundColor: "#fff" }}>
         {loading ? (
           <div style={{ padding: "40px", textAlign: "center", color: "#8FB9A8" }}>Loading reviews...</div>
-        ) : reviews.length === 0 ? (
-          <div style={{ padding: "40px", textAlign: "center", color: "#8FB9A8" }}>No reviews found. Add one above!</div>
+        ) : filteredAndSortedReviews.length === 0 ? (
+          <div style={{ padding: "40px", textAlign: "center", color: "#8FB9A8" }}>
+            {reviews.length === 0 ? "No reviews found. Add one above!" : "No reviews match the current filters."}
+          </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
@@ -167,7 +315,7 @@ export default function ReviewsDashboard() {
               </tr>
             </thead>
             <tbody>
-              {reviews.map((rev) => (
+              {filteredAndSortedReviews.map((rev) => (
                 <tr key={rev.id} style={{ borderBottom: "1px solid #EBE5DB" }}>
                   <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{rev.id}</td>
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{rev.product?.title || "General"}</td>
@@ -314,3 +462,4 @@ export default function ReviewsDashboard() {
     </div>
   );
 }
+
