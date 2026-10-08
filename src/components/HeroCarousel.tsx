@@ -142,7 +142,7 @@ export default function HeroCarousel() {
           height: 380px;
           flex-shrink: 0;
           margin-left: auto;
-          margin-right: 100px;
+          margin-right: 20px;
           margin-top: 67px;
           display: flex;
           justify-content: center;

@@ -166,7 +166,7 @@ export default function Home() {
               className="hero-text-side"
               style={{
                 paddingTop: "68px",
-                paddingLeft: "143px",
+                paddingLeft: "60px",
                 flex: "1",
               }}
             >
@@ -529,7 +529,7 @@ export default function Home() {
                               height: "100%",
                               objectFit: "cover",
                               opacity: leftProduct?.id === p.id ? 1 : 0,
-                              transition: "opacity 0.6s ease-in-out"
+                              transition: "opacity 1.5s ease-in-out"
                             }}
                           />
                         ))
@@ -592,7 +592,7 @@ export default function Home() {
                                 height: "100%",
                                 objectFit: "cover",
                                 opacity: rightProduct?.id === p.id ? 1 : 0,
-                                transition: "opacity 0.6s ease-in-out"
+                                transition: "opacity 1.5s ease-in-out"
                               }}
                             />
                           ))
