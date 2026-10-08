@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import { useCart } from "@/context/CartContext";
-import { Heart, ChevronDown, Truck } from "lucide-react";
+import { Heart, ChevronDown, Truck, ArrowLeft } from "lucide-react";
 
 export default function ProductDetailsPage() {
   const params = useParams();
@@ -220,11 +221,7 @@ export default function ProductDetailsPage() {
   }
 
   // Gallery images array
-  const galleryImages: string[] = Array.isArray(productData.images) && productData.images.length > 0
-    ? productData.images
-    : productData.image
-    ? [productData.image]
-    : [];
+  const galleryImages: string[] = [productData.image, ...(Array.isArray(productData.images) ? productData.images : [])].filter(Boolean);
 
   const mainImage = galleryImages[0] || "";
   const subImages = galleryImages.slice(1);
@@ -237,6 +234,22 @@ export default function ProductDetailsPage() {
       <main style={{ flex: 1, backgroundColor: "#fff", padding: "40px 0 80px 0" }}>
         <div className="details-container">
           
+          <Link
+            href="/shop"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              color: "#8FB9A8",
+              textDecoration: "none",
+              fontSize: "15px",
+              marginBottom: "20px",
+              fontWeight: 500,
+            }}
+          >
+            <ArrowLeft size={18} /> Back to Shop
+          </Link>
+
           {/* Header Title */}
           <h1
             className="font-serif page-title"
@@ -316,6 +329,7 @@ export default function ProductDetailsPage() {
                     color: "#8FB9A8",
                     margin: 0,
                     flex: 1,
+                    whiteSpace: "pre-wrap",
                   }}
                 >
                   {productData.description || "Handcrafted custom keepsake crafted especially with premium flowers and preservation craftsmanship."}
@@ -329,18 +343,18 @@ export default function ProductDetailsPage() {
                   }}
                 >
                   <span style={{ fontSize: "36px", lineHeight: "44px", fontWeight: 400, color: "#3F3B38" }}>
-                    ₹{calculateTotalPrice()}
+                    ₹{calculateTotalPrice().toLocaleString("en-IN")}
                   </span>
                   {productData.discount_price && (
                     <span style={{ fontSize: "20px", textDecoration: "line-through", color: "#999" }}>
-                      ₹{calculateOriginalTotalPrice()}
+                      ₹{calculateOriginalTotalPrice().toLocaleString("en-IN")}
                     </span>
                   )}
                 </div>
               </div>
 
               {/* Free Delivery Banner */}
-              {productData.is_free_delivery ? (
+              {productData.is_free_delivery && (
                 <div
                   style={{
                     display: "flex",
@@ -357,23 +371,6 @@ export default function ProductDetailsPage() {
                 >
                   <Truck size={20} color="#4E8E76" />
                   <span>🚚 <b>Free Delivery:</b> Included on this handcrafted product!</span>
-                </div>
-              ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    backgroundColor: "#FAF6F0",
-                    border: "1px solid #EBE5DB",
-                    padding: "10px 16px",
-                    borderRadius: "12px",
-                    color: "#6E6E6E",
-                    fontSize: "13px",
-                  }}
-                >
-                  <Truck size={18} color="#D9A85C" />
-                  <span>Standard safe delivery charges calculated at checkout.</span>
                 </div>
               )}
 
@@ -393,39 +390,31 @@ export default function ProductDetailsPage() {
                         <label className="font-serif" style={{ fontSize: "17px", color: "#3F3B38", fontWeight: 400 }}>
                           {attr.name}
                         </label>
-                        <div style={{ position: "relative" }}>
-                          <select
-                            value={selectedAttributes[attr.name]?.value || validValues[0]?.value || ""}
-                            onChange={(e) => handleAttributeChange(attr.name, e.target.value, validValues)}
-                            style={{
-                              width: "100%",
-                              height: "44px",
-                              borderRadius: "10px",
-                              border: "1px solid #D9A85C",
-                              padding: "0 40px 0 16px",
-                              fontSize: "15px",
-                              color: "#D98A9C",
-                              backgroundColor: "#fff",
-                              outline: "none",
-                              cursor: "pointer",
-                              appearance: "none",
-                            }}
-                          >
-                            {validValues.map((opt: any) => {
-                              const mod = parseFloat(opt.price_modifier || "0");
-                              const modText = mod > 0 ? ` (+₹${parseInt(mod.toString())})` : mod < 0 ? ` (-₹${Math.abs(parseInt(mod.toString()))})` : "";
-                              return (
-                                <option key={opt.id || opt.value} value={opt.value}>
-                                  {opt.value}{modText}
-                                </option>
-                              );
-                            })}
-                          </select>
-                          <ChevronDown
-                            size={18}
-                            color="#D98A9C"
-                            style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
-                          />
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                          {validValues.map((opt: any) => {
+                            const mod = parseFloat(opt.price_modifier || "0");
+                            const modText = mod > 0 ? ` (+₹${parseInt(mod.toString())})` : mod < 0 ? ` (-₹${Math.abs(parseInt(mod.toString()))})` : "";
+                            const isSelected = selectedAttributes[attr.name]?.value === opt.value;
+                            return (
+                              <button
+                                key={opt.id || opt.value}
+                                onClick={() => handleAttributeChange(attr.name, opt.value, validValues)}
+                                style={{
+                                  padding: "10px 16px",
+                                  borderRadius: "10px",
+                                  border: isSelected ? "2px solid #D98A9C" : "1px solid #D9A85C",
+                                  backgroundColor: isSelected ? "rgba(217, 138, 156, 0.05)" : "#fff",
+                                  color: isSelected ? "#3F3B38" : "#8FB9A8",
+                                  fontSize: "14px",
+                                  fontWeight: isSelected ? 600 : 400,
+                                  cursor: "pointer",
+                                  transition: "all 0.2s",
+                                }}
+                              >
+                                {opt.value}{modText}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     );
@@ -685,7 +674,7 @@ export default function ProductDetailsPage() {
                       </a>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                         <span className="font-sans" style={{ fontSize: "18px", fontWeight: 500, color: "#3F3B38" }}>
-                          ₹{parseInt(prod.base_price || "2000")}
+                          ₹{parseInt(prod.base_price || "2000").toLocaleString("en-IN")}
                         </span>
                         <button
                           onClick={() =>

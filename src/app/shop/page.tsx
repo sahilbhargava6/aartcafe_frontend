@@ -29,6 +29,7 @@ export default function Shop() {
   const [categories, setCategories] = useState<string[]>([]);
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Fetch categories and products from Laravel API
   useEffect(() => {
@@ -63,8 +64,12 @@ export default function Shop() {
           setAllProducts(formatted);
           setFilteredProducts(formatted);
         }
+        setLoading(false);
       })
-      .catch((err) => console.error("Error loading products:", err));
+      .catch((err) => {
+        console.error("Error loading products:", err);
+        setLoading(false);
+      });
   }, []);
 
   const priceRanges = [
@@ -236,7 +241,11 @@ export default function Shop() {
               </div>
 
               {/* Product Grid */}
-              {filteredProducts.length === 0 ? (
+              {loading ? (
+                <div style={{ padding: "80px 0", textAlign: "center", color: "#8FB9A8", fontSize: "22px" }}>
+                  Loading products...
+                </div>
+              ) : filteredProducts.length === 0 ? (
                 <div style={{ padding: "80px 0", textAlign: "center", color: "#6E6E6E" }}>
                   <p className="font-sans" style={{ fontSize: "22px" }}>No products match the selected filters.</p>
                   <button
@@ -394,11 +403,11 @@ export default function Shop() {
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
                               <span className="font-sans" style={{ fontSize: "20px", color: "#3F3B38", fontWeight: 500 }}>
-                                ₹{prod.price}
+                                ₹{prod.price.toLocaleString("en-IN")}
                               </span>
                               {prod.discountPrice && (
                                 <span className="font-sans" style={{ fontSize: "14px", textDecoration: "line-through", color: "#999" }}>
-                                  ₹{prod.basePrice}
+                                  ₹{prod.basePrice.toLocaleString("en-IN")}
                                 </span>
                               )}
                             </div>

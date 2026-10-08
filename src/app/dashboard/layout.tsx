@@ -68,10 +68,12 @@ export default function DashboardLayout({
     { name: "Banners", path: "/dashboard/banners" },
     { name: "Pages", path: "/dashboard/pages" },
     { name: "Reviews", path: "/dashboard/reviews" },
-    { name: "New Discovers", path: "/dashboard/new-discovers" },
+    { name: "New Discoveries", path: "/dashboard/new-discovers" },
     { name: "Wedding Specials", path: "/dashboard/wedding-specials" },
-    { name: "Festive Specials", path: "/dashboard/festive-specials" },
-    { name: "Best Sellers", path: "/dashboard/best-sellers" },
+    { name: "Hero Banner", path: "/dashboard/hero-featured" },
+    { name: "Bestsellers", path: "/dashboard/best-sellers" },
+    { name: "Special Offers", path: "/dashboard/special-offers" },
+    { name: "Festival Specials", path: "/dashboard/festive-specials" },
   ];
 
   const currentItem = menuItems.find((item) => item.path === pathname) || menuItems[3];

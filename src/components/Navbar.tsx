@@ -24,7 +24,6 @@ export default function Navbar() {
     { name: "Shop", path: "/shop" },
     { name: "Festival Specials", path: "/festival-specials" },
     { name: "Special offers", path: "/special-offers" },
-    { name: "Track Order", path: "/track-order" },
   ];
 
   // Fetch products once for live search
@@ -557,27 +556,7 @@ export default function Navbar() {
               Access administrative dashboard or track your custom orders.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <Link
-                href="/track-order"
-                onClick={() => setUserMenuOpen(false)}
-                style={{
-                  height: "44px",
-                  borderRadius: "22px",
-                  border: "none",
-                  backgroundColor: "#FAF6F0",
-                  color: "#3F3B38",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textDecoration: "none",
-                  gap: "8px",
-                  fontSize: "14px",
-                }}
-              >
-                <Package size={16} color="#D9A85C" /> Track Customer Order
-              </Link>
+
               <Link
                 href="/signin"
                 onClick={() => setUserMenuOpen(false)}
