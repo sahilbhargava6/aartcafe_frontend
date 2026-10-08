@@ -74,7 +74,9 @@ export default function Shop() {
 
       if (isMounted) {
         if (Array.isArray(catData) && catData.length > 0) {
-          setCategories(catData.map((c: any) => c.name));
+          const names = catData.map((c: any) => c.name).filter(Boolean);
+          names.sort((a: string, b: string) => a.localeCompare(b));
+          setCategories(names);
         }
 
         if (Array.isArray(prodData) && prodData.length > 0) {
