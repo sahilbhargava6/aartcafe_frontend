@@ -757,76 +757,98 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════════════
             WEDDING SPECIALS
             ═══════════════════════════════════════════════════════ */}
-        <section style={{ padding: "80px 0", background: "#fff", position: "relative", overflow: "hidden" }}>
-          {/* Pink ribbon decoration banner */}
+        <section style={{ padding: "80px 0 100px 0", background: "#fff", position: "relative", overflow: "hidden" }}>
+          {/* Section title */}
+          <h2
+            className="font-serif"
+            style={{
+              fontSize: "48px",
+              lineHeight: "64px",
+              fontWeight: 400,
+              color: "#3F3B38",
+              textAlign: "center",
+              margin: "0 0 60px 0",
+              position: "relative",
+              zIndex: 2,
+            }}
+          >
+            WEDDING SPECIALS
+          </h2>
+
+          {/* Background Pink Ribbon Wave Image */}
           <div style={{
             position: "absolute",
-            left: 0,
-            top: "38%",
-            width: "100%",
-            height: "190px",
-            background: "linear-gradient(90deg, rgba(217,138,156,0.1) 0%, rgba(217,138,156,0.22) 50%, rgba(217,138,156,0.1) 100%)",
-            transform: "skewY(-5deg)",
+            left: "-5%",
+            top: "55%",
+            width: "110%",
+            height: "auto",
+            transform: "translateY(-50%)",
             zIndex: 0,
             pointerEvents: "none"
-          }} />
+          }}>
+            <img 
+              src="/images/Minimalist_Spring_Sale_Facebook_Post_6.png" 
+              alt="Pink Ribbon Wave" 
+              style={{ width: "100%", height: "auto", objectFit: "contain", opacity: 0.9 }} 
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          </div>
 
-          <div style={{ maxWidth: "1920px", margin: "0 auto", padding: "0 120px", position: "relative", zIndex: 1 }}>
-            {/* Section title */}
-            <h2
-              className="font-serif"
-              style={{
-                fontSize: "48px",
-                lineHeight: "64px",
-                fontWeight: 400,
-                color: "#3F3B38",
-                textAlign: "center",
-                margin: "0 0 60px 0",
-              }}
-            >
-              WEDDING SPECIALS
-            </h2>
+          <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "0 120px", position: "relative", zIndex: 1 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", alignItems: "center", position: "relative" }}>
+              
+              {/* Slider Left Arrow */}
+              <button
+                style={{
+                  position: "absolute",
+                  left: "-80px",
+                  bottom: "0px",
+                  background: "transparent",
+                  border: "none",
+                  color: "#8FB9A8",
+                  cursor: "pointer",
+                  zIndex: 10,
+                  transition: "color 0.2s ease",
+                  padding: "10px",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "#6c9383"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "#8FB9A8"; }}
+              >
+                <ChevronLeft size={32} strokeWidth={1} />
+              </button>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "80px", alignItems: "center", position: "relative" }}>
-              {/* Left Column: Wedding Couple / Product Image */}
+              {/* Left Column: Wedding Couple Illustration */}
               <div
                 style={{
                   width: "100%",
-                  maxWidth: "500px",
-                  aspectRatio: "4/5",
-                  backgroundColor: "#F5EDE8",
-                  borderRadius: "15px",
-                  boxShadow: "0px 4px 10px rgba(0,0,0,0.15)",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  color: "#BCAEA2",
-                  fontSize: "16px",
-                  overflow: "hidden",
-                  marginLeft: "60px",
+                  justifyContent: "flex-end",
+                  position: "relative",
+                  zIndex: 2,
                 }}
               >
-                {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIndex]?.image ? (
-                  <img
-                    src={weddingSpecials[activeWeddingIndex].image}
-                    alt={weddingSpecials[activeWeddingIndex].title}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                ) : (
-                  "Wedding Couple Illustration"
-                )}
+                <img
+                  src="/images/Minimalist_Spring_Sale_Facebook_Post_5.png"
+                  alt="Wedding Couple"
+                  style={{ width: "85%", height: "auto", objectFit: "contain" }}
+                  onError={(e) => { 
+                    e.currentTarget.src = "/images/Minimalist_Spring_Sale_Facebook_Post_7.png";
+                  }}
+                />
               </div>
 
               {/* Right Column: Details & Mini-gallery */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px", paddingBottom: "40px", zIndex: 2 }}>
                 <h3
                   className="font-serif"
                   style={{
-                    fontSize: "28px",
-                    lineHeight: "36px",
+                    fontSize: "24px",
+                    lineHeight: "32px",
                     fontWeight: 400,
-                    color: "#3F3B38",
+                    color: "#5c5753",
                     margin: 0,
+                    textTransform: "uppercase",
                   }}
                 >
                   {weddingSpecials.length > 0 ? weddingSpecials[activeWeddingIndex]?.title : "WEDDING FRAMES"}
@@ -835,16 +857,16 @@ export default function Home() {
                 {/* 3 mini product thumbnails gallery */}
                 <div style={{ display: "flex", gap: "16px" }}>
                   {weddingSpecials.length > 0 ? (
-                    weddingSpecials.slice(0, 4).map((wProd, idx) => (
+                    weddingSpecials.slice(0, 3).map((wProd, idx) => (
                       <div
                         key={wProd.id}
                         onClick={() => setActiveWeddingIndex(idx)}
                         style={{
-                          width: "160px",
-                          height: "160px",
+                          width: "140px",
+                          height: "180px",
                           backgroundColor: "#F5EDE8",
-                          borderRadius: "10px",
-                          boxShadow: "0px 2px 5px rgba(0,0,0,0.1)",
+                          borderRadius: "8px",
+                          boxShadow: "0px 6px 12px rgba(0,0,0,0.15)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -852,7 +874,6 @@ export default function Home() {
                           fontSize: "14px",
                           overflow: "hidden",
                           cursor: "pointer",
-                          border: activeWeddingIndex === idx ? "2px solid #D98A9C" : "2px solid transparent",
                           transition: "all 0.2s ease"
                         }}
                       >
@@ -868,11 +889,11 @@ export default function Home() {
                       <div
                         key={num}
                         style={{
-                          width: "160px",
-                          height: "160px",
+                          width: "140px",
+                          height: "180px",
                           backgroundColor: "#F5EDE8",
-                          borderRadius: "10px",
-                          boxShadow: "0px 2px 5px rgba(0,0,0,0.1)",
+                          borderRadius: "8px",
+                          boxShadow: "0px 6px 12px rgba(0,0,0,0.15)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -889,12 +910,12 @@ export default function Home() {
                 <p
                   className="font-sans"
                   style={{
-                    fontSize: "18px",
-                    lineHeight: "28px",
+                    fontSize: "15px",
+                    lineHeight: "24px",
                     fontWeight: 400,
-                    color: "#6E6E6E",
+                    color: "#3F3B38",
                     margin: 0,
-                    maxWidth: "600px",
+                    maxWidth: "500px",
                   }}
                 >
                   {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIndex]?.description
@@ -905,129 +926,67 @@ export default function Home() {
                 <div
                   className="font-serif"
                   style={{
-                    fontSize: "36px",
-                    lineHeight: "44px",
-                    fontWeight: 400,
+                    fontSize: "42px",
+                    lineHeight: "48px",
+                    fontWeight: 500,
                     color: "#3F3B38",
+                    marginTop: "10px",
                   }}
                 >
-                  ₹{weddingSpecials.length > 0 ? weddingSpecials[activeWeddingIndex]?.base_price : "2000"}
+                  ₹{weddingSpecials.length > 0 ? (weddingSpecials[activeWeddingIndex]?.discount_price || weddingSpecials[activeWeddingIndex]?.base_price) : "2000"}
                 </div>
 
-                <div>
-                  <button
-                    onClick={() => {
-                      if (weddingSpecials.length > 0) {
-                        const wp = weddingSpecials[activeWeddingIndex];
-                        addToBag({ id: wp.id, title: wp.title, price: wp.base_price, image: wp.image || "" });
-                      }
-                    }}
-                    className="font-sans"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      borderBottom: "1px solid #000",
-                      fontSize: "22px",
-                      lineHeight: "32px",
-                      fontWeight: 400,
-                      color: "#3F3B38",
-                      cursor: "pointer",
-                      padding: "0 0 2px 0",
-                    }}
-                  >
-                    Add to Bag
-                  </button>
-                </div>
-
-                <div>
-                  <button
+                <div style={{ marginTop: "10px" }}>
+                  <a
+                    href={weddingSpecials.length > 0 && weddingSpecials[activeWeddingIndex]?.slug ? `/shop/${weddingSpecials[activeWeddingIndex].slug}` : "#"}
                     style={{
                       width: "100%",
-                      maxWidth: "400px",
-                      height: "48px",
-                      borderRadius: "24px",
-                      border: "1px solid #D9A85C",
-                      backgroundColor: "transparent",
+                      maxWidth: "380px",
+                      height: "44px",
+                      borderRadius: "22px",
+                      border: "1.5px solid #D9A85C",
+                      backgroundColor: "#fff",
                       color: "#D98A9C",
-                      fontSize: "16px",
-                      fontWeight: 500,
-                      letterSpacing: "1px",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "0.5px",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       transition: "all 0.3s ease",
+                      textDecoration: "none",
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = "rgba(217, 138, 156, 0.05)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.backgroundColor = "#fff";
                     }}
                   >
                     MORE DETAILS
-                  </button>
+                  </a>
                 </div>
               </div>
 
-              {/* Slider Left and Right Controls */}
+              {/* Slider Right Arrow */}
               <button
                 style={{
                   position: "absolute",
-                  left: "-60px",
-                  bottom: "-20px",
+                  right: "-80px",
+                  bottom: "0px",
                   background: "transparent",
-                  border: "1.5px solid #8FB9A8",
+                  border: "none",
                   color: "#8FB9A8",
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                   cursor: "pointer",
                   zIndex: 10,
-                  transition: "all 0.2s ease",
+                  transition: "color 0.2s ease",
+                  padding: "10px",
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#8FB9A8";
-                  e.currentTarget.style.color = "#fff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#8FB9A8";
-                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "#6c9383"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "#8FB9A8"; }}
               >
-                <ChevronLeft size={22} />
-              </button>
-              <button
-                style={{
-                  position: "absolute",
-                  right: "-60px",
-                  bottom: "-20px",
-                  background: "transparent",
-                  border: "1.5px solid #8FB9A8",
-                  color: "#8FB9A8",
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  zIndex: 10,
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#8FB9A8";
-                  e.currentTarget.style.color = "#fff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#8FB9A8";
-                }}
-              >
-                <ChevronRight size={22} />
+                <ChevronRight size={32} strokeWidth={1} />
               </button>
             </div>
           </div>
