@@ -898,7 +898,16 @@ export default function ProductsDashboard() {
                   <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{prod.id}</td>
                   <td style={{ padding: "16px 24px" }}>
                     {prod.image ? (
-                      <img src={prod.image} alt={prod.title} style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "8px" }} />
+                      <img 
+                        src={prod.image} 
+                        alt={prod.title} 
+                        style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "8px" }} 
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=200&auto=format&fit=crop&q=80";
+                        }}
+                      />
                     ) : (
                       <div style={{ width: "50px", height: "50px", backgroundColor: "#F5EDE8", borderRadius: "8px" }}></div>
                     )}
