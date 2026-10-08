@@ -143,6 +143,34 @@ export default function ProductDetailsPage() {
     }));
   };
 
+  const toggleCheckboxAttribute = (attrName: string, value: string, attrValues: any[]) => {
+    setSelectedAttributes((prev) => {
+      const current = prev[attrName];
+      let currentValues: string[] = [];
+      if (current && current.value) {
+        currentValues = current.value.split(", ").map((s) => s.trim()).filter(Boolean);
+      }
+
+      let newValues: string[];
+      if (currentValues.includes(value)) {
+        newValues = currentValues.filter((v) => v !== value);
+      } else {
+        newValues = [...currentValues, value];
+      }
+
+      let totalMod = 0;
+      newValues.forEach((valStr) => {
+        const match = attrValues.find((v: any) => v.value === valStr);
+        if (match) totalMod += parseFloat(match.price_modifier || "0");
+      });
+
+      return {
+        ...prev,
+        [attrName]: { value: newValues.join(", "), modifier: totalMod },
+      };
+    });
+  };
+
   const calculateTotalPrice = () => {
     if (!productData) return 0;
     const baseVal = productData.discount_price ? parseFloat(productData.discount_price) : parseFloat(productData.base_price || "0");
@@ -376,46 +404,114 @@ export default function ProductDetailsPage() {
 
               {/* Dynamic Attribute Customizers */}
               {productData.attributes && productData.attributes.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
                   {productData.attributes.map((attr: any) => {
-                    // Filter out invalid/placeholder values like NA, N/A, -, none, empty
                     const validValues = (attr.values || []).filter(
                       (v: any) => v.value && !["na", "n/a", "none", "-", "null", ""].includes(v.value.toString().trim().toLowerCase())
                     );
 
-                    if (validValues.length === 0) return null;
+                    const isCheckbox = attr.type === "checkbox" || attr.name.toLowerCase() === "options";
+                    const isTextInput = attr.type === "text";
+
+                    if (!isTextInput && validValues.length === 0) return null;
+
+                    const currentSelectedStr = selectedAttributes[attr.name]?.value || "";
+                    const checkedList = currentSelectedStr.split(", ").map((s: string) => s.trim()).filter(Boolean);
 
                     return (
-                      <div key={attr.id || attr.name} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <label className="font-serif" style={{ fontSize: "17px", color: "#3F3B38", fontWeight: 400 }}>
+                      <div key={attr.id || attr.name} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <label className="font-serif" style={{ fontSize: "17px", color: "#3F3B38", fontWeight: 500 }}>
                           {attr.name}
                         </label>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-                          {validValues.map((opt: any) => {
-                            const mod = parseFloat(opt.price_modifier || "0");
-                            const modText = mod > 0 ? ` (+₹${parseInt(mod.toString())})` : mod < 0 ? ` (-₹${Math.abs(parseInt(mod.toString()))})` : "";
-                            const isSelected = selectedAttributes[attr.name]?.value === opt.value;
-                            return (
-                              <button
-                                key={opt.id || opt.value}
-                                onClick={() => handleAttributeChange(attr.name, opt.value, validValues)}
-                                style={{
-                                  padding: "10px 16px",
-                                  borderRadius: "10px",
-                                  border: isSelected ? "2px solid #D98A9C" : "1px solid #D9A85C",
-                                  backgroundColor: isSelected ? "rgba(217, 138, 156, 0.05)" : "#fff",
-                                  color: isSelected ? "#3F3B38" : "#8FB9A8",
-                                  fontSize: "14px",
-                                  fontWeight: isSelected ? 600 : 400,
-                                  cursor: "pointer",
-                                  transition: "all 0.2s",
-                                }}
-                              >
-                                {opt.value}{modText}
-                              </button>
-                            );
-                          })}
-                        </div>
+
+                        {isTextInput ? (
+                          <input
+                            type="text"
+                            placeholder={`Enter ${attr.name.toLowerCase()} details...`}
+                            value={currentSelectedStr}
+                            onChange={(e) => handleAttributeChange(attr.name, e.target.value, validValues)}
+                            style={{
+                              width: "100%",
+                              padding: "10px 14px",
+                              borderRadius: "8px",
+                              border: "1px solid #D9A85C",
+                              fontSize: "14px",
+                              color: "#3F3B38",
+                              outline: "none",
+                              backgroundColor: "#FFFDF9",
+                            }}
+                          />
+                        ) : isCheckbox ? (
+                          /* CHECKBOX MULTI-SELECT OPTIONS */
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                            {validValues.map((opt: any) => {
+                              const mod = parseFloat(opt.price_modifier || "0");
+                              const modText = mod > 0 ? ` (+₹${parseInt(mod.toString())})` : mod < 0 ? ` (-₹${Math.abs(parseInt(mod.toString()))})` : "";
+                              const isChecked = checkedList.includes(opt.value);
+                              return (
+                                <label
+                                  key={opt.id || opt.value}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    toggleCheckboxAttribute(attr.name, opt.value, validValues);
+                                  }}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    padding: "10px 16px",
+                                    borderRadius: "10px",
+                                    border: isChecked ? "2px solid #D9A85C" : "1px solid #E5D5C5",
+                                    backgroundColor: isChecked ? "rgba(217, 168, 92, 0.1)" : "#FFFDF9",
+                                    color: isChecked ? "#3F3B38" : "#6E6E6E",
+                                    fontSize: "14px",
+                                    fontWeight: isChecked ? 600 : 400,
+                                    cursor: "pointer",
+                                    userSelect: "none",
+                                    transition: "all 0.2s ease",
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => {}}
+                                    style={{ accentColor: "#D9A85C", width: "16px", height: "16px", cursor: "pointer" }}
+                                  />
+                                  <span>{opt.value}{modText}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          /* PILL / RADIO SINGLE-SELECT OPTIONS */
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                            {validValues.map((opt: any) => {
+                              const mod = parseFloat(opt.price_modifier || "0");
+                              const modText = mod > 0 ? ` (+₹${parseInt(mod.toString())})` : mod < 0 ? ` (-₹${Math.abs(parseInt(mod.toString()))})` : "";
+                              const isSelected = selectedAttributes[attr.name]?.value === opt.value;
+                              return (
+                                <button
+                                  key={opt.id || opt.value}
+                                  type="button"
+                                  onClick={() => handleAttributeChange(attr.name, opt.value, validValues)}
+                                  style={{
+                                    padding: "10px 16px",
+                                    borderRadius: "10px",
+                                    border: isSelected ? "2px solid #D98A9C" : "1px solid #D9A85C",
+                                    backgroundColor: isSelected ? "rgba(217, 138, 156, 0.05)" : "#fff",
+                                    color: isSelected ? "#3F3B38" : "#8FB9A8",
+                                    fontSize: "14px",
+                                    fontWeight: isSelected ? 600 : 400,
+                                    cursor: "pointer",
+                                    transition: "all 0.2s",
+                                  }}
+                                >
+                                  {opt.value}{modText}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

@@ -399,6 +399,7 @@ export default function ProductsDashboard() {
       setAttributes(
         prod.attributes.map((attr: any) => ({
           name: attr.name,
+          type: attr.type || (attr.name.toLowerCase() === "options" ? "checkbox" : "select"),
           values: attr.values ? attr.values.map((v: any) => ({
             value: v.value,
             price_modifier: parseFloat(v.price_modifier || "0")
@@ -443,7 +444,7 @@ export default function ProductsDashboard() {
 
   // Attributes Management
   const addAttribute = () => {
-    setAttributes([...attributes, { name: "", values: [{ value: "", price_modifier: 0 }] }]);
+    setAttributes([...attributes, { name: "", type: "checkbox", values: [{ value: "", price_modifier: 0 }] }]);
   };
 
   const addPredefinedAttribute = (name: string) => {
@@ -458,6 +459,7 @@ export default function ProductsDashboard() {
 
     const newAttr = {
       name: found.name,
+      type: "select",
       values: found.values.map(v => ({ value: v, price_modifier: 0 }))
     };
     setAttributes([...attributes, newAttr]);
@@ -470,6 +472,12 @@ export default function ProductsDashboard() {
   const updateAttributeName = (index: number, newName: string) => {
     const updated = [...attributes];
     updated[index].name = newName;
+    setAttributes(updated);
+  };
+
+  const updateAttributeType = (index: number, newType: string) => {
+    const updated = [...attributes];
+    updated[index].type = newType;
     setAttributes(updated);
   };
 
@@ -516,6 +524,7 @@ export default function ProductsDashboard() {
       .filter((attr) => attr.name.trim() !== "")
       .map((attr) => ({
         name: attr.name,
+        type: attr.type || "checkbox",
         values: attr.values.filter((v: any) => v.value.trim() !== "")
       }));
 
@@ -1068,18 +1077,36 @@ export default function ProductsDashboard() {
                       <X size={16} />
                     </button>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "85%" }}>
-                      <label style={{ fontSize: "12px", color: "#6E6E6E" }}>Attribute Name</label>
-                      <input
-                        type="text"
-                        value={attr.name}
-                        onChange={(e) => updateAttributeName(attrIndex, e.target.value)}
-                        placeholder="e.g. Size, Frame Color, Preservation"
-                        style={{
-                          height: "36px", borderRadius: "6px", border: "1px solid #D9A85C",
-                          padding: "0 10px", fontSize: "14px", outline: "none", color: "#3F3B38", backgroundColor: "#fff"
-                        }}
-                      />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", width: "88%" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <label style={{ fontSize: "12px", color: "#6E6E6E", fontWeight: 500 }}>Attribute Name</label>
+                        <input
+                          type="text"
+                          value={attr.name}
+                          onChange={(e) => updateAttributeName(attrIndex, e.target.value)}
+                          placeholder="e.g. Options, Size, Message"
+                          style={{
+                            height: "36px", borderRadius: "6px", border: "1px solid #D9A85C",
+                            padding: "0 10px", fontSize: "14px", outline: "none", color: "#3F3B38", backgroundColor: "#fff"
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <label style={{ fontSize: "12px", color: "#6E6E6E", fontWeight: 500 }}>Customer Input Type</label>
+                        <select
+                          value={attr.type || "checkbox"}
+                          onChange={(e) => updateAttributeType(attrIndex, e.target.value)}
+                          style={{
+                            height: "36px", borderRadius: "6px", border: "1px solid #D9A85C",
+                            padding: "0 10px", fontSize: "13px", outline: "none", color: "#3F3B38", backgroundColor: "#fff"
+                          }}
+                        >
+                          <option value="checkbox">☑️ Checkboxes (Multi-select)</option>
+                          <option value="text">✍️ Text Input (Custom Text)</option>
+                          <option value="select">🔘 Pill Buttons (Single Select)</option>
+                        </select>
+                      </div>
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>

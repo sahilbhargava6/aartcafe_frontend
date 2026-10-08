@@ -775,23 +775,169 @@ export default function Home() {
             WEDDING SPECIALS
           </h2>
 
-          {/* Background Pink Ribbon Wave Image */}
+          {/* Background Indian Red Dupatta with Golden Zari Border */}
+          <style>{`
+            @keyframes silkWind1 {
+              0% { transform: skewX(-2deg) translateY(0px) scaleY(1); }
+              25% { transform: skewX(3deg) translateY(-40px) scaleY(1.15); }
+              50% { transform: skewX(-2deg) translateY(5px) scaleY(0.95); }
+              75% { transform: skewX(3deg) translateY(-30px) scaleY(1.1); }
+              100% { transform: skewX(-2deg) translateY(0px) scaleY(1); }
+            }
+            @keyframes silkWind2 {
+              0% { transform: skewX(3deg) translateY(20px) scaleY(1.15); }
+              25% { transform: skewX(-2deg) translateY(-20px) scaleY(1); }
+              50% { transform: skewX(3deg) translateY(-45px) scaleY(1.2); }
+              75% { transform: skewX(-1deg) translateY(10px) scaleY(0.95); }
+              100% { transform: skewX(3deg) translateY(20px) scaleY(1.15); }
+            }
+          `}</style>
+          
+          {/* Back Dupatta Layer */}
           <div style={{
             position: "absolute",
-            left: "-5%",
-            top: "55%",
-            width: "110%",
-            height: "auto",
-            transform: "translateY(-50%)",
+            left: "-10%",
+            top: "8%",
+            width: "120%",
+            height: "850px",
             zIndex: 0,
-            pointerEvents: "none"
+            pointerEvents: "none",
+            animation: "silkWind1 14s ease-in-out infinite",
+            opacity: 0.92,
           }}>
-            <img 
-              src="/images/Minimalist_Spring_Sale_Facebook_Post_6.png" 
-              alt="Pink Ribbon Wave" 
-              style={{ width: "100%", height: "auto", objectFit: "contain", opacity: 0.9 }} 
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
+            <svg width="100%" height="100%" viewBox="0 -100 1440 1200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                {/* Metallic Gold Zari Gradient */}
+                <linearGradient id="zariGold1" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#BF953F" />
+                  <stop offset="25%" stopColor="#FCF6BA" />
+                  <stop offset="50%" stopColor="#B38728" />
+                  <stop offset="75%" stopColor="#FBF5B7" />
+                  <stop offset="100%" stopColor="#AA771C" />
+                </linearGradient>
+
+                {/* Deep Indian Royal Red Base */}
+                <linearGradient id="dupatta1Base" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#800010" stopOpacity="0.95" />
+                  <stop offset="40%" stopColor="#B80018" stopOpacity="0.92" />
+                  <stop offset="70%" stopColor="#D90429" stopOpacity="0.88" />
+                  <stop offset="100%" stopColor="#5B000B" stopOpacity="0.95" />
+                </linearGradient>
+
+                {/* Dupatta Sheen Highlights */}
+                <linearGradient id="dupatta1Highlights" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FF99AA" stopOpacity="0" />
+                  <stop offset="25%" stopColor="#FFB3C1" stopOpacity="0.5" />
+                  <stop offset="40%" stopColor="#FFF0F3" stopOpacity="0.7" />
+                  <stop offset="60%" stopColor="#FF8095" stopOpacity="0.3" />
+                  <stop offset="80%" stopColor="#FFCBD5" stopOpacity="0.6" />
+                  <stop offset="100%" stopColor="#800010" stopOpacity="0" />
+                </linearGradient>
+
+                {/* Deep Fold Shadow */}
+                <linearGradient id="dupatta1Shadow" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#300006" stopOpacity="0.7" />
+                  <stop offset="30%" stopColor="#300006" stopOpacity="0" />
+                  <stop offset="50%" stopColor="#400008" stopOpacity="0.6" />
+                  <stop offset="70%" stopColor="#300006" stopOpacity="0" />
+                  <stop offset="100%" stopColor="#300006" stopOpacity="0.75" />
+                </linearGradient>
+              </defs>
+
+              {/* Main Red Dupatta Body */}
+              <path fill="url(#dupatta1Base)" d="M 0,400 C 480,50 960,750 1440,400 L 1440,700 C 960,1050 480,300 0,700 Z" />
+              
+              {/* Dupatta Fabric Sheen Folds */}
+              <path fill="url(#dupatta1Highlights)" d="M 0,410 C 480,60 960,740 1440,410 L 1440,680 C 960,1030 480,320 0,680 Z" />
+              <path fill="url(#dupatta1Shadow)" d="M 0,400 C 480,50 960,750 1440,400 L 1440,700 C 960,1050 480,300 0,700 Z" />
+
+              {/* GOLDEN ZARI / GOTA PATTI BORDER (Top Edge) */}
+              <path fill="none" stroke="url(#zariGold1)" strokeWidth="16" d="M 0,400 C 480,50 960,750 1440,400" />
+              <path fill="none" stroke="#50000B" strokeWidth="3" d="M 0,408 C 480,58 960,758 1440,408" />
+              <path fill="none" stroke="#FFF5C0" strokeWidth="2.5" strokeDasharray="8 6" d="M 0,394 C 480,44 960,744 1440,394" />
+              <path fill="none" stroke="#FFF5C0" strokeWidth="2.5" strokeDasharray="8 6" d="M 0,406 C 480,56 960,756 1440,406" />
+
+              {/* GOLDEN ZARI BORDER (Bottom Edge) */}
+              <path fill="none" stroke="url(#zariGold1)" strokeWidth="12" d="M 0,700 C 480,300 960,1050 1440,700" />
+              <path fill="none" stroke="#FFF5C0" strokeWidth="2" strokeDasharray="6 4" d="M 0,695 C 480,295 960,1045 1440,695" />
+
+              {/* Gold Thread Pleat Folds */}
+              <path fill="none" stroke="url(#zariGold1)" strokeWidth="2" strokeOpacity="0.6" d="M 0,480 C 480,130 960,830 1440,480" />
+              <path fill="none" stroke="url(#zariGold1)" strokeWidth="1.5" strokeOpacity="0.4" d="M 0,560 C 480,210 960,910 1440,560" />
+            </svg>
+          </div>
+
+          {/* Front Dupatta Layer (Inverted wave with Zari border) */}
+          <div style={{
+            position: "absolute",
+            left: "-8%",
+            top: "12%",
+            width: "116%",
+            height: "800px",
+            zIndex: 0,
+            pointerEvents: "none",
+            animation: "silkWind2 10s ease-in-out infinite",
+            opacity: 0.95,
+          }}>
+            <svg width="100%" height="100%" viewBox="0 0 1440 1300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                {/* Metallic Gold Zari Gradient */}
+                <linearGradient id="zariGold2" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#F5D061" />
+                  <stop offset="25%" stopColor="#FFFFFF" />
+                  <stop offset="50%" stopColor="#E5A93B" />
+                  <stop offset="75%" stopColor="#FFF2A1" />
+                  <stop offset="100%" stopColor="#B37E14" />
+                </linearGradient>
+
+                {/* Rich Crimson Base */}
+                <linearGradient id="dupatta2Base" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#A80016" stopOpacity="0.95" />
+                  <stop offset="40%" stopColor="#E60026" stopOpacity="0.9" />
+                  <stop offset="70%" stopColor="#FF1A3C" stopOpacity="0.85" />
+                  <stop offset="100%" stopColor="#73000E" stopOpacity="0.95" />
+                </linearGradient>
+
+                {/* Specular Sheen */}
+                <linearGradient id="dupatta2Specular" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FFCCD5" stopOpacity="0" />
+                  <stop offset="25%" stopColor="#FFFFFF" stopOpacity="0.75" />
+                  <stop offset="50%" stopColor="#FFA3B1" stopOpacity="0.4" />
+                  <stop offset="75%" stopColor="#FFFFFF" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="#A80016" stopOpacity="0" />
+                </linearGradient>
+
+                {/* Deep Fold Shadow */}
+                <linearGradient id="dupatta2Shadow" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#2A0005" stopOpacity="0.8" />
+                  <stop offset="30%" stopColor="#2A0005" stopOpacity="0" />
+                  <stop offset="50%" stopColor="#450009" stopOpacity="0.65" />
+                  <stop offset="70%" stopColor="#2A0005" stopOpacity="0" />
+                  <stop offset="100%" stopColor="#2A0005" stopOpacity="0.8" />
+                </linearGradient>
+              </defs>
+
+              {/* Main Red Dupatta Body */}
+              <path fill="url(#dupatta2Base)" d="M 0,600 C 480,950 960,250 1440,600 L 1440,850 C 960,500 480,1200 0,850 Z" />
+              
+              {/* Specular & Shadow Sheen Folds */}
+              <path fill="url(#dupatta2Specular)" d="M 0,610 C 480,960 960,260 1440,610 L 1440,835 C 960,485 480,1185 0,835 Z" />
+              <path fill="url(#dupatta2Shadow)" d="M 0,600 C 480,950 960,250 1440,600 L 1440,850 C 960,500 480,1200 0,850 Z" />
+
+              {/* GOLDEN ZARI / GOTA PATTI BORDER (Top Edge) */}
+              <path fill="none" stroke="url(#zariGold2)" strokeWidth="18" d="M 0,600 C 480,950 960,250 1440,600" />
+              <path fill="none" stroke="#60000C" strokeWidth="3.5" d="M 0,608 C 480,958 960,258 1440,608" />
+              <path fill="none" stroke="#FFFDF0" strokeWidth="2.5" strokeDasharray="10 6" d="M 0,593 C 480,943 960,243 1440,593" />
+              <path fill="none" stroke="#FFFDF0" strokeWidth="2.5" strokeDasharray="10 6" d="M 0,606 C 480,956 960,256 1440,606" />
+
+              {/* GOLDEN ZARI BORDER (Bottom Edge) */}
+              <path fill="none" stroke="url(#zariGold2)" strokeWidth="14" d="M 0,850 C 480,1200 960,500 1440,850" />
+              <path fill="none" stroke="#FFFDF0" strokeWidth="2" strokeDasharray="8 5" d="M 0,844 C 480,1194 960,494 1440,844" />
+
+              {/* Gold Thread Pleat Accent Lines */}
+              <path fill="none" stroke="url(#zariGold2)" strokeWidth="2" strokeOpacity="0.65" d="M 0,670 C 480,1020 960,320 1440,670" />
+              <path fill="none" stroke="url(#zariGold2)" strokeWidth="1.5" strokeOpacity="0.45" d="M 0,750 C 480,1100 960,400 1440,750" />
+            </svg>
           </div>
 
           <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "0 120px", position: "relative", zIndex: 1 }}>
@@ -822,18 +968,39 @@ export default function Home() {
                 style={{
                   width: "100%",
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-end",
+                  alignItems: "flex-end",
+                  justifyContent: "center",
                   position: "relative",
                   zIndex: 2,
+                  height: "700px", // Increased height to make bride/groom larger
                 }}
               >
+                {/* Groom */}
+                <img
+                  src="/images/Minimalist_Spring_Sale_Facebook_Post_6.png"
+                  alt="Wedding Groom"
+                  style={{ 
+                    height: "100%", 
+                    width: "auto", 
+                    objectFit: "contain",
+                    position: "absolute",
+                    left: "-15%",
+                    bottom: 0,
+                    zIndex: 1
+                  }}
+                />
+                {/* Bride */}
                 <img
                   src="/images/Minimalist_Spring_Sale_Facebook_Post_5.png"
-                  alt="Wedding Couple"
-                  style={{ width: "85%", height: "auto", objectFit: "contain" }}
-                  onError={(e) => { 
-                    e.currentTarget.src = "/images/Minimalist_Spring_Sale_Facebook_Post_7.png";
+                  alt="Wedding Bride"
+                  style={{ 
+                    height: "85%", 
+                    width: "auto", 
+                    objectFit: "contain",
+                    position: "absolute",
+                    left: "10%",
+                    bottom: 0,
+                    zIndex: 2
                   }}
                 />
               </div>
@@ -862,10 +1029,10 @@ export default function Home() {
                         key={wProd.id}
                         onClick={() => setActiveWeddingIndex(idx)}
                         style={{
-                          width: "140px",
-                          height: "180px",
+                          width: "180px",
+                          height: "230px",
                           backgroundColor: "#F5EDE8",
-                          borderRadius: "8px",
+                          borderRadius: "10px",
                           boxShadow: "0px 6px 12px rgba(0,0,0,0.15)",
                           display: "flex",
                           alignItems: "center",
@@ -889,10 +1056,10 @@ export default function Home() {
                       <div
                         key={num}
                         style={{
-                          width: "140px",
-                          height: "180px",
+                          width: "180px",
+                          height: "230px",
                           backgroundColor: "#F5EDE8",
-                          borderRadius: "8px",
+                          borderRadius: "10px",
                           boxShadow: "0px 6px 12px rgba(0,0,0,0.15)",
                           display: "flex",
                           alignItems: "center",
