@@ -249,8 +249,6 @@ export default function ProductDetailsPage() {
     );
   }
 
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
-
   // Robust parsing for gallery images array
   const getGalleryImages = (): string[] => {
     if (!productData) return [];
