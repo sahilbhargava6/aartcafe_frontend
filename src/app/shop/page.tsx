@@ -26,6 +26,25 @@ export default function Shop() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
   
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get("category");
+      if (cat) setSelectedCategory(cat);
+    }
+  }, []);
+
+  const handleCategoryClick = (cat: string) => {
+    const newCat = selectedCategory === cat ? null : cat;
+    setSelectedCategory(newCat);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (newCat) url.searchParams.set("category", newCat);
+      else url.searchParams.delete("category");
+      window.history.pushState({}, "", url.toString());
+    }
+  };
+  
   const [categories, setCategories] = useState<string[]>([]);
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
@@ -173,7 +192,7 @@ export default function Shop() {
                     {categories.map((cat) => (
                       <li key={cat}>
                         <button
-                          onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                          onClick={() => handleCategoryClick(cat)}
                           className="font-sans"
                           style={{
                             background: "none",
@@ -258,6 +277,11 @@ export default function Shop() {
                     onClick={() => {
                       setSelectedCategory(null);
                       setSelectedPriceRange(null);
+                      if (typeof window !== "undefined") {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("category");
+                        window.history.pushState({}, "", url.toString());
+                      }
                     }}
                     className="font-sans"
                     style={{
