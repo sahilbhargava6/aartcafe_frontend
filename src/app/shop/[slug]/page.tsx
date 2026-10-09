@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
@@ -12,6 +12,7 @@ import { Heart, ChevronDown, Truck, ArrowLeft } from "lucide-react";
 export default function ProductDetailsPage() {
   const params = useParams();
   const slug = params?.slug as string;
+  const router = useRouter();
   const { addToBag } = useCart();
 
   const [productData, setProductData] = useState<any>(null);
@@ -297,8 +298,8 @@ export default function ProductDetailsPage() {
       <main style={{ flex: 1, backgroundColor: "#fff", padding: "40px 0 80px 0" }}>
         <div className="details-container">
           
-          <Link
-            href="/shop"
+          <button
+            onClick={() => router.back()}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -308,10 +309,14 @@ export default function ProductDetailsPage() {
               fontSize: "15px",
               marginBottom: "20px",
               fontWeight: 500,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
             }}
           >
-            <ArrowLeft size={18} /> Back to Shop
-          </Link>
+            <ArrowLeft size={18} /> Back
+          </button>
 
           {/* Header Title */}
           <h1
@@ -444,6 +449,11 @@ export default function ProductDetailsPage() {
                   {productData.discount_price && (
                     <span style={{ fontSize: "18px", textDecoration: "line-through", color: "#999" }}>
                       ₹{calculateOriginalTotalPrice().toLocaleString("en-IN")}
+                    </span>
+                  )}
+                  {productData.is_free_delivery && (
+                    <span style={{ fontSize: "14px", color: "#4E8E76", fontWeight: 600, marginTop: "4px" }}>
+                      🚚 Free Delivery
                     </span>
                   )}
                 </div>

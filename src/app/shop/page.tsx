@@ -248,9 +248,8 @@ export default function Shop() {
                     fontWeight: 400,
                     color: "#3F3B38",
                     margin: 0,
-                  }}
                 >
-                  SHOP
+                  {selectedCategory && selectedCategory !== "All" ? selectedCategory.toUpperCase() : "SHOP"}
                 </h1>
 
                 {(selectedCategory || selectedPriceRange) && (

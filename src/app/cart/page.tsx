@@ -114,7 +114,7 @@ export default function CartPage() {
       alert("Since WhatsApp web links don't allow automatic image attachments, please attach your image manually once WhatsApp opens, or paste it into the chat!");
     }
 
-    window.open(whatsappUrl, "_blank");
+    window.location.href = whatsappUrl;
   };
 
   return (
