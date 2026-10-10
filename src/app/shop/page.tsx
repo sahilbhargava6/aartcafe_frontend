@@ -5,6 +5,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
+import PriceSlider from "@/components/PriceSlider";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { Heart } from "lucide-react";
@@ -216,7 +217,7 @@ export default function Shop() {
                     max={10000}
                     currentMin={minPrice}
                     currentMax={maxPrice}
-                    onChange={(min, max) => {
+                    onChange={(min: number, max: number) => {
                       setMinPrice(min);
                       setMaxPrice(max);
                     }}
