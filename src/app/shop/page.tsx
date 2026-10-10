@@ -445,18 +445,21 @@ export default function Shop() {
 
                         {/* Details below card */}
                         <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "14px", width: "100%" }}>
-                          <h4
-                            className="font-serif"
-                            style={{
-                              fontSize: "22px",
-                              lineHeight: "30px",
-                              fontWeight: 400,
-                              color: "#3F3B38",
-                              margin: 0,
-                            }}
-                          >
-                            {prod.title}
-                          </h4>
+                          <Link href={prod.slug ? `/shop/${prod.slug}` : `/shop/${prod.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                            <h4
+                              className="font-serif"
+                              style={{
+                                fontSize: "22px",
+                                lineHeight: "30px",
+                                fontWeight: 400,
+                                color: "#3F3B38",
+                                margin: 0,
+                                cursor: "pointer",
+                              }}
+                            >
+                              {prod.title}
+                            </h4>
+                          </Link>
                           
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>

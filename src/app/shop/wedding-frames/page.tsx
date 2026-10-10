@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
+import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { Heart, ChevronDown } from "lucide-react";
 
@@ -410,9 +411,11 @@ export default function ProductDetails() {
                     Product Image
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-                    <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0 }}>
-                      {prod.title}
-                    </h4>
+                    <Link href={prod.slug ? `/shop/${prod.slug}` : `/shop/${prod.id}`} style={{ textDecoration: 'none' }}>
+                      <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0 }}>
+                        {prod.title}
+                      </h4>
+                    </Link>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                       <span className="font-sans" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
                         ₹{prod.price}
