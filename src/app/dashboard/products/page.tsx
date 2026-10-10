@@ -466,7 +466,9 @@ export default function ProductsDashboard() {
           type: attr.type || (attr.name.toLowerCase() === "options" ? "checkbox" : "select"),
           values: attr.values ? attr.values.map((v: any) => ({
             value: v.value,
-            price_modifier: parseFloat(v.price_modifier || "0")
+            price_modifier: parseFloat(v.price_modifier || "0"),
+            parent_attribute_name: v.parent?.attribute?.name || "",
+            parent_value_name: v.parent?.value || ""
           })) : []
         }))
       );
@@ -508,7 +510,7 @@ export default function ProductsDashboard() {
 
   // Attributes Management
   const addAttribute = () => {
-    setAttributes([...attributes, { name: "", type: "checkbox", values: [{ value: "", price_modifier: 0 }] }]);
+    setAttributes([...attributes, { name: "", type: "checkbox", values: [{ value: "", price_modifier: 0, parent_attribute_name: "", parent_value_name: "" }] }]);
   };
 
   const addPredefinedAttribute = (name: string) => {
@@ -524,7 +526,7 @@ export default function ProductsDashboard() {
     const newAttr = {
       name: found.name,
       type: "select",
-      values: found.values.map(v => ({ value: v, price_modifier: 0 }))
+      values: found.values.map(v => ({ value: v, price_modifier: 0, parent_attribute_name: "", parent_value_name: "" }))
     };
     setAttributes([...attributes, newAttr]);
   };
@@ -547,7 +549,7 @@ export default function ProductsDashboard() {
 
   const addAttributeValue = (attrIndex: number) => {
     const updated = [...attributes];
-    updated[attrIndex].values.push({ value: "", price_modifier: 0 });
+    updated[attrIndex].values.push({ value: "", price_modifier: 0, parent_attribute_name: "", parent_value_name: "" });
     setAttributes(updated);
   };
 
@@ -566,6 +568,13 @@ export default function ProductsDashboard() {
   const updateAttributeValueModifier = (attrIndex: number, valIndex: number, val: number) => {
     const updated = [...attributes];
     updated[attrIndex].values[valIndex].price_modifier = val;
+    setAttributes(updated);
+  };
+
+  const updateAttributeValueDependency = (attrIndex: number, valIndex: number, parentAttr: string, parentVal: string) => {
+    const updated = [...attributes];
+    updated[attrIndex].values[valIndex].parent_attribute_name = parentAttr;
+    updated[attrIndex].values[valIndex].parent_value_name = parentVal;
     setAttributes(updated);
   };
 
@@ -589,7 +598,14 @@ export default function ProductsDashboard() {
       .map((attr) => ({
         name: attr.name,
         type: attr.type || "checkbox",
-        values: attr.values.filter((v: any) => v.value.trim() !== "")
+        values: attr.values
+          .filter((v: any) => v.value.trim() !== "")
+          .map((v: any) => ({
+            value: v.value.trim(),
+            price_modifier: v.price_modifier || 0,
+            parent_attribute_name: v.parent_attribute_name || "",
+            parent_value_name: v.parent_value_name || ""
+          }))
       }));
 
     const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
@@ -1368,35 +1384,69 @@ export default function ProductsDashboard() {
                       </div>
 
                       {attr.values.map((val: any, valIndex: number) => (
-                        <div key={valIndex} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                          <input
-                            type="text"
-                            value={val.value}
-                            onChange={(e) => updateAttributeValueText(attrIndex, valIndex, e.target.value)}
-                            placeholder="e.g. Medium / Gold"
-                            style={{
-                              flex: 2, height: "32px", borderRadius: "6px", border: "1px solid #D9A85C",
-                              padding: "0 10px", fontSize: "14px", outline: "none", color: "#3F3B38"
-                            }}
-                          />
-                          <input
-                            type="number"
-                            value={val.price_modifier}
-                            onChange={(e) => updateAttributeValueModifier(attrIndex, valIndex, parseFloat(e.target.value) || 0)}
-                            placeholder="Price modifier (e.g. +500)"
-                            style={{
-                              flex: 1, height: "32px", borderRadius: "6px", border: "1px solid #D9A85C",
-                              padding: "0 10px", fontSize: "14px", outline: "none", color: "#3F3B38"
-                            }}
-                          />
-                          {attr.values.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeAttributeValue(attrIndex, valIndex)}
-                              style={{ background: "none", border: "none", color: "#E05A47", cursor: "pointer" }}
-                            >
-                              <X size={14} />
-                            </button>
+                        <div key={valIndex} style={{ display: "flex", flexDirection: "column", gap: "8px", borderBottom: "1px dashed #D9A85C", paddingBottom: "10px", marginBottom: "4px" }}>
+                          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                            <input
+                              type="text"
+                              value={val.value}
+                              onChange={(e) => updateAttributeValueText(attrIndex, valIndex, e.target.value)}
+                              placeholder="e.g. Medium / Gold"
+                              style={{
+                                flex: 2, height: "32px", borderRadius: "6px", border: "1px solid #D9A85C",
+                                padding: "0 10px", fontSize: "14px", outline: "none", color: "#3F3B38"
+                              }}
+                            />
+                            <input
+                              type="number"
+                              value={val.price_modifier}
+                              onChange={(e) => updateAttributeValueModifier(attrIndex, valIndex, parseFloat(e.target.value) || 0)}
+                              placeholder="Price modifier (+)"
+                              style={{
+                                flex: 1, height: "32px", borderRadius: "6px", border: "1px solid #D9A85C",
+                                padding: "0 10px", fontSize: "14px", outline: "none", color: "#3F3B38"
+                              }}
+                            />
+                            {attr.values.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeAttributeValue(attrIndex, valIndex)}
+                                style={{ background: "none", border: "none", color: "#E05A47", cursor: "pointer" }}
+                              >
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
+                          
+                          {/* Dependency Selectors */}
+                          {attributes.length > 1 && (
+                            <div style={{ display: "flex", gap: "10px", paddingLeft: "10px", alignItems: "center" }}>
+                              <span style={{ fontSize: "11px", color: "#8B7E74" }}>Depends on:</span>
+                              <select
+                                value={`${val.parent_attribute_name}||${val.parent_value_name}`}
+                                onChange={(e) => {
+                                  const [pAttr, pVal] = e.target.value.split("||");
+                                  updateAttributeValueDependency(attrIndex, valIndex, pAttr || "", pVal || "");
+                                }}
+                                style={{
+                                  flex: 1, height: "26px", borderRadius: "4px", border: "1px solid #EAEAEA",
+                                  padding: "0 6px", fontSize: "12px", outline: "none", color: "#6E6E6E", backgroundColor: "#fff"
+                                }}
+                              >
+                                <option value="||">No dependency (Always available)</option>
+                                {attributes.map((otherAttr, otherIndex) => {
+                                  if (otherIndex === attrIndex || !otherAttr.name.trim()) return null;
+                                  return (
+                                    <optgroup key={otherIndex} label={otherAttr.name}>
+                                      {otherAttr.values.map((otherVal: any, oValIdx: number) => (
+                                        <option key={oValIdx} value={`${otherAttr.name}||${otherVal.value}`}>
+                                          {otherAttr.name} - {otherVal.value}
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  );
+                                })}
+                              </select>
+                            </div>
                           )}
                         </div>
                       ))}

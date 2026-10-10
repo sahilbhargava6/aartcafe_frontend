@@ -463,9 +463,25 @@ export default function ProductDetailsPage() {
               {productData.attributes && productData.attributes.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
                   {productData.attributes.map((attr: any) => {
-                    const validValues = (attr.values || []).filter(
+                    let validValues = (attr.values || []).filter(
                       (v: any) => v.value && !["na", "n/a", "none", "-", "null", ""].includes(v.value.toString().trim().toLowerCase())
                     );
+
+                    // Filter based on dependencies
+                    validValues = validValues.filter((v: any) => {
+                      if (!v.parent_id || !v.parent) return true; // No dependency
+                      
+                      const parentAttrName = v.parent.attribute?.name;
+                      const parentValName = v.parent.value;
+                      
+                      if (!parentAttrName) return true;
+                      
+                      // Check if the currently selected value for the parent attribute matches
+                      const currentSelectedParent = selectedAttributes[parentAttrName]?.value || "";
+                      const checkedList = currentSelectedParent.split(", ").map((s: string) => s.trim());
+                      
+                      return checkedList.includes(parentValName);
+                    });
 
                     const isCheckbox = attr.type === "checkbox" || attr.name.toLowerCase() === "options";
                     const isTextInput = attr.type === "text";
