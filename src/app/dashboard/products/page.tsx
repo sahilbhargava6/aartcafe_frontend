@@ -463,7 +463,7 @@ export default function ProductsDashboard() {
       setAttributes(
         prod.attributes.map((attr: any) => ({
           name: attr.name,
-          type: attr.type || (attr.name.toLowerCase() === "options" ? "checkbox" : "select"),
+          type: attr.type || "select",
           values: attr.values ? attr.values.map((v: any) => ({
             value: v.value,
             price_modifier: parseFloat(v.price_modifier || "0"),
@@ -510,7 +510,7 @@ export default function ProductsDashboard() {
 
   // Attributes Management
   const addAttribute = () => {
-    setAttributes([...attributes, { name: "", type: "checkbox", values: [{ value: "", price_modifier: 0, parent_attribute_name: "", parent_value_name: "" }] }]);
+    setAttributes([...attributes, { name: "", type: "select", values: [{ value: "", price_modifier: 0, parent_attribute_name: "", parent_value_name: "" }] }]);
   };
 
   const addPredefinedAttribute = (name: string) => {
@@ -597,7 +597,7 @@ export default function ProductsDashboard() {
       .filter((attr) => attr.name.trim() !== "")
       .map((attr) => ({
         name: attr.name,
-        type: attr.type || "checkbox",
+        type: attr.type || "select",
         values: attr.values
           .filter((v: any) => v.value.trim() !== "")
           .map((v: any) => ({
@@ -1385,16 +1385,16 @@ export default function ProductsDashboard() {
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <label style={{ fontSize: "12px", color: "#6E6E6E", fontWeight: 500 }}>Customer Input Type</label>
                         <select
-                          value={attr.type || "checkbox"}
+                          value={attr.type || "select"}
                           onChange={(e) => updateAttributeType(attrIndex, e.target.value)}
                           style={{
                             height: "36px", borderRadius: "6px", border: "1px solid #D9A85C",
                             padding: "0 10px", fontSize: "13px", outline: "none", color: "#3F3B38", backgroundColor: "#fff"
                           }}
                         >
+                          <option value="select">🔘 Pill Buttons (Single Select)</option>
                           <option value="checkbox">☑️ Checkboxes (Multi-select)</option>
                           <option value="text">✍️ Text Input (Custom Text)</option>
-                          <option value="select">🔘 Pill Buttons (Single Select)</option>
                         </select>
                       </div>
                     </div>
