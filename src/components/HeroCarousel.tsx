@@ -102,7 +102,7 @@ export default function HeroCarousel() {
 
           return (
             <Link
-              href={image.slug ? `/shop/${image.slug}` : "/shop"}
+              href={`/shop/${image.slug || image.id}`}
               key={`${image.id}-${index}`}
               style={{
                 position: "absolute",

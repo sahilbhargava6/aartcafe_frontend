@@ -493,7 +493,7 @@ export default function Navbar() {
                     {searchResults.map((prod) => (
                       <Link
                         key={prod.id}
-                        href={prod.slug ? `/shop/${prod.slug}` : "/shop"}
+                        href={`/shop/${prod.slug || prod.id}`}
                         onClick={() => {
                           setSearchOpen(false);
                           setSearchQuery("");

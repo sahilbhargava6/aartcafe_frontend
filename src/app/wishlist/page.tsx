@@ -130,7 +130,7 @@ export default function WishlistPage() {
                 </button>
 
                 {/* Product Image */}
-                <Link href={item.slug ? `/shop/${item.slug}` : "/shop"} style={{ position: "relative", height: "240px", backgroundColor: "#FAF6F0", display: "block" }}>
+                <Link href={`/shop/${item.slug || item.id}`} style={{ position: "relative", height: "240px", backgroundColor: "#FAF6F0", display: "block" }}>
                   {item.image ? (
                     <Image
                       src={item.image}

@@ -342,7 +342,7 @@ export default function Home() {
                   >
                     {/* Product image */}
                     <a
-                      href={prod.slug ? `/shop/${prod.slug}` : `/shop`}
+                      href={`/shop/${prod.slug || prod.id}`}
                       style={{
                         width: "100%",
                         aspectRatio: "1/1",
@@ -371,7 +371,7 @@ export default function Home() {
                     </a>
 
                     <a
-                      href={prod.slug ? `/shop/${prod.slug}` : `/shop`}
+                      href={`/shop/${prod.slug || prod.id}`}
                       style={{ textDecoration: "none" }}
                     >
                       <h3
