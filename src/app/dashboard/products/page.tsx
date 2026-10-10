@@ -1071,47 +1071,75 @@ export default function ProductsDashboard() {
                 <label style={{ fontSize: "14px", color: "#6E6E6E", fontWeight: 500 }}>
                   Categories <span style={{ fontSize: "12px", color: "#D98A9C" }}>(Select one or multiple)</span>
                 </label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", border: "1px solid #D9A85C", borderRadius: "10px", padding: "12px", backgroundColor: "#FAF6F0" }}>
-                  {categories.map((cat) => {
-                    const isSelected = categoryIds.includes(Number(cat.id));
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", border: "1px solid #D9A85C", borderRadius: "10px", padding: "12px", backgroundColor: "#FAF6F0" }}>
+                  {categories.filter(c => !c.parent_id).map((mainCat) => {
+                    const isMainSelected = categoryIds.includes(Number(mainCat.id));
+                    const subCats = categories.filter(c => c.parent_id === mainCat.id);
                     return (
-                      <label
-                        key={cat.id}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "6px 14px",
-                          borderRadius: "20px",
-                          border: isSelected ? "1.5px solid #D98A9C" : "1.5px solid #EBE5DB",
-                          backgroundColor: isSelected ? "#FFEAEF" : "#fff",
-                          color: isSelected ? "#D98A9C" : "#3F3B38",
-                          fontSize: "14px",
-                          fontWeight: isSelected ? 600 : 400,
-                          cursor: "pointer",
-                          userSelect: "none",
-                          transition: "all 0.2s ease",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => {
-                            const catId = Number(cat.id);
-                            if (e.target.checked) {
-                              setCategoryIds((prev) => [...prev, catId]);
-                              if (!categoryId) setCategoryId(String(catId));
-                            } else {
-                              const updated = categoryIds.filter((id) => id !== catId);
-                              setCategoryIds(updated);
-                              if (updated.length > 0) setCategoryId(String(updated[0]));
-                              else setCategoryId("");
-                            }
+                      <div key={mainCat.id} style={{ display: "flex", flexDirection: "column", gap: "8px", paddingBottom: "12px", borderBottom: "1px dashed #EBE5DB" }}>
+                        <label
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 14px",
+                            borderRadius: "20px", border: isMainSelected ? "1.5px solid #D98A9C" : "1.5px solid #EBE5DB",
+                            backgroundColor: isMainSelected ? "#FFEAEF" : "#fff", color: isMainSelected ? "#D98A9C" : "#3F3B38",
+                            fontSize: "15px", fontWeight: isMainSelected ? 600 : 500, cursor: "pointer", userSelect: "none", transition: "all 0.2s ease", alignSelf: "flex-start"
                           }}
-                          style={{ accentColor: "#D98A9C", cursor: "pointer" }}
-                        />
-                        {cat.name}
-                      </label>
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isMainSelected}
+                            onChange={(e) => {
+                              const catId = Number(mainCat.id);
+                              if (e.target.checked) {
+                                setCategoryIds((prev) => [...prev, catId]);
+                                if (!categoryId) setCategoryId(String(catId));
+                              } else {
+                                const updated = categoryIds.filter((id) => id !== catId);
+                                setCategoryIds(updated);
+                                if (updated.length > 0) setCategoryId(String(updated[0]));
+                                else setCategoryId("");
+                              }
+                            }}
+                            style={{ accentColor: "#D98A9C", cursor: "pointer" }}
+                          />
+                          {mainCat.name}
+                        </label>
+
+                        {/* Render Sub Categories */}
+                        {subCats.length > 0 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginLeft: "28px" }}>
+                            {subCats.map((subCat) => {
+                              const isSubSelected = categoryIds.includes(Number(subCat.id));
+                              return (
+                                <label
+                                  key={subCat.id}
+                                  style={{
+                                    display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 12px",
+                                    borderRadius: "20px", border: isSubSelected ? "1.5px solid #8FB9A8" : "1.5px solid #EBE5DB",
+                                    backgroundColor: isSubSelected ? "#E9F5F0" : "#fff", color: isSubSelected ? "#4E8E76" : "#6E6E6E",
+                                    fontSize: "13px", fontWeight: isSubSelected ? 600 : 400, cursor: "pointer", userSelect: "none", transition: "all 0.2s ease"
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSubSelected}
+                                    onChange={(e) => {
+                                      const catId = Number(subCat.id);
+                                      if (e.target.checked) {
+                                        setCategoryIds((prev) => [...prev, catId]);
+                                      } else {
+                                        setCategoryIds(categoryIds.filter((id) => id !== catId));
+                                      }
+                                    }}
+                                    style={{ accentColor: "#8FB9A8", cursor: "pointer" }}
+                                  />
+                                  {subCat.name}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>

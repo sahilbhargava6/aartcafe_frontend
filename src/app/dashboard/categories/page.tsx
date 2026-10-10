@@ -17,6 +17,7 @@ export default function CategoriesDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [categoryName, setCategoryName] = useState("");
+  const [parentId, setParentId] = useState<string>("");
 
   const fetchCategories = () => {
     setLoading(true);
@@ -79,12 +80,14 @@ export default function CategoriesDashboard() {
   const openAddModal = () => {
     setEditingCategory(null);
     setCategoryName("");
+    setParentId("");
     setIsModalOpen(true);
   };
 
   const openEditModal = (cat: any) => {
     setEditingCategory(cat);
     setCategoryName(cat.name);
+    setParentId(cat.parent_id ? String(cat.parent_id) : "");
     setIsModalOpen(true);
   };
 
@@ -106,7 +109,7 @@ export default function CategoriesDashboard() {
         "Accept": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ name: categoryName }),
+      body: JSON.stringify({ name: categoryName, parent_id: parentId ? parseInt(parentId) : null }),
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
@@ -287,6 +290,7 @@ export default function CategoriesDashboard() {
               <tr style={{ backgroundColor: "#F9F6F0", borderBottom: "2px solid #D9A85C" }}>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>ID</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Name</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Parent</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Slug</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Products Count</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Actions</th>
@@ -297,6 +301,9 @@ export default function CategoriesDashboard() {
                 <tr key={cat.id} style={{ borderBottom: "1px solid #EBE5DB" }}>
                   <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{cat.id}</td>
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{cat.name}</td>
+                  <td style={{ padding: "16px 24px", color: "#8B7E74" }}>
+                    {cat.parent ? cat.parent.name : <span style={{ opacity: 0.5 }}>None</span>}
+                  </td>
                   <td style={{ padding: "16px 24px", color: "#D98A9C" }}>{cat.slug}</td>
                   <td style={{ padding: "16px 24px", color: "#8FB9A8" }}>{cat.products_count ?? 0}</td>
                   <td style={{ padding: "16px 24px", textAlign: "right" }}>
@@ -365,6 +372,23 @@ export default function CategoriesDashboard() {
                   placeholder="e.g. Handmade Rakhis"
                   required
                 />
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label className="font-sans" style={{ fontSize: "14px", color: "#6E6E6E" }}>Parent Category (Optional)</label>
+                <select
+                  value={parentId}
+                  onChange={(e) => setParentId(e.target.value)}
+                  style={{
+                    height: "40px", borderRadius: "8px", border: "1px solid #D9A85C",
+                    padding: "0 12px", fontSize: "15px", outline: "none", color: "#3F3B38", backgroundColor: "#fff"
+                  }}
+                >
+                  <option value="">-- None (Top Level) --</option>
+                  {categories.filter(c => !editingCategory || c.id !== editingCategory.id).map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
               </div>
 
               <button
