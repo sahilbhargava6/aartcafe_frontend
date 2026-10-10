@@ -411,7 +411,7 @@ export default function ProductDetails() {
                     Product Image
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-                    <Link href={prod.slug ? `/shop/${prod.slug}` : `/shop/${prod.id}`} style={{ textDecoration: 'none' }}>
+                    <Link href={`/shop/${(prod as any).slug || prod.id}`} style={{ textDecoration: 'none' }}>
                       <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0 }}>
                         {prod.title}
                       </h4>
