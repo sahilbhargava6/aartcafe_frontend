@@ -165,7 +165,7 @@ export default function Home() {
             <div
               className="hero-text-side"
               style={{
-                paddingTop: "68px",
+                paddingTop: "240px",
                 paddingLeft: "60px",
                 flex: "1",
               }}

@@ -126,12 +126,8 @@ export default function Shop() {
     };
   }, []);
 
-  const priceRanges = [
-    { label: "Under ₹1,000", value: "under-1000" },
-    { label: "₹1,000 - ₹2,000", value: "1000-2000" },
-    { label: "₹2,000 - ₹5,000", value: "2000-5000" },
-    { label: "Over ₹5,000", value: "over-5000" },
-  ];
+  const [minPrice, setMinPrice] = useState<number>(0);
+  const [maxPrice, setMaxPrice] = useState<number>(10000);
 
   useEffect(() => {
     let result = allProducts;
@@ -140,18 +136,11 @@ export default function Shop() {
       result = result.filter((p) => (p.categories && Array.isArray(p.categories)) ? p.categories.includes(selectedCategory) : p.category === selectedCategory);
     }
 
-    if (selectedPriceRange) {
-      result = result.filter((p) => {
-        if (selectedPriceRange === "under-1000") return p.price < 1000;
-        if (selectedPriceRange === "1000-2000") return p.price >= 1000 && p.price <= 2000;
-        if (selectedPriceRange === "2000-5000") return p.price >= 2000 && p.price <= 5000;
-        if (selectedPriceRange === "over-5000") return p.price > 5000;
-        return true;
-      });
-    }
+    // Apply price filter
+    result = result.filter((p) => p.price >= minPrice && p.price <= maxPrice);
 
     setFilteredProducts(result);
-  }, [selectedCategory, selectedPriceRange, allProducts]);
+  }, [selectedCategory, minPrice, maxPrice, allProducts]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#fff" }}>
@@ -221,32 +210,17 @@ export default function Shop() {
                 <h3 className="font-serif filter-box-title">
                   Prices
                 </h3>
-                <div style={{ overflowY: "auto", flex: 1, paddingRight: "4px" }}>
-                  <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {priceRanges.map((range) => (
-                      <li key={range.value}>
-                        <button
-                          onClick={() => setSelectedPriceRange(selectedPriceRange === range.value ? null : range.value)}
-                          className="font-sans"
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            fontSize: "20px",
-                            lineHeight: "30px",
-                            color: selectedPriceRange === range.value ? "#D9A85C" : "#3F3B38",
-                            fontWeight: 400,
-                            textAlign: "left",
-                            width: "100%",
-                            padding: 0,
-                            transition: "color 0.2s ease",
-                          }}
-                        >
-                          {range.label}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                <div style={{ paddingRight: "4px", marginTop: "16px" }}>
+                  <PriceSlider
+                    min={0}
+                    max={10000}
+                    currentMin={minPrice}
+                    currentMax={maxPrice}
+                    onChange={(min, max) => {
+                      setMinPrice(min);
+                      setMaxPrice(max);
+                    }}
+                  />
                 </div>
               </div>
 
@@ -272,11 +246,12 @@ export default function Shop() {
                   {selectedCategory && selectedCategory !== "All" ? selectedCategory.toUpperCase() : "SHOP"}
                 </h1>
 
-                {(selectedCategory || selectedPriceRange) && (
+                {(selectedCategory || minPrice > 0 || maxPrice < 10000) && (
                   <button
                     onClick={() => {
                       setSelectedCategory(null);
-                      setSelectedPriceRange(null);
+                      setMinPrice(0);
+                      setMaxPrice(10000);
                       if (typeof window !== "undefined") {
                         const url = new URL(window.location.href);
                         url.searchParams.delete("category");

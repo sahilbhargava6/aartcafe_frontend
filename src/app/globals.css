@@ -482,3 +482,31 @@ button, a, input, select, textarea {
     padding-right: 20px !important;
   }
 }
+
+.thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  background-color: #D9A85C;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  height: 18px;
+  width: 18px;
+  margin-top: 4px;
+  pointer-events: all;
+  position: relative;
+  box-shadow: 0 0 1px 1px #eee;
+}
+.thumb::-moz-range-thumb {
+  background-color: #D9A85C;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  height: 18px;
+  width: 18px;
+  margin-top: 4px;
+  pointer-events: all;
+  position: relative;
+  box-shadow: 0 0 1px 1px #eee;
+}
+
