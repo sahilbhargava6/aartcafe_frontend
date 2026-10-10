@@ -79,7 +79,6 @@ export default function BestSellersDashboard() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
-        ...prod,
         is_bestseller: updatedStatus,
       }),
     })

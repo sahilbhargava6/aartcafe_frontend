@@ -92,11 +92,26 @@ export default function ProductDetails() {
 
   const handleAddToBag = () => {
     const finalPrice = calculateTotalPrice();
+    const selections: [string, string][] = [
+      ["Type of Preservation", preservation],
+      ["Shapes", shape],
+      ["Sizes", size],
+      ["Type of Filling", filling],
+      ["Type of Flowers", flowers],
+      ["Accessories", accessory],
+      ["Outline", outline],
+    ];
+    const optionIds = selections
+      .map(([attrName, selected]) => getAttributeOptions(attrName).find((v: any) => v.value === selected)?.id)
+      .filter((id): id is number => typeof id === "number");
+
     addToBag({
       id: productData?.id || "shop-1",
       title: `${productData?.title || "Wedding Frame"} (${shape}, ${size})`,
       price: finalPrice,
       image: productData?.image || "",
+      productId: productData?.id,
+      optionIds,
     });
   };
 

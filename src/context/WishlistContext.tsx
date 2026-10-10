@@ -23,6 +23,8 @@ const WishlistContext = createContext<WishlistContextType | undefined>(undefined
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  // Becomes true once the saved wishlist has been read, so the empty starting list never overwrites it
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("aartcafe-wishlist");
@@ -33,11 +35,12 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         console.error("Failed to load wishlist", e);
       }
     }
+    setLoaded(true);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("aartcafe-wishlist", JSON.stringify(wishlist));
-  }, [wishlist]);
+    if (loaded) localStorage.setItem("aartcafe-wishlist", JSON.stringify(wishlist));
+  }, [wishlist, loaded]);
 
   const toggleWishlist = (item: WishlistItem) => {
     setWishlist((prev) => {

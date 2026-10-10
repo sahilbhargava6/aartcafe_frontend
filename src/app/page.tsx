@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import HeroCarousel from "@/components/HeroCarousel";
+import SwipeCarousel from "@/components/SwipeCarousel";
 import { useCart } from "@/context/CartContext";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -19,6 +20,20 @@ export default function Home() {
   const [activeFestiveIndex, setActiveFestiveIndex] = useState(0);
   const [discoveryIndex, setDiscoveryIndex] = useState(0);
   const [reviews, setReviews] = useState<any[]>([]);
+  const weddingThumbsRef = useRef<HTMLDivElement>(null);
+
+  // Show a wedding special (the arrows wrap around) and slide its thumbnail into view
+  const showWedding = (index: number) => {
+    const count = weddingSpecials.length;
+    if (count === 0) return;
+    const next = (index + count) % count;
+    setActiveWeddingIndex(next);
+    const row = weddingThumbsRef.current;
+    const thumb = row?.children[next] as HTMLElement | undefined;
+    if (row && thumb) {
+      row.scrollTo({ left: thumb.offsetLeft - (row.clientWidth - thumb.offsetWidth) / 2, behavior: "smooth" });
+    }
+  };
 
   useEffect(() => {
     if (newDiscoveryProducts.length > 1) {
@@ -29,15 +44,15 @@ export default function Home() {
     }
   }, [newDiscoveryProducts]);
 
-  const bestsellersRef = useRef<HTMLDivElement>(null);
-  const reviewsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/festive-specials")
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/festive-specials?status=featured")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          setFestiveSpecials(data);
+          // A backend without the festive flags ignores ?status=; then keep showing all festive items as before
+          const featured = data.filter((p: any) => !("is_festive_featured" in p) || p.is_festive_featured);
+          if (featured.length > 0) setFestiveSpecials(featured);
         }
       })
       .catch((err) => console.error("Error fetching festive specials:", err));
@@ -73,7 +88,12 @@ export default function Home() {
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          setReviews(data.slice(0, 18));
+          // Featured reviews: approved only, best rated first, newest first within a rating
+          const featured = data
+            .filter((r: any) => r.is_approved !== false)
+            .sort((a: any, b: any) => Number(b.rating) - Number(a.rating) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 12);
+          setReviews(featured);
         }
       })
       .catch((err) => console.error("Error fetching reviews:", err));
@@ -97,13 +117,33 @@ export default function Home() {
     },
   };
 
-  const scrollCarousel = (ref: React.RefObject<HTMLDivElement | null>, direction: "left" | "right") => {
-    if (ref.current) {
-      const { scrollLeft, clientWidth } = ref.current;
-      const scrollTo = direction === "left" ? scrollLeft - clientWidth * 0.6 : scrollLeft + clientWidth * 0.6;
-      ref.current.scrollTo({ left: scrollTo, behavior: "smooth" });
-    }
-  };
+  // One slide per festive product for the tablet/phone carousel (same fallback items as the desktop tabs)
+  const festiveSlides =
+    festiveSpecials.length > 0
+      ? festiveSpecials.map((p) => {
+          const price = p.discount_price ? parseFloat(p.discount_price) : parseFloat(p.base_price);
+          return {
+            id: String(p.id),
+            title: p.title,
+            description: p.description || "Beautifully handcrafted festive special collection item, created with premium materials.",
+            price,
+            image: p.image || "",
+            href: `/shop/${p.slug || p.id}`,
+            cartItem: { id: String(p.id), title: p.title, price, image: p.image || "", category: p.category?.name || "Festive Specials" },
+          };
+        })
+      : Object.entries(festiveDetails).map(([tab, details]) => {
+          const id = `festive-${tab.toLowerCase().replace(/\s+/g, "-")}`;
+          return {
+            id,
+            title: tab,
+            description: details.desc,
+            price: details.price,
+            image: "",
+            href: "/festive-specials",
+            cartItem: { id, title: details.title, price: details.price, image: "", category: "Festive Specials" },
+          };
+        });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#fff" }}>
@@ -116,6 +156,7 @@ export default function Home() {
             HERO SECTION
             ═══════════════════════════════════════════════════════ */}
         <section
+          className="hero-section"
           style={{
             position: "relative",
             width: "100%",
@@ -127,6 +168,7 @@ export default function Home() {
         >
           {/* ── Flower decoration: top-left cluster ── */}
           <div
+            className="hero-flower hero-flower--tl"
             style={{
               position: "absolute",
               top: "0px",
@@ -203,6 +245,7 @@ export default function Home() {
 
           {/* ── Flower decoration: bottom-right branch ── */}
           <div
+            className="hero-flower hero-flower--br"
             style={{
               position: "absolute",
               bottom: "-50px",
@@ -230,6 +273,7 @@ export default function Home() {
             ═══════════════════════════════════════════════════════ */}
         <section
           id="bestsellers"
+          className="home-section"
           style={{
             padding: "40px 0 60px 0",
             background: "#fff",
@@ -237,9 +281,9 @@ export default function Home() {
         >
           <div className="home-section-wrapper" style={{ maxWidth: "1920px", margin: "0 auto", padding: "0 120px", position: "relative" }}>
             {/* Section Header */}
-            <div style={{ textAlign: "center", marginBottom: "50px" }}>
+            <div className="home-section-header" style={{ textAlign: "center", marginBottom: "50px" }}>
               <h2
-                className="font-serif"
+                className="font-serif home-section-title"
                 style={{
                   fontSize: "48px",
                   lineHeight: "64px",
@@ -251,8 +295,8 @@ export default function Home() {
                 CUSTOMER&apos;S FAVORITES
               </h2>
               <a
-                href="/shop"
-                className="font-sans"
+                href="/shop?collection=bestsellers"
+                className="font-sans home-section-link"
                 style={{
                   color: "#8FB9A8",
                   fontSize: "32px",
@@ -272,55 +316,11 @@ export default function Home() {
               </a>
             </div>
 
-            {/* Carousel */}
-            <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-              {/* Left Arrow */}
-              <button
-                onClick={() => scrollCarousel(bestsellersRef, "left")}
-                style={{
-                  position: "absolute",
-                  left: "-60px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "transparent",
-                  border: "1.5px solid #8FB9A8",
-                  color: "#8FB9A8",
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  zIndex: 10,
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#8FB9A8";
-                  e.currentTarget.style.color = "#fff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#8FB9A8";
-                }}
-              >
-                <ChevronLeft size={22} />
-              </button>
-
-              {/* Viewport */}
-              <div
-                ref={bestsellersRef}
-                style={{
-                  display: "flex",
-                  gap: "55px",
-                  overflowX: "auto",
-                  scrollBehavior: "smooth",
-                  scrollbarWidth: "none",
-                  width: "100%",
-                  padding: "10px 0",
-                }}
-              >
-                {(bestsellerProducts.length > 0
+            {/* Carousel: 3 cards per view on laptops and tablets, 2 on phones */}
+            <SwipeCarousel
+              ariaLabel="Customer's favorites"
+              items={
+                bestsellerProducts.length > 0
                   ? bestsellerProducts
                   : [
                     { id: "fav-1", title: "Wedding Frame", base_price: 2000 },
@@ -328,153 +328,111 @@ export default function Home() {
                     { id: "fav-3", title: "Wedding Frame", base_price: 2000 },
                     { id: "fav-4", title: "Wedding Frame", base_price: 2000 },
                   ]
-                ).map((prod) => (
-                  <div
-                    key={prod.id}
+              }
+              getKey={(prod) => prod.id}
+              perView={{ desktop: 3, tablet: 3, mobile: 2 }}
+              gap={{ desktop: 55, mobile: 14 }}
+              arrowTop="36%"
+              renderItem={(prod) => (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+                  {/* Product image */}
+                  <a
+                    href={`/shop/${prod.slug || prod.id}`}
                     style={{
-                      flex: "0 0 calc(33.333% - 37px)",
-                      minWidth: "280px",
+                      width: "100%",
+                      aspectRatio: "1/1",
+                      backgroundColor: "#F5EDE8",
+                      borderRadius: "10px",
+                      marginBottom: "16px",
                       display: "flex",
-                      flexDirection: "column",
                       alignItems: "center",
-                      textAlign: "center",
+                      justifyContent: "center",
+                      color: "#BCAEA2",
+                      fontSize: "14px",
+                      boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      transition: "transform 0.3s ease",
+                      textDecoration: "none",
                     }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                   >
-                    {/* Product image */}
-                    <a
-                      href={`/shop/${prod.slug || prod.id}`}
-                      style={{
-                        width: "100%",
-                        aspectRatio: "1/1",
-                        backgroundColor: "#F5EDE8",
-                        borderRadius: "10px",
-                        marginBottom: "16px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#BCAEA2",
-                        fontSize: "14px",
-                        boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
-                        overflow: "hidden",
-                        cursor: "pointer",
-                        transition: "transform 0.3s ease",
-                        textDecoration: "none",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-                    >
-                      {prod.image ? (
-                        <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        "Product Image"
-                      )}
-                    </a>
+                    {prod.image ? (
+                      <img src={prod.image} alt={prod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      "Product Image"
+                    )}
+                  </a>
 
-                    <a
-                      href={`/shop/${prod.slug || prod.id}`}
-                      style={{ textDecoration: "none" }}
-                    >
-                      <h3
-                        className="font-serif"
-                        style={{
-                          fontSize: "24px",
-                          lineHeight: "32px",
-                          fontWeight: 400,
-                          color: "#3F3B38",
-                          margin: "0 0 4px 0",
-                        }}
-                      >
-                        {prod.title}
-                      </h3>
-                    </a>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: "8px", margin: "0 0 4px 0" }}>
-                      <span
-                        className="font-sans"
-                        style={{
-                          fontSize: "22px",
-                          lineHeight: "32px",
-                          fontWeight: 500,
-                          color: "#3F3B38",
-                        }}
-                      >
-                        ₹{prod.discount_price ?? prod.base_price ?? prod.price}
-                      </span>
-                      {prod.discount_price && (
-                        <span className="font-sans" style={{ fontSize: "15px", textDecoration: "line-through", color: "#999" }}>
-                          ₹{prod.base_price}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => addToBag({ id: prod.id, title: prod.title, price: parseFloat(prod.discount_price ?? prod.base_price ?? prod.price), image: prod.image || "" })}
-                      className="font-sans"
+                  <a href={`/shop/${prod.slug || prod.id}`} style={{ textDecoration: "none" }}>
+                    <h3
+                      className="font-serif fav-title"
                       style={{
-                        background: "none",
-                        border: "none",
-                        borderBottom: "1px solid #000",
-                        fontSize: "22px",
+                        fontSize: "24px",
                         lineHeight: "32px",
                         fontWeight: 400,
                         color: "#3F3B38",
-                        cursor: "pointer",
-                        padding: "0 0 2px 0",
-                        transition: "color 0.2s, border-color 0.2s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = "#D9A85C";
-                        e.currentTarget.style.borderColor = "#D9A85C";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = "#3F3B38";
-                        e.currentTarget.style.borderColor = "#000";
+                        margin: "0 0 4px 0",
                       }}
                     >
-                      Add to Bag
-                    </button>
+                      {prod.title}
+                    </h3>
+                  </a>
+                  <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", justifyContent: "center", columnGap: "8px", margin: "0 0 4px 0" }}>
+                    <span
+                      className="font-sans fav-price"
+                      style={{
+                        fontSize: "22px",
+                        lineHeight: "32px",
+                        fontWeight: 500,
+                        color: "#3F3B38",
+                      }}
+                    >
+                      ₹{prod.discount_price ?? prod.base_price ?? prod.price}
+                    </span>
+                    {prod.discount_price && (
+                      <span className="font-sans fav-strike" style={{ fontSize: "15px", textDecoration: "line-through", color: "#999" }}>
+                        ₹{prod.base_price}
+                      </span>
+                    )}
                   </div>
-                ))}
-              </div>
-
-              {/* Right Arrow */}
-              <button
-                onClick={() => scrollCarousel(bestsellersRef, "right")}
-                style={{
-                  position: "absolute",
-                  right: "-60px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "transparent",
-                  border: "1.5px solid #8FB9A8",
-                  color: "#8FB9A8",
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  zIndex: 10,
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#8FB9A8";
-                  e.currentTarget.style.color = "#fff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#8FB9A8";
-                }}
-              >
-                <ChevronRight size={22} />
-              </button>
-            </div>
+                  <button
+                    onClick={() => addToBag({ id: prod.id, title: prod.title, price: parseFloat(prod.discount_price ?? prod.base_price ?? prod.price), image: prod.image || "" })}
+                    className="font-sans fav-btn"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      borderBottom: "1px solid #000",
+                      fontSize: "22px",
+                      lineHeight: "32px",
+                      fontWeight: 400,
+                      color: "#3F3B38",
+                      cursor: "pointer",
+                      padding: "0 0 2px 0",
+                      transition: "color 0.2s, border-color 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "#D9A85C";
+                      e.currentTarget.style.borderColor = "#D9A85C";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "#3F3B38";
+                      e.currentTarget.style.borderColor = "#000";
+                    }}
+                  >
+                    Add to Bag
+                  </button>
+                </div>
+              )}
+            />
           </div>
         </section>
 
         {/* ═══════════════════════════════════════════════════════
             DISCOVER NEW
             ═══════════════════════════════════════════════════════ */}
-        <section style={{ padding: "60px 0 80px 0", background: "#fff", position: "relative", overflow: "hidden" }}>
+        <section className="home-section" style={{ padding: "60px 0 80px 0", background: "#fff", position: "relative", overflow: "hidden" }}>
           {/* Flower decoration top-right for this section */}
           <div style={{
             position: "absolute", top: "-20px", right: "-30px",
@@ -490,7 +448,7 @@ export default function Home() {
               : rightProduct;
 
             return (
-              <div style={{ maxWidth: "1920px", margin: "0 auto", padding: "0 120px", position: "relative", zIndex: 1 }}>
+              <div className="home-desktop-only" style={{ maxWidth: "1920px", margin: "0 auto", padding: "0 120px", position: "relative", zIndex: 1 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1.05fr 0.95fr", gap: "80px", alignItems: "start", maxWidth: "1350px", margin: "0 auto" }}>
                   {/* Left: Large product frame image */}
                   <a
@@ -542,7 +500,7 @@ export default function Home() {
                   {/* Right: Discover heading + smaller image + text */}
                   <div style={{ display: "flex", flexDirection: "column", gap: "24px", paddingTop: "40px" }}>
                     <h2
-                      className="font-serif"
+                      className="font-serif home-section-title"
                       style={{
                         fontSize: "48px",
                         lineHeight: "64px",
@@ -644,7 +602,7 @@ export default function Home() {
                         className="font-sans"
                         onClick={() => {
                           if (rightProduct) {
-                            addToBag({ id: rightProduct.id, title: rightProduct.title, price: rightProduct.base_price, image: rightProduct.image || "" });
+                            addToBag({ id: rightProduct.id, title: rightProduct.title, price: parseFloat(rightProduct.discount_price || rightProduct.base_price), image: rightProduct.image || "" });
                           }
                         }}
                         style={{
@@ -668,6 +626,60 @@ export default function Home() {
             );
           })()}
 
+          {/* Tablets & phones: heading + swipeable row of new products */}
+          {newDiscoveryProducts.length > 0 && (
+            <div className="home-mobile-only home-section-wrapper" style={{ padding: "0 40px", position: "relative", zIndex: 1 }}>
+              <h2
+                className="font-serif home-section-title"
+                style={{ fontSize: "48px", lineHeight: "64px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: "0 0 24px 0" }}
+              >
+                DISCOVER NEW
+              </h2>
+              <SwipeCarousel
+                ariaLabel="New discoveries"
+                items={newDiscoveryProducts}
+                getKey={(p) => p.id}
+                perView={{ desktop: 3, tablet: 2.3, mobile: 1.3 }}
+                gap={{ desktop: 24, mobile: 14 }}
+                arrowTop="40%"
+                renderItem={(p) => {
+                  const price = parseFloat(p.discount_price || p.base_price);
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", textAlign: "center", height: "100%" }}>
+                      <a
+                        href={`/shop/${p.slug || p.id}`}
+                        style={{ display: "block", width: "100%", aspectRatio: "4/5", backgroundColor: "#F5EDE8", borderRadius: "15px", boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.15)", overflow: "hidden", marginBottom: "12px" }}
+                      >
+                        {p.image && <img src={p.image} alt={p.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                      </a>
+                      <a href={`/shop/${p.slug || p.id}`} style={{ textDecoration: "none" }}>
+                        <h3 className="font-serif" style={{ fontSize: "18px", lineHeight: "24px", fontWeight: 400, color: "#3F3B38", margin: "0 0 6px 0" }}>
+                          {p.title}
+                        </h3>
+                      </a>
+                      <p
+                        className="font-sans"
+                        style={{ fontSize: "14px", lineHeight: "20px", color: "#6E6E6E", margin: "0 0 8px 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+                      >
+                        {p.description || "Handcrafted keepsake item."}
+                      </p>
+                      <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "center", gap: "14px" }}>
+                        <span className="font-sans" style={{ fontSize: "16px", fontWeight: 500, color: "#3F3B38" }}>₹{price}</span>
+                        <button
+                          onClick={() => addToBag({ id: p.id, title: p.title, price, image: p.image || "" })}
+                          className="font-sans"
+                          style={{ background: "none", border: "none", borderBottom: "1px solid #3F3B38", fontSize: "15px", color: "#3F3B38", cursor: "pointer", padding: "0 0 2px 0", minHeight: "32px" }}
+                        >
+                          Add to Bag
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }}
+              />
+            </div>
+          )}
+
           {/* Rotated decorative image (background) */}
           <div style={{
             position: "absolute",
@@ -685,11 +697,11 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════════════
             FESTIVE TREASURES
             ═══════════════════════════════════════════════════════ */}
-        <section style={{ padding: "60px 0 80px 0", background: "#fff" }}>
+        <section className="home-section" style={{ padding: "60px 0 80px 0", background: "#fff" }}>
           <div className="home-section-wrapper" style={{ maxWidth: "1920px", margin: "0 auto", padding: "0 120px" }}>
             {/* Section title */}
             <h2
-              className="font-serif"
+              className="font-serif home-section-title"
               style={{
                 fontSize: "48px",
                 lineHeight: "64px",
@@ -707,7 +719,7 @@ export default function Home() {
                 const currentProduct = festiveSpecials[activeFestiveIndex % festiveSpecials.length];
                 const prodPrice = currentProduct.discount_price ? parseFloat(currentProduct.discount_price) : parseFloat(currentProduct.base_price);
                 return (
-                  <div className="festive-grid" style={{ display: "grid", gridTemplateColumns: "452px 1.2fr 1fr", gap: "40px", alignItems: "center" }}>
+                  <div className="festive-grid festive-desktop-only" style={{ display: "grid", gridTemplateColumns: "452px 1.2fr 1fr", gap: "40px", alignItems: "center" }}>
                     {/* Left: Festive product image with zoom & fade effect */}
                     <a href={`/shop/${currentProduct.slug || currentProduct.id}`} style={{ textDecoration: "none", display: "block" }}>
                       <div
@@ -884,7 +896,7 @@ export default function Home() {
                 );
               })()
             ) : (
-              <div className="festive-grid" style={{ display: "grid", gridTemplateColumns: "452px 1.2fr 1fr", gap: "40px", alignItems: "center" }}>
+              <div className="festive-grid festive-desktop-only" style={{ display: "grid", gridTemplateColumns: "452px 1.2fr 1fr", gap: "40px", alignItems: "center" }}>
                 {/* Fallback layout */}
                 <div
                   style={{
@@ -951,16 +963,71 @@ export default function Home() {
                 </div>
               </div>
             )}
+
+            {/* Tablets & phones: each product in one card frame, swipeable */}
+            <div className="festive-mobile-only">
+              <SwipeCarousel
+                ariaLabel="Festive treasures"
+                items={festiveSlides}
+                getKey={(s) => s.id}
+                perView={{ desktop: 3, tablet: 2.4, mobile: 1.08 }}
+                gap={{ desktop: 24, mobile: 12 }}
+                arrowTop="28%"
+                renderItem={(s) => (
+                  <div
+                    style={{
+                      height: "100%",
+                      boxSizing: "border-box",
+                      display: "flex",
+                      flexDirection: "column",
+                      background: "#fff",
+                      border: "1px solid #F0E6DF",
+                      borderRadius: "18px",
+                      boxShadow: "0 8px 24px rgba(63, 59, 56, 0.08)",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <a
+                      href={s.href}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "4/3", backgroundColor: "#F5EDE8", color: "#BCAEA2", fontSize: "14px", overflow: "hidden", textDecoration: "none" }}
+                    >
+                      {s.image ? <img src={s.image} alt={s.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "Festive Product Image"}
+                    </a>
+                    <div style={{ padding: "16px 18px 20px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "8px", flex: 1 }}>
+                      <h3 className="font-serif" style={{ fontSize: "20px", lineHeight: "28px", fontWeight: 400, color: "#3F3B38", margin: 0 }}>
+                        {s.title}
+                      </h3>
+                      <p
+                        className="font-sans"
+                        style={{ fontSize: "14px", lineHeight: "21px", color: "#6E6E6E", margin: 0, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+                      >
+                        {s.description}
+                      </p>
+                      <span className="font-sans" style={{ fontSize: "20px", lineHeight: "28px", fontWeight: 500, color: "#D98A9C", marginTop: "auto" }}>
+                        ₹{s.price}
+                      </span>
+                      <button
+                        onClick={() => addToBag(s.cartItem)}
+                        className="font-sans"
+                        style={{ background: "#D98A9C", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 500, color: "#fff", cursor: "pointer", padding: "10px 24px", minHeight: "42px", boxShadow: "0 4px 12px rgba(217, 138, 156, 0.3)" }}
+                      >
+                        Add to Bag
+                      </button>
+                    </div>
+                  </div>
+                )}
+              />
+            </div>
           </div>
         </section>
 
         {/* ═══════════════════════════════════════════════════════
             WEDDING SPECIALS
             ═══════════════════════════════════════════════════════ */}
-        <section style={{ padding: "80px 0 100px 0", background: "#fff", position: "relative", overflow: "hidden" }}>
+        <section className="wedding-section" style={{ padding: "80px 0 100px 0", background: "#fff", position: "relative", overflow: "hidden" }}>
           {/* Section title */}
           <h2
-            className="font-serif"
+            className="font-serif home-section-title wedding-heading"
             style={{
               fontSize: "48px",
               lineHeight: "64px",
@@ -994,7 +1061,7 @@ export default function Home() {
           `}</style>
 
           {/* Back Dupatta Layer */}
-          <div style={{
+          <div className="wedding-dupatta wedding-dupatta--back" style={{
             position: "absolute",
             left: "-10%",
             top: "8%",
@@ -1056,7 +1123,7 @@ export default function Home() {
           </div>
 
           {/* Front Dupatta Layer (Inverted wave with Zari border) */}
-          <div style={{
+          <div className="wedding-dupatta wedding-dupatta--front" style={{
             position: "absolute",
             left: "-8%",
             top: "12%",
@@ -1116,11 +1183,16 @@ export default function Home() {
             </svg>
           </div>
 
-          <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "0 120px", position: "relative", zIndex: 1 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", alignItems: "center", position: "relative" }}>
+          <div className="wedding-container" style={{ maxWidth: "1400px", margin: "0 auto", padding: "0 120px", position: "relative", zIndex: 1 }}>
+            <div className="wedding-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", alignItems: "center", position: "relative" }}>
 
               {/* Slider Left Arrow */}
               <button
+                type="button"
+                className="wedding-arrow wedding-arrow--prev"
+                onClick={() => showWedding(activeWeddingIndex - 1)}
+                disabled={weddingSpecials.length < 2}
+                aria-label="Previous wedding special"
                 style={{
                   position: "absolute",
                   left: "-80px",
@@ -1141,6 +1213,7 @@ export default function Home() {
 
               {/* Left Column: Wedding Couple Illustration */}
               <div
+                className="wedding-couple"
                 style={{
                   width: "100%",
                   display: "flex",
@@ -1153,6 +1226,7 @@ export default function Home() {
               >
                 {/* Groom */}
                 <img
+                  className="wedding-groom"
                   src="/images/Minimalist_Spring_Sale_Facebook_Post_6.png"
                   alt="Wedding Groom"
                   style={{
@@ -1167,6 +1241,7 @@ export default function Home() {
                 />
                 {/* Bride */}
                 <img
+                  className="wedding-bride"
                   src="/images/Minimalist_Spring_Sale_Facebook_Post_5.png"
                   alt="Wedding Bride"
                   style={{
@@ -1182,9 +1257,25 @@ export default function Home() {
               </div>
 
               {/* Right Column: Details & Mini-gallery */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px", paddingBottom: "40px", zIndex: 2 }}>
+              <div
+                className="wedding-card"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "20px",
+                  zIndex: 2,
+                  minWidth: 0,
+                  // Frosted card keeps the text readable over the animated red dupatta
+                  backgroundColor: "rgba(255, 255, 255, 0.9)",
+                  backdropFilter: "blur(6px)",
+                  WebkitBackdropFilter: "blur(6px)",
+                  borderRadius: "20px",
+                  padding: "28px 32px",
+                  boxShadow: "0 10px 30px rgba(91, 0, 11, 0.12)",
+                }}
+              >
                 <h3
-                  className="font-serif"
+                  className="font-serif wedding-title"
                   style={{
                     fontSize: "24px",
                     lineHeight: "32px",
@@ -1197,18 +1288,29 @@ export default function Home() {
                   {weddingSpecials.length > 0 ? weddingSpecials[activeWeddingIndex]?.title : "WEDDING FRAMES"}
                 </h3>
 
-                {/* 3 mini product thumbnails gallery */}
-                <div style={{ display: "flex", gap: "16px" }}>
+                {/* Product thumbnails: tap one to show it; the row swipes when there are more than fit */}
+                <div
+                  ref={weddingThumbsRef}
+                  className="wedding-thumbs"
+                  style={{ display: "flex", gap: "16px", overflowX: "auto", scrollbarWidth: "none", scrollSnapType: "x mandatory", position: "relative", padding: "4px 2px 12px" }}
+                >
                   {weddingSpecials.length > 0 ? (
-                    weddingSpecials.slice(0, 3).map((wProd, idx) => (
-                      <div
+                    weddingSpecials.map((wProd, idx) => (
+                      <button
                         key={wProd.id}
-                        onClick={() => setActiveWeddingIndex(idx)}
+                        type="button"
+                        className="wedding-thumb"
+                        onClick={() => showWedding(idx)}
+                        aria-label={`Show ${wProd.title}`}
+                        aria-pressed={idx === activeWeddingIndex}
                         style={{
+                          flex: "0 0 auto",
                           width: "180px",
                           height: "230px",
+                          padding: 0,
                           backgroundColor: "#F5EDE8",
                           borderRadius: "10px",
+                          border: idx === activeWeddingIndex ? "2px solid #D98A9C" : "2px solid transparent",
                           boxShadow: "0px 6px 12px rgba(0,0,0,0.15)",
                           display: "flex",
                           alignItems: "center",
@@ -1217,6 +1319,7 @@ export default function Home() {
                           fontSize: "14px",
                           overflow: "hidden",
                           cursor: "pointer",
+                          scrollSnapAlign: "start",
                           transition: "all 0.2s ease"
                         }}
                       >
@@ -1225,13 +1328,15 @@ export default function Home() {
                         ) : (
                           `Frame ${idx + 1}`
                         )}
-                      </div>
+                      </button>
                     ))
                   ) : (
                     [1, 2, 3].map((num) => (
                       <div
                         key={num}
+                        className="wedding-thumb"
                         style={{
+                          flex: "0 0 auto",
                           width: "180px",
                           height: "230px",
                           backgroundColor: "#F5EDE8",
@@ -1251,7 +1356,7 @@ export default function Home() {
                 </div>
 
                 <p
-                  className="font-sans"
+                  className="font-sans wedding-desc"
                   style={{
                     fontSize: "15px",
                     lineHeight: "24px",
@@ -1259,6 +1364,10 @@ export default function Home() {
                     color: "#3F3B38",
                     margin: 0,
                     maxWidth: "500px",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 6,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
                   }}
                 >
                   {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIndex]?.description
@@ -1267,7 +1376,7 @@ export default function Home() {
                 </p>
 
                 <div
-                  className="font-serif"
+                  className="font-serif wedding-price"
                   style={{
                     fontSize: "42px",
                     lineHeight: "48px",
@@ -1314,6 +1423,11 @@ export default function Home() {
 
               {/* Slider Right Arrow */}
               <button
+                type="button"
+                className="wedding-arrow wedding-arrow--next"
+                onClick={() => showWedding(activeWeddingIndex + 1)}
+                disabled={weddingSpecials.length < 2}
+                aria-label="Next wedding special"
                 style={{
                   position: "absolute",
                   right: "-80px",
@@ -1338,11 +1452,11 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════════════
             ENJOYED BY MANY
             ═══════════════════════════════════════════════════════ */}
-        <section style={{ padding: "60px 0 120px 0", background: "#fff" }}>
-          <div style={{ maxWidth: "1920px", margin: "0 auto", padding: "0 120px", position: "relative" }}>
+        <section className="home-section" style={{ padding: "60px 0 120px 0", background: "#fff" }}>
+          <div className="home-section-wrapper" style={{ maxWidth: "1920px", margin: "0 auto", padding: "0 120px", position: "relative" }}>
             {/* Section title */}
             <h2
-              className="font-serif"
+              className="font-serif home-section-title"
               style={{
                 fontSize: "48px",
                 lineHeight: "64px",
@@ -1355,139 +1469,66 @@ export default function Home() {
               ENJOYED BY MANY
             </h2>
 
-            {/* Carousel */}
-            <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-              {/* Left Arrow */}
-              <button
-                onClick={() => scrollCarousel(reviewsRef, "left")}
-                style={{
-                  position: "absolute",
-                  left: "-60px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "transparent",
-                  border: "1.5px solid #8FB9A8",
-                  color: "#8FB9A8",
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  zIndex: 10,
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#8FB9A8";
-                  e.currentTarget.style.color = "#fff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#8FB9A8";
-                }}
-              >
-                <ChevronLeft size={22} />
-              </button>
-
-              <div
-                ref={reviewsRef}
-                style={{
-                  display: "flex",
-                  gap: "32px",
-                  overflowX: "auto",
-                  scrollBehavior: "smooth",
-                  scrollbarWidth: "none",
-                  width: "100%",
-                  padding: "10px 0",
-                }}
-              >
-                {(reviews.length > 0
-                  ? reviews.slice(0, 18)
+            {/* Carousel: 3 reviews per view on laptops, 2 on tablets, 1 (with a peek of the next) on phones */}
+            <SwipeCarousel
+              ariaLabel="Customer reviews"
+              items={
+                reviews.length > 0
+                  ? reviews.slice(0, 12)
                   : [
                     { id: 1, reviewer_name: "Mohit Sharma", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
                     { id: 2, reviewer_name: "Ananya Roy", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
                     { id: 3, reviewer_name: "Priya Patel", review_text: "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime", rating: 5 },
                   ]
-                ).map((rev, index) => {
-                  const borderColors = ["#D98A9C", "#8FB9A8", "#D9A85C"];
-                  const borderColor = borderColors[index % borderColors.length];
-                  return (
-                    <div
-                      key={rev.id || index}
-                      style={{
-                        flex: "0 0 calc(33.333% - 22px)",
-                        minWidth: "280px",
-                        border: `2px solid ${borderColor}`,
-                        borderRadius: "15px",
-                        padding: "30px 24px",
-                        background: "#fff",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        textAlign: "center",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <div>
-                        <h3 className="font-serif" style={{ fontSize: "24px", lineHeight: "32px", fontWeight: 400, color: "#3F3B38", margin: "0 0 8px 0" }}>
-                          {rev.reviewer_name}
-                        </h3>
-                        {rev.product && (
-                          <span style={{ fontSize: "12px", color: "#D98A9C", display: "block", marginBottom: "12px", fontWeight: 500 }}>
-                            {rev.product.title}
-                          </span>
-                        )}
-                        <p className="font-sans" style={{ fontSize: "18px", lineHeight: "28px", fontWeight: 400, color: "#555", margin: 0 }}>
-                          "{rev.review_text}"
-                        </p>
-                      </div>
-
-                      {rev.rating && (
-                        <div style={{ display: "flex", gap: "3px", justifyContent: "center", marginTop: "16px" }}>
-                          {Array.from({ length: Number(rev.rating) }).map((_, i) => (
-                            <span key={i} style={{ color: "#D98A9C", fontSize: "16px" }}>❤️</span>
-                          ))}
-                        </div>
+              }
+              getKey={(rev, index) => rev.id || index}
+              perView={{ desktop: 3, tablet: 2, mobile: 1.15 }}
+              gap={{ desktop: 32, mobile: 14 }}
+              renderItem={(rev, index) => {
+                const borderColors = ["#D98A9C", "#8FB9A8", "#D9A85C"];
+                const borderColor = borderColors[index % borderColors.length];
+                return (
+                  <div
+                    className="rev-card"
+                    style={{
+                      height: "100%",
+                      boxSizing: "border-box",
+                      border: `2px solid ${borderColor}`,
+                      borderRadius: "15px",
+                      padding: "30px 24px",
+                      background: "#fff",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      textAlign: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div>
+                      <h3 className="font-serif rev-name" style={{ fontSize: "24px", lineHeight: "32px", fontWeight: 400, color: "#3F3B38", margin: "0 0 8px 0" }}>
+                        {rev.reviewer_name}
+                      </h3>
+                      {rev.product && (
+                        <span style={{ fontSize: "12px", color: "#D98A9C", display: "block", marginBottom: "12px", fontWeight: 500 }}>
+                          {rev.product.title}
+                        </span>
                       )}
+                      <p className="font-sans rev-text" style={{ fontSize: "18px", lineHeight: "28px", fontWeight: 400, color: "#555", margin: 0 }}>
+                        &ldquo;{rev.review_text}&rdquo;
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
 
-              {/* Right Arrow */}
-              <button
-                onClick={() => scrollCarousel(reviewsRef, "right")}
-                style={{
-                  position: "absolute",
-                  right: "-60px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "transparent",
-                  border: "1.5px solid #8FB9A8",
-                  color: "#8FB9A8",
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  zIndex: 10,
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#8FB9A8";
-                  e.currentTarget.style.color = "#fff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#8FB9A8";
-                }}
-              >
-                <ChevronRight size={22} />
-              </button>
-            </div>
+                    {rev.rating && (
+                      <div style={{ display: "flex", gap: "3px", justifyContent: "center", marginTop: "16px" }}>
+                        {Array.from({ length: Number(rev.rating) }).map((_, i) => (
+                          <span key={i} style={{ color: "#D98A9C", fontSize: "16px" }}>❤️</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }}
+            />
           </div>
         </section>
       </main>
@@ -1495,9 +1536,39 @@ export default function Home() {
       <Footer />
 
       <style jsx global>{`
+        /* Discover New switches to a swipeable card row below 993px, Festive Treasures below 1200px */
+        @media (min-width: 993px) {
+          .home-mobile-only {
+            display: none !important;
+          }
+        }
+        @media (min-width: 1200px) {
+          .festive-mobile-only {
+            display: none !important;
+          }
+        }
+        @media (max-width: 1199px) {
+          .festive-desktop-only {
+            display: none !important;
+          }
+        }
+
+        /* Wedding thumbnails share the card width (up to their original 180px) */
+        .wedding-thumb {
+          width: calc((100% - 32px) / 3) !important;
+          max-width: 180px;
+          height: auto !important;
+          aspect-ratio: 180 / 230;
+        }
+
+
         @media (max-width: 1200px) {
           .home-section-wrapper {
             padding: 0 40px !important;
+          }
+          .home-section-title {
+            font-size: 40px !important;
+            line-height: 52px !important;
           }
           .hero-text-side {
             padding-left: 40px !important;
@@ -1510,9 +1581,63 @@ export default function Home() {
             font-size: 32px !important;
             line-height: 46px !important;
           }
+          .wedding-container {
+            padding: 0 60px !important;
+          }
+          .wedding-grid {
+            gap: 32px !important;
+          }
+          .wedding-couple {
+            height: 560px !important;
+          }
+          .wedding-groom {
+            left: -4% !important;
+          }
+          .wedding-bride {
+            left: 18% !important;
+          }
+          .wedding-arrow--prev {
+            left: -50px !important;
+          }
+          .wedding-arrow--next {
+            right: -50px !important;
+          }
         }
 
         @media (max-width: 992px) {
+          .home-desktop-only {
+            display: none !important;
+          }
+          .home-section {
+            padding: 48px 0 56px !important;
+          }
+          .home-section-title {
+            margin-bottom: 28px !important;
+          }
+          .home-section-header {
+            margin-bottom: 28px !important;
+          }
+          .home-section-header .home-section-title {
+            margin-bottom: 0 !important;
+          }
+          .fav-title {
+            font-size: 20px !important;
+            line-height: 28px !important;
+          }
+          .fav-price {
+            font-size: 18px !important;
+          }
+          .fav-btn {
+            font-size: 18px !important;
+          }
+
+          /* Hero: smaller flowers kept in the corners, behind the photos and clear of the text */
+          .hero-section {
+            min-height: 0 !important;
+            padding-bottom: 90px !important;
+            /* The carousel's outer photos run past the screen edges on phones; clip them sideways only */
+            overflow-x: clip !important;
+          }
           .hero-container {
             flex-direction: column !important;
             align-items: center !important;
@@ -1520,16 +1645,74 @@ export default function Home() {
           }
           .hero-text-side {
             padding-left: 0 !important;
-            padding-top: 40px !important;
+            padding-top: 150px !important;
             margin-bottom: 20px !important;
           }
-          .festive-grid {
-            grid-template-columns: 1fr !important;
-            gap: 30px !important;
+          .hero-flower--tl {
+            width: 130px !important;
           }
-          .festive-grid > div {
-            max-width: 100% !important;
-            justify-self: center !important;
+          .hero-flower--br {
+            width: 320px !important;
+            bottom: -30px !important;
+            z-index: 1 !important;
+          }
+
+          /* Wedding Specials: couple on top, details card below, all centred */
+          .wedding-section {
+            padding: 56px 0 64px !important;
+          }
+          .wedding-heading {
+            margin-bottom: 24px !important;
+          }
+          .wedding-container {
+            padding: 0 24px !important;
+          }
+          .wedding-grid {
+            grid-template-columns: 1fr !important;
+            gap: 20px !important;
+          }
+          .wedding-couple {
+            height: 380px !important;
+          }
+          .wedding-groom {
+            left: calc(50% - 154px) !important;
+          }
+          .wedding-bride {
+            left: calc(50% - 92px) !important;
+          }
+          .wedding-card {
+            width: 100%;
+            max-width: 560px;
+            margin: 0 auto;
+            box-sizing: border-box;
+          }
+          .wedding-arrow {
+            top: 190px !important;
+            bottom: auto !important;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            padding: 0 !important;
+            border-radius: 50% !important;
+            background: rgba(255, 255, 255, 0.94) !important;
+            box-shadow: 0 2px 10px rgba(63, 59, 56, 0.15);
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+          }
+          .wedding-arrow--prev {
+            left: 0 !important;
+          }
+          .wedding-arrow--next {
+            right: 0 !important;
+          }
+          .wedding-dupatta--back {
+            top: 70px !important;
+            height: 460px !important;
+          }
+          .wedding-dupatta--front {
+            top: 110px !important;
+            height: 420px !important;
           }
         }
 
@@ -1559,14 +1742,126 @@ export default function Home() {
           .home-section-wrapper {
             padding: 0 16px !important;
           }
+          .home-section {
+            padding: 32px 0 40px !important;
+          }
+          .home-section-title {
+            margin-bottom: 20px !important;
+          }
+          .home-section-header {
+            margin-bottom: 20px !important;
+          }
+          .home-section-title {
+            font-size: 28px !important;
+            line-height: 38px !important;
+          }
+          .home-section-link {
+            font-size: 20px !important;
+            line-height: 30px !important;
+          }
+
+          .hero-section {
+            padding-bottom: 70px !important;
+          }
+          .hero-text-side {
+            padding-top: 112px !important;
+          }
           .hero-h1 {
-            font-size: 36px !important;
-            line-height: 48px !important;
+            font-size: 34px !important;
+            line-height: 46px !important;
           }
           .hero-p {
             font-size: 24px !important;
             line-height: 34px !important;
-            margin-top: 20px !important;
+            margin-top: 16px !important;
+          }
+          .hero-flower--tl {
+            width: 92px !important;
+          }
+          .hero-flower--br {
+            width: 230px !important;
+            bottom: -24px !important;
+          }
+
+          .fav-title {
+            font-size: 16px !important;
+            line-height: 22px !important;
+          }
+          .fav-price {
+            font-size: 16px !important;
+            line-height: 24px !important;
+          }
+          .fav-strike {
+            font-size: 12px !important;
+          }
+          .fav-btn {
+            font-size: 15px !important;
+            line-height: 24px !important;
+          }
+
+          .rev-card {
+            padding: 22px 18px !important;
+          }
+          .rev-name {
+            font-size: 20px !important;
+            line-height: 28px !important;
+          }
+          .rev-text {
+            font-size: 15px !important;
+            line-height: 24px !important;
+          }
+
+          .wedding-section {
+            padding: 40px 0 48px !important;
+          }
+          .wedding-container {
+            padding: 0 16px !important;
+          }
+          .wedding-couple {
+            height: 300px !important;
+          }
+          .wedding-groom {
+            left: calc(50% - 122px) !important;
+          }
+          .wedding-bride {
+            left: calc(50% - 73px) !important;
+          }
+          .wedding-arrow {
+            top: 150px !important;
+            width: 36px;
+            height: 36px;
+          }
+          .wedding-card {
+            padding: 18px 16px !important;
+            gap: 12px !important;
+          }
+          .wedding-title {
+            font-size: 18px !important;
+            line-height: 24px !important;
+          }
+          .wedding-thumbs {
+            gap: 10px !important;
+          }
+          .wedding-thumb {
+            width: calc((100% - 20px) / 3) !important;
+          }
+          .wedding-desc {
+            font-size: 14px !important;
+            line-height: 21px !important;
+            -webkit-line-clamp: 3 !important;
+          }
+          .wedding-price {
+            font-size: 28px !important;
+            line-height: 34px !important;
+            margin-top: 0 !important;
+          }
+          .wedding-dupatta--back {
+            top: 50px !important;
+            height: 380px !important;
+          }
+          .wedding-dupatta--front {
+            top: 80px !important;
+            height: 340px !important;
           }
         }
       `}</style>

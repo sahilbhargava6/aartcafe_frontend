@@ -31,8 +31,9 @@ export default function SignUp() {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#fff" }}>
       <Navbar />
 
-      <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 20px" }}>
+      <main className="auth-main" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 20px" }}>
         <div
+          className="auth-card"
           style={{
             maxWidth: "480px",
             width: "100%",
@@ -46,10 +47,10 @@ export default function SignUp() {
             alignItems: "center",
           }}
         >
-          <h1 className="font-serif" style={{ fontSize: "32px", color: "#3F3B38", margin: "0 0 12px 0", fontWeight: 400, textAlign: "center" }}>
+          <h1 className="font-serif auth-title" style={{ fontSize: "32px", color: "#3F3B38", margin: "0 0 12px 0", fontWeight: 400, textAlign: "center" }}>
             Create Account
           </h1>
-          <p className="font-sans" style={{ fontSize: "16px", color: "#6E6E6E", textAlign: "center", margin: "0 0 32px 0", lineHeight: "24px" }}>
+          <p className="font-sans auth-intro" style={{ fontSize: "16px", color: "#6E6E6E", textAlign: "center", margin: "0 0 32px 0", lineHeight: "24px" }}>
             Join Aartcafe to track orders, save favorites, and manage your custom frame requests.
           </p>
 
@@ -173,9 +174,10 @@ export default function SignUp() {
                 id="terms"
                 checked={agreeTerms}
                 onChange={(e) => setAgreeTerms(e.target.checked)}
+                className="auth-check"
                 style={{ cursor: "pointer", accentColor: "#D9A85C", width: "16px", height: "16px", marginTop: "3px" }}
               />
-              <label htmlFor="terms" className="font-sans" style={{ fontSize: "13px", color: "#6E6E6E", cursor: "pointer", lineHeight: "20px" }}>
+              <label htmlFor="terms" className="font-sans auth-terms" style={{ fontSize: "13px", color: "#6E6E6E", cursor: "pointer", lineHeight: "20px" }}>
                 I agree to the <a href="#" style={{ color: "#D98A9C" }}>Terms of Service</a> and <a href="#" style={{ color: "#D98A9C" }}>Privacy Policy</a>.
               </label>
             </div>
@@ -209,7 +211,7 @@ export default function SignUp() {
             </button>
           </form>
 
-          <div style={{ marginTop: "32px", textAlign: "center", fontSize: "15px", color: "#6E6E6E" }}>
+          <div className="auth-switch" style={{ marginTop: "32px", textAlign: "center", fontSize: "15px", color: "#6E6E6E" }}>
             Already have an account?{" "}
             <Link href="/signin" style={{ color: "#D98A9C", fontWeight: 600, textDecoration: "underline" }}>
               Sign In
@@ -219,6 +221,59 @@ export default function SignUp() {
       </main>
 
       <Footer />
+
+      <style jsx>{`
+        /* Touch screens: bigger tap area for the small text link, without moving it */
+        @media (max-width: 1024px) {
+          .auth-switch > :global(a) {
+            display: inline-block;
+            padding: 10px 2px;
+            margin: -10px 0;
+          }
+          .auth-terms {
+            padding: 10px 0;
+            margin: -10px 0;
+          }
+        }
+
+        /* Undo the global h1 clamp, which inflates the title to 48px on tablets */
+        @media (max-width: 768px) {
+          .auth-title {
+            font-size: 32px !important;
+            line-height: 1.25 !important;
+          }
+        }
+
+        /* Phones: tighter page and card padding so the form gets the width */
+        @media (max-width: 600px) {
+          .auth-main {
+            padding: 32px 16px 48px !important;
+          }
+          .auth-card {
+            padding: 32px 20px !important;
+            border-radius: 16px !important;
+          }
+          .auth-title {
+            font-size: 28px !important;
+          }
+          .auth-intro {
+            font-size: 15px !important;
+            line-height: 23px !important;
+            margin-bottom: 24px !important;
+          }
+          .auth-check {
+            width: 20px !important;
+            height: 20px !important;
+          }
+          .auth-check {
+            margin-top: 1px !important;
+          }
+          .auth-terms {
+            font-size: 14px !important;
+            line-height: 22px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

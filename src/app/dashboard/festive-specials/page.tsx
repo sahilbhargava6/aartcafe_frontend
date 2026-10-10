@@ -1,13 +1,25 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Heart, Search } from "lucide-react";
+import { Search } from "lucide-react";
+
+type FestiveFlag = "is_festive_featured" | "is_festive_selected" | "is_festive_hidden";
+
+// Each button toggles its own flag. Featured and Selected can be combined; turning on
+// Hidden (price on request) clears both, and turning either back on clears Hidden.
+const FESTIVE_OPTIONS: { flag: FestiveFlag; value: string; label: string; hint: string; color: string }[] = [
+  { flag: "is_festive_featured", value: "featured", label: "Featured", hint: "Festive Treasures on the homepage", color: "#D98A9C" },
+  { flag: "is_festive_selected", value: "selected", label: "Selected", hint: "Festive Specials page (can be combined with Featured)", color: "#8FB9A8" },
+  { flag: "is_festive_hidden", value: "hidden", label: "Hidden", hint: "More off-festival items, price hidden, \"Contact for details\" (can't be combined with Featured or Selected)", color: "#D9A85C" },
+];
+const festiveRank = (p: any) => (p.is_festive_featured ? 0 : p.is_festive_selected ? 1 : p.is_festive_hidden ? 2 : 3);
 
 export default function FestiveSpecialsDashboard() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [savingId, setSavingId] = useState<number | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -17,7 +29,8 @@ export default function FestiveSpecialsDashboard() {
   const fetchData = () => {
     setLoading(true);
     Promise.all([
-      fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products").then((res) => res.json()),
+      // ?all=1 includes inactive products so they can be re-activated from this page
+      fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products?all=1").then((res) => res.json()),
       fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/categories").then((res) => res.json()).catch(() => []),
     ])
       .then(([prodData, catData]) => {
@@ -51,25 +64,22 @@ export default function FestiveSpecialsDashboard() {
     }
 
     // Status filter
-    if (filterStatus === "featured") {
-      result = result.filter((p) => p.is_festive_special);
-    } else if (filterStatus === "unfeatured") {
-      result = result.filter((p) => !p.is_festive_special);
+    const statusOption = FESTIVE_OPTIONS.find((o) => o.value === filterStatus);
+    if (filterStatus === "none") {
+      result = result.filter((p) => !FESTIVE_OPTIONS.some((o) => p[o.flag]));
+    } else if (statusOption) {
+      result = result.filter((p) => p[statusOption.flag]);
     }
 
-    // Featured items shown on top, then sorted by ID desc
-    result.sort((a, b) => {
-      if (a.is_festive_special && !b.is_festive_special) return -1;
-      if (!a.is_festive_special && b.is_festive_special) return 1;
-      return b.id - a.id;
-    });
+    // Featured, then Selected, then Hidden, then the rest; newest first within each
+    result.sort((a, b) => festiveRank(a) - festiveRank(b) || b.id - a.id);
 
     return result;
   }, [products, searchQuery, filterCategory, filterStatus]);
 
-  const toggleStatus = (prod: any, field: "is_festive_special" | "is_active") => {
-    const updatedValue = !prod[field];
+  const updateProduct = (prod: any, changes: Record<string, unknown>) => {
     const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    setSavingId(prod.id);
 
     fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/${prod.id}`, {
       method: "PUT",
@@ -78,19 +88,27 @@ export default function FestiveSpecialsDashboard() {
         "Accept": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({
-        ...prod,
-        [field]: updatedValue,
-      }),
+      body: JSON.stringify(changes),
     })
-      .then((res) => {
+      .then(async (res) => {
         if (!res.ok) throw new Error("Failed to update status.");
-        fetchData();
+        // The server returns the saved product (including flags it adjusted, e.g. Hidden
+        // clearing Featured/Selected), so update just that row instead of reloading the list
+        const updated = await res.json();
+        setProducts((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
       })
       .catch((err) => {
         alert(err.message);
-      });
+      })
+      .finally(() => setSavingId(null));
   };
+
+  const toggleActive = (prod: any) => updateProduct(prod, { is_active: prod.is_active === false });
+
+  const toggleFestive = (prod: any, flag: FestiveFlag) => updateProduct(prod, { [flag]: !prod[flag] });
+
+  // A backend without the festive flag columns leaves them out and silently ignores updates to them
+  const backendOutdated = products.length > 0 && !products.some((p) => "is_festive_featured" in p);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -100,9 +118,19 @@ export default function FestiveSpecialsDashboard() {
         </h1>
       </div>
 
-      <p className="font-sans" style={{ color: "#6E6E6E", fontSize: "16px", margin: 0 }}>
-        Quickly feature/unfeature products for the <b>FESTIVE TREASURES</b> section on the homepage and toggle product Active / Inactive status.
-      </p>
+      <div className="font-sans" style={{ color: "#6E6E6E", fontSize: "15px", margin: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
+        {FESTIVE_OPTIONS.map((o) => (
+          <span key={o.value}>
+            <b style={{ color: o.color }}>{o.label}:</b> {o.hint}
+          </span>
+        ))}
+      </div>
+
+      {backendOutdated && (
+        <div style={{ border: "1px solid #E05A47", backgroundColor: "rgba(224, 90, 71, 0.08)", color: "#E05A47", borderRadius: "10px", padding: "12px 16px", fontSize: "15px" }}>
+          The server doesn&apos;t support Featured / Selected / Hidden yet, so these buttons can&apos;t save. Deploy the latest backend (and run its migrations), then reload this page.
+        </div>
+      )}
 
       {/* Filter Controls */}
       <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center" }}>
@@ -134,15 +162,17 @@ export default function FestiveSpecialsDashboard() {
           style={{ height: "42px", borderRadius: "10px", border: "1px solid #8FB9A8", padding: "0 14px", fontSize: "15px", outline: "none", backgroundColor: "#fff", color: "#3F3B38" }}
         >
           <option value="all">All Festive Status</option>
-          <option value="featured">Featured in Festive Treasures</option>
-          <option value="unfeatured">Unfeatured Only</option>
+          {FESTIVE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label} Only</option>
+          ))}
+          <option value="none">Not in Festive</option>
         </select>
       </div>
 
       {error && <div style={{ color: "#E05A47", fontSize: "16px", fontWeight: 500 }}>{error}</div>}
 
       <div style={{ border: "2px solid #8FB9A8", borderRadius: "15px", overflowX: "auto", backgroundColor: "#fff" }}>
-        {loading ? (
+        {loading && products.length === 0 ? (
           <div style={{ padding: "40px", textAlign: "center", color: "#8FB9A8" }}>Loading products...</div>
         ) : filteredProducts.length === 0 ? (
           <div style={{ padding: "40px", textAlign: "center", color: "#8FB9A8" }}>No matching products found.</div>
@@ -155,68 +185,79 @@ export default function FestiveSpecialsDashboard() {
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Product Title</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Category</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Active Status</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Festive Treasures</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Actions</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Festive Placement</th>
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map((prod) => (
-                <tr key={prod.id} style={{ borderBottom: "1px solid #EBE5DB", backgroundColor: prod.is_festive_special ? "rgba(217,138,156,0.05)" : "transparent" }}>
-                  <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{prod.id}</td>
-                  <td style={{ padding: "16px 24px" }}>
-                    {prod.image ? (
-                      <img src={prod.image} alt={prod.title} style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "8px" }} />
-                    ) : (
-                      <div style={{ width: "40px", height: "40px", backgroundColor: "#F5EDE8", borderRadius: "8px" }} />
-                    )}
-                  </td>
-                  <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{prod.title}</td>
-                  <td style={{ padding: "16px 24px", color: "#D98A9C" }}>{prod.category?.name || "Uncategorized"}</td>
-                  {/* Active Toggle Column */}
-                  <td style={{ padding: "16px 24px" }}>
-                    <button
-                      onClick={() => toggleStatus(prod, "is_active")}
-                      style={{
-                        padding: "4px 10px", borderRadius: "12px", fontSize: "13px", fontWeight: 500,
-                        border: "none", cursor: "pointer",
-                        backgroundColor: prod.is_active !== false ? "rgba(143, 185, 168, 0.2)" : "rgba(224, 90, 71, 0.15)",
-                        color: prod.is_active !== false ? "#4F8571" : "#E05A47",
-                        transition: "all 0.2s ease"
-                      }}
-                    >
-                      {prod.is_active !== false ? "Active" : "Inactive"}
-                    </button>
-                  </td>
-                  {/* Festive Status Column */}
-                  <td style={{ padding: "16px 24px" }}>
-                    <span
-                      style={{
-                        padding: "4px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: 500,
-                        backgroundColor: prod.is_festive_special ? "rgba(217,138,156,0.15)" : "#F5EDE8",
-                        color: prod.is_festive_special ? "#D98A9C" : "#BCAEA2",
-                      }}
-                    >
-                      {prod.is_festive_special ? "Featured" : "Not Featured"}
-                    </span>
-                  </td>
-                  {/* Actions Column */}
-                  <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                    <button
-                      onClick={() => toggleStatus(prod, "is_festive_special")}
-                      style={{
-                        backgroundColor: prod.is_festive_special ? "#D98A9C" : "transparent",
-                        color: prod.is_festive_special ? "#fff" : "#D98A9C",
-                        border: "1px solid #D98A9C", borderRadius: "8px",
-                        padding: "6px 12px", fontSize: "14px", fontWeight: 500,
-                        cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      <Heart size={14} fill={prod.is_festive_special ? "#fff" : "none"} /> {prod.is_festive_special ? "Unfeature" : "Feature"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredProducts.map((prod) => {
+                const current = FESTIVE_OPTIONS.find((o) => prod[o.flag]);
+                const saving = savingId === prod.id;
+                return (
+                  <tr
+                    key={prod.id}
+                    style={{
+                      borderBottom: "1px solid #EBE5DB",
+                      backgroundColor: current ? `${current.color}0D` : "transparent",
+                      opacity: saving ? 0.6 : 1,
+                    }}
+                  >
+                    <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{prod.id}</td>
+                    <td style={{ padding: "16px 24px" }}>
+                      {prod.image ? (
+                        <img src={prod.image} alt={prod.title} style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "8px" }} />
+                      ) : (
+                        <div style={{ width: "40px", height: "40px", backgroundColor: "#F5EDE8", borderRadius: "8px" }} />
+                      )}
+                    </td>
+                    <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{prod.title}</td>
+                    <td style={{ padding: "16px 24px", color: "#D98A9C" }}>{prod.category?.name || "Uncategorized"}</td>
+                    {/* Active Toggle Column */}
+                    <td style={{ padding: "16px 24px" }}>
+                      <button
+                        onClick={() => toggleActive(prod)}
+                        disabled={saving}
+                        style={{
+                          padding: "4px 10px", borderRadius: "12px", fontSize: "13px", fontWeight: 500,
+                          border: "none", cursor: "pointer",
+                          backgroundColor: prod.is_active !== false ? "rgba(143, 185, 168, 0.2)" : "rgba(224, 90, 71, 0.15)",
+                          color: prod.is_active !== false ? "#4F8571" : "#E05A47",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        {prod.is_active !== false ? "Active" : "Inactive"}
+                      </button>
+                    </td>
+                    {/* Festive Placement: Featured / Selected / Hidden */}
+                    <td style={{ padding: "16px 24px", textAlign: "right" }}>
+                      <div style={{ display: "inline-flex", gap: "8px" }}>
+                        {FESTIVE_OPTIONS.map((o) => {
+                          const isOn = !!prod[o.flag];
+                          return (
+                            <button
+                              key={o.flag}
+                              onClick={() => toggleFestive(prod, o.flag)}
+                              aria-pressed={isOn}
+                              disabled={saving || backendOutdated}
+                              title={backendOutdated ? "Deploy the latest backend to use festive placement" : isOn ? `Remove from ${o.label}` : o.hint}
+                              style={{
+                                backgroundColor: isOn ? o.color : "transparent",
+                                color: isOn ? "#fff" : o.color,
+                                border: `1px solid ${o.color}`, borderRadius: "8px",
+                                padding: "6px 12px", fontSize: "14px", fontWeight: 500,
+                                cursor: backendOutdated ? "not-allowed" : saving ? "wait" : "pointer",
+                                opacity: backendOutdated ? 0.45 : 1,
+                                transition: "all 0.2s ease",
+                              }}
+                            >
+                              {o.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

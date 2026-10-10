@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
@@ -9,12 +10,40 @@ import { useCart } from "@/context/CartContext";
 import { Heart, ChevronDown } from "lucide-react";
 
 export default function FestivalSpecials() {
-  const { addToBag } = useCart();
+  const { addToBag, closeCart } = useCart();
+  const router = useRouter();
+
+  // API products only have base_price/discount_price; the cart needs a numeric price
+  const addProductToBag = (prod: any) =>
+    addToBag({
+      id: prod.id,
+      title: prod.title,
+      price: parseFloat(prod.discount_price || prod.base_price || "0"),
+      image: prod.image || (Array.isArray(prod.images) && prod.images[0]) || "",
+      productId: typeof prod.id === "number" ? prod.id : undefined,
+    });
   const [expandedReviews, setExpandedReviews] = useState<Record<string, boolean>>({});
   const [banners, setBanners] = useState<any[]>([]);
   const [currentBannerIdx, setCurrentBannerIdx] = useState(0);
   const [products, setProducts] = useState<any[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  // Products set to "Hidden" in the dashboard: no price shown, enquiry via the bag
+  const [offFestivalProducts, setOffFestivalProducts] = useState<any[]>([]);
+
+  const contactForDetails = (prod: any) => {
+    addToBag({
+      // Separate line from a normal priced "Add to bag" of the same product
+      id: `${prod.id}-enquiry`,
+      title: prod.title,
+      price: 0,
+      image: prod.image || (Array.isArray(prod.images) && prod.images[0]) || "",
+      productId: typeof prod.id === "number" ? prod.id : undefined,
+      priceOnRequest: true,
+    });
+    // Go straight to the bag to fill in contact details and send to WhatsApp
+    closeCart();
+    router.push("/cart");
+  };
 
   // Reviews state
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -46,10 +75,18 @@ export default function FestivalSpecials() {
         }
       });
 
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/festive-specials?status=hidden")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        // Filter here too: a backend without the festive flags ignores ?status= and returns every festive product
+        if (Array.isArray(data)) setOffFestivalProducts(data.filter((p: any) => p.is_festive_hidden === true));
+      });
+
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/bestsellers")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data)) setRelatedProducts(data.slice(0, 8));
+        // Hidden items are price-on-request on this page, so don't list them with a price here
+        if (Array.isArray(data)) setRelatedProducts(data.filter((p: any) => !p.is_festive_hidden).slice(0, 4));
       });
   }, []);
 
@@ -111,7 +148,7 @@ export default function FestivalSpecials() {
           
           {/* HERO BANNER CAROUSEL SECTION */}
           <div
-            className="rakhi-banner"
+            className={`rakhi-banner${banners.length > 1 ? " has-nav" : ""}`}
             style={{
               position: "relative",
               overflow: "hidden",
@@ -191,6 +228,7 @@ export default function FestivalSpecials() {
               <>
                 <button
                   onClick={() => setCurrentBannerIdx((prev) => (prev - 1 + banners.length) % banners.length)}
+                  className="banner-arrow"
                   style={{
                     position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)",
                     background: "rgba(0,0,0,0.3)", border: "none", color: "#fff", borderRadius: "50%",
@@ -202,6 +240,7 @@ export default function FestivalSpecials() {
                 </button>
                 <button
                   onClick={() => setCurrentBannerIdx((prev) => (prev + 1) % banners.length)}
+                  className="banner-arrow"
                   style={{
                     position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)",
                     background: "rgba(0,0,0,0.3)", border: "none", color: "#fff", borderRadius: "50%",
@@ -211,11 +250,12 @@ export default function FestivalSpecials() {
                 >
                   ›
                 </button>
-                <div style={{ position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "8px", zIndex: 10 }}>
+                <div className="banner-dots" style={{ position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "8px", zIndex: 10 }}>
                   {banners.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentBannerIdx(idx)}
+                      className="banner-dot"
                       style={{
                         width: idx === currentBannerIdx ? "24px" : "10px",
                         height: "10px",
@@ -265,7 +305,7 @@ export default function FestivalSpecials() {
                       {prod.discount_price ? (
                         <>
                           <span className="font-serif detail-price">₹{prod.discount_price}</span>
-                          <span className="font-sans" style={{ textDecoration: "line-through", color: "#BCAEA2", fontSize: "20px" }}>₹{prod.base_price}</span>
+                          <span className="font-sans detail-old-price" style={{ textDecoration: "line-through", color: "#BCAEA2", fontSize: "20px" }}>₹{prod.base_price}</span>
                         </>
                       ) : (
                         <span className="font-serif detail-price">₹{prod.base_price}</span>
@@ -273,18 +313,18 @@ export default function FestivalSpecials() {
                     </div>
 
                     <div>
-                      <button onClick={() => addToBag(prod)} className="font-sans cart-button">
+                      <button onClick={() => addProductToBag(prod)} className="font-sans cart-button">
                         ADD TO CART
                       </button>
                     </div>
 
                     {/* Reviews */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
+                    <div className="reviews-block" style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span className="font-serif review-section-label">Reviews</span>
                         <button 
                           onClick={() => { setReviewingProductId(prod.id); setReviewModalOpen(true); }}
-                          className="font-sans" 
+                          className="font-sans add-review-btn"
                           style={{ background: "none", border: "1px solid #D9A85C", color: "#D9A85C", padding: "4px 12px", borderRadius: "12px", cursor: "pointer", fontSize: "14px" }}>
                           Add Review
                         </button>
@@ -295,7 +335,7 @@ export default function FestivalSpecials() {
                           <div className="review-box">
                             <span className="font-serif reviewer-name">{prod.reviews[0].reviewer_name}</span>
                             <p className="font-sans review-text">{prod.reviews[0].review_text}</p>
-                            <div style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-end" }}>
+                            <div className="review-hearts" style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-end" }}>
                               {Array.from({ length: 5 }).map((_, i) => (
                                 <Heart key={i} size={26} fill={i < prod.reviews[0].rating ? "#D98A9C" : "transparent"} color={i < prod.reviews[0].rating ? "#D98A9C" : "#3F3B38"} />
                               ))}
@@ -306,7 +346,7 @@ export default function FestivalSpecials() {
                             <div key={rev.id} className="review-box">
                               <span className="font-serif reviewer-name">{rev.reviewer_name}</span>
                               <p className="font-sans review-text">{rev.review_text}</p>
-                              <div style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-end" }}>
+                              <div className="review-hearts" style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-end" }}>
                                 {Array.from({ length: 5 }).map((_, i) => (
                                   <Heart key={i} size={26} fill={i < rev.rating ? "#D98A9C" : "transparent"} color={i < rev.rating ? "#D98A9C" : "#3F3B38"} />
                                 ))}
@@ -323,7 +363,7 @@ export default function FestivalSpecials() {
                           )}
                         </>
                       ) : (
-                        <div style={{ color: "#8FB9A8", fontStyle: "italic", fontSize: "16px", padding: "10px 0" }}>
+                        <div className="no-reviews" style={{ color: "#8FB9A8", fontStyle: "italic", fontSize: "16px", padding: "10px 0" }}>
                           No reviews yet. Be the first to add one!
                         </div>
                       )}
@@ -348,7 +388,7 @@ export default function FestivalSpecials() {
                       {prod.discount_price ? (
                         <>
                           <span className="font-serif detail-price">₹{prod.discount_price}</span>
-                          <span className="font-sans" style={{ textDecoration: "line-through", color: "#BCAEA2", fontSize: "20px" }}>₹{prod.base_price}</span>
+                          <span className="font-sans detail-old-price" style={{ textDecoration: "line-through", color: "#BCAEA2", fontSize: "20px" }}>₹{prod.base_price}</span>
                         </>
                       ) : (
                         <span className="font-serif detail-price">₹{prod.base_price}</span>
@@ -356,18 +396,18 @@ export default function FestivalSpecials() {
                     </div>
 
                     <div>
-                      <button onClick={() => addToBag(prod)} className="font-sans cart-button">
+                      <button onClick={() => addProductToBag(prod)} className="font-sans cart-button">
                         ADD TO CART
                       </button>
                     </div>
 
                     {/* Reviews */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
+                    <div className="reviews-block" style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span className="font-serif review-section-label">Reviews</span>
                         <button 
                           onClick={() => { setReviewingProductId(prod.id); setReviewModalOpen(true); }}
-                          className="font-sans" 
+                          className="font-sans add-review-btn"
                           style={{ background: "none", border: "1px solid #D9A85C", color: "#D9A85C", padding: "4px 12px", borderRadius: "12px", cursor: "pointer", fontSize: "14px" }}>
                           Add Review
                         </button>
@@ -378,7 +418,7 @@ export default function FestivalSpecials() {
                           <div className="review-box">
                             <span className="font-serif reviewer-name">{prod.reviews[0].reviewer_name}</span>
                             <p className="font-sans review-text">{prod.reviews[0].review_text}</p>
-                            <div style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-start" }}>
+                            <div className="review-hearts" style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-start" }}>
                               {Array.from({ length: 5 }).map((_, i) => (
                                 <Heart key={i} size={26} fill={i < prod.reviews[0].rating ? "#D98A9C" : "transparent"} color={i < prod.reviews[0].rating ? "#D98A9C" : "#3F3B38"} />
                               ))}
@@ -389,7 +429,7 @@ export default function FestivalSpecials() {
                             <div key={rev.id} className="review-box">
                               <span className="font-serif reviewer-name">{rev.reviewer_name}</span>
                               <p className="font-sans review-text">{rev.review_text}</p>
-                              <div style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-start" }}>
+                              <div className="review-hearts" style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-start" }}>
                                 {Array.from({ length: 5 }).map((_, i) => (
                                   <Heart key={i} size={26} fill={i < rev.rating ? "#D98A9C" : "transparent"} color={i < rev.rating ? "#D98A9C" : "#3F3B38"} />
                                 ))}
@@ -406,7 +446,7 @@ export default function FestivalSpecials() {
                           )}
                         </>
                       ) : (
-                        <div style={{ color: "#8FB9A8", fontStyle: "italic", fontSize: "16px", padding: "10px 0", textAlign: "left" }}>
+                        <div className="no-reviews" style={{ color: "#8FB9A8", fontStyle: "italic", fontSize: "16px", padding: "10px 0", textAlign: "left" }}>
                           No reviews yet. Be the first to add one!
                         </div>
                       )}
@@ -428,20 +468,19 @@ export default function FestivalSpecials() {
           })}
 
           {/* "More off-festival items:" SECTION */}
-          {relatedProducts.length > 0 && (
-            <div style={{ borderTop: "1px solid #EBE5DB", paddingTop: "60px" }}>
-              <Link href="/shop" style={{ textDecoration: "none" }}>
-                <h2 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
-                  More off-festival items:
-                </h2>
-              </Link>
+          {offFestivalProducts.length > 0 && (
+            <div className="related-section" style={{ borderTop: "1px solid #EBE5DB", paddingTop: "60px" }}>
+              <h2 className="font-serif related-heading" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
+                More off-festival items:
+              </h2>
               <div className="related-grid">
-                {relatedProducts.slice(0, 4).map((prod) => {
+                {offFestivalProducts.map((prod) => {
                   const productUrl = `/shop/${prod.slug || prod.id}`;
                   return (
-                    <div key={prod.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <div key={prod.id} className="related-card" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <Link href={productUrl} style={{ width: "100%", textDecoration: "none" }}>
                         <div
+                          className="related-image"
                           style={{
                             width: "100%",
                             aspectRatio: "338/422",
@@ -465,30 +504,27 @@ export default function FestivalSpecials() {
                           )}
                         </div>
                       </Link>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+                      <div className="related-info" style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
                         <Link href={productUrl} style={{ textDecoration: "none" }}>
-                          <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0, cursor: "pointer" }}>
+                          <h4 className="font-serif related-title" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0, cursor: "pointer" }}>
                             {prod.title}
                           </h4>
                         </Link>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                          <span className="font-sans" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
-                            ₹{prod.discount_price || prod.base_price}
-                          </span>
+                        <div className="related-meta" style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}>
                           <button
-                            onClick={() => addToBag(prod)}
-                            className="font-sans"
+                            onClick={() => contactForDetails(prod)}
+                            className="font-sans related-action"
                             style={{
                               background: "none",
                               border: "none",
-                              borderBottom: "1px solid #3F3B38",
+                              borderBottom: "1px solid #D98A9C",
                               fontSize: "20px",
-                              color: "#3F3B38",
+                              color: "#D98A9C",
                               cursor: "pointer",
                               padding: "0 0 2px 0",
                             }}
                           >
-                            Add to bag
+                            Contact for details
                           </button>
                         </div>
                       </div>
@@ -500,20 +536,21 @@ export default function FestivalSpecials() {
           )}
 
           {/* "You may also Like:" SECTION */}
-          {relatedProducts.length > 4 && (
-            <div style={{ borderTop: "1px solid #EBE5DB", paddingTop: "60px", marginTop: "80px" }}>
+          {relatedProducts.length > 0 && (
+            <div className="related-section related-section-spaced" style={{ borderTop: "1px solid #EBE5DB", paddingTop: "60px", marginTop: "80px" }}>
               <Link href="/shop" style={{ textDecoration: "none" }}>
-                <h2 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
+                <h2 className="font-serif related-heading" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
                   You may also Like:
                 </h2>
               </Link>
               <div className="related-grid">
-                {relatedProducts.slice(4, 8).map((prod) => {
+                {relatedProducts.map((prod) => {
                   const productUrl = `/shop/${prod.slug || prod.id}`;
                   return (
-                  <div key={prod.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div key={prod.id} className="related-card" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <Link href={productUrl} style={{ width: "100%", textDecoration: "none" }}>
                       <div
+                        className="related-image"
                         style={{
                           width: "100%",
                           aspectRatio: "338/422",
@@ -536,19 +573,19 @@ export default function FestivalSpecials() {
                         )}
                       </div>
                     </Link>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+                    <div className="related-info" style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
                       <Link href={productUrl} style={{ textDecoration: "none" }}>
-                        <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0, cursor: "pointer" }}>
+                        <h4 className="font-serif related-title" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0, cursor: "pointer" }}>
                           {prod.title}
                         </h4>
                       </Link>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                          <span className="font-sans" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
+                        <div className="related-meta" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                          <span className="font-sans related-price" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
                             ₹{prod.discount_price || prod.base_price}
                           </span>
                           <button
-                            onClick={() => addToBag(prod)}
-                            className="font-sans"
+                            onClick={() => addProductToBag(prod)}
+                            className="font-sans related-action"
                             style={{
                               background: "none",
                               border: "none",
@@ -577,9 +614,9 @@ export default function FestivalSpecials() {
 
       {/* ADD REVIEW MODAL */}
       {reviewModalOpen && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
-          <div style={{ backgroundColor: "#fff", padding: "30px", borderRadius: "15px", width: "90%", maxWidth: "500px", display: "flex", flexDirection: "column", gap: "20px", boxShadow: "0px 10px 30px rgba(0,0,0,0.2)" }}>
-            <h3 className="font-serif" style={{ margin: 0, fontSize: "28px", color: "#3F3B38" }}>Add a Review</h3>
+        <div className="review-modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
+          <div className="review-modal" style={{ backgroundColor: "#fff", padding: "30px", borderRadius: "15px", width: "90%", maxWidth: "500px", display: "flex", flexDirection: "column", gap: "20px", boxShadow: "0px 10px 30px rgba(0,0,0,0.2)" }}>
+            <h3 className="font-serif review-modal-title" style={{ margin: 0, fontSize: "28px", color: "#3F3B38" }}>Add a Review</h3>
             
             <input 
               type="text" 
@@ -591,7 +628,7 @@ export default function FestivalSpecials() {
             
             <div>
               <span className="font-sans" style={{ display: "block", marginBottom: "8px", color: "#8FB9A8", fontSize: "16px" }}>Rating</span>
-              <div style={{ display: "flex", gap: "8px", cursor: "pointer" }}>
+              <div className="rating-row" style={{ display: "flex", gap: "8px", cursor: "pointer" }}>
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Heart 
                     key={i} 
@@ -612,7 +649,7 @@ export default function FestivalSpecials() {
               style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #EBE5DB", fontSize: "16px", resize: "none", outline: "none" }}
             />
 
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "10px" }}>
+            <div className="review-modal-actions" style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "10px" }}>
               <button 
                 onClick={() => setReviewModalOpen(false)}
                 style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid #8FB9A8", backgroundColor: "transparent", color: "#8FB9A8", cursor: "pointer", fontWeight: 600, fontSize: "16px" }}
@@ -649,6 +686,8 @@ export default function FestivalSpecials() {
           box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
           margin-bottom: 80px;
           overflow: hidden;
+          /* clip (unlike hidden) lets the box grow past its aspect ratio when a long title/button needs it */
+          overflow: clip !important;
         }
         .banner-svg-medallion {
           position: absolute;
@@ -797,6 +836,21 @@ export default function FestivalSpecials() {
           grid-template-columns: repeat(4, 1fr);
           gap: 30px;
         }
+        /* Cards in a row share one height; pin price/action to the bottom so they line up when titles wrap */
+        .related-info {
+          flex: 1;
+        }
+        .related-meta {
+          margin-top: auto;
+        }
+        .review-modal-overlay {
+          padding: 16px;
+        }
+        .review-modal {
+          max-height: calc(100vh - 32px);
+          max-height: calc(100dvh - 32px);
+          overflow-y: auto;
+        }
 
         @media (max-width: 1200px) {
           .fest-container {
@@ -811,13 +865,62 @@ export default function FestivalSpecials() {
           .product-row {
             gap: 40px;
           }
+          /* Touch-sized controls (tablets, iPad) */
+          .add-review-btn {
+            min-height: 40px;
+            padding: 8px 16px !important;
+            border-radius: 20px !important;
+          }
+          .banner-dot {
+            position: relative;
+          }
+          .banner-dot::after {
+            content: "";
+            position: absolute;
+            inset: -15px -3px;
+          }
+          .rating-row {
+            gap: 4px !important;
+          }
+          .rating-row :global(svg) {
+            width: 40px;
+            height: 40px;
+            padding: 4px;
+          }
+          .related-grid {
+            gap: 24px;
+          }
+          .related-title {
+            font-size: 18px !important;
+            line-height: 26px !important;
+          }
+          .related-price,
+          .related-action {
+            font-size: 17px !important;
+          }
+          /* 40px tap box; a text underline keeps the line under the words instead of at the box edge */
+          .related-action {
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            border-bottom: none !important;
+            padding: 0 !important;
+            text-decoration: underline;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 6px;
+          }
         }
         @media (max-width: 992px) {
           .rakhi-banner {
             aspect-ratio: auto;
             padding: 80px 40px;
+            flex-direction: column;
             justify-content: center;
             text-align: center;
+          }
+          .rakhi-banner.has-nav {
+            padding-left: 72px;
+            padding-right: 72px;
           }
           .banner-svg-medallion {
             position: relative;
@@ -833,7 +936,8 @@ export default function FestivalSpecials() {
           }
           .product-row {
             grid-template-columns: 1fr !important;
-            gap: 30px;
+            gap: 24px;
+            margin-bottom: 64px;
           }
           .detail-order-first {
             order: 2;
@@ -848,44 +952,199 @@ export default function FestivalSpecials() {
           }
           .product-details-container {
             max-width: 100%;
+            gap: 20px;
             text-align: center !important;
             align-items: center !important;
           }
+          .detail-title {
+            font-size: 30px !important;
+            line-height: 38px !important;
+          }
+          .detail-desc {
+            font-size: 18px;
+            line-height: 28px;
+          }
+          .detail-price {
+            font-size: 34px;
+            line-height: 42px;
+          }
+          .reviews-block {
+            width: 100%;
+            max-width: 600px;
+          }
+          .review-box,
           .row-align-right .review-box {
             align-items: center;
             text-align: center;
           }
+          .review-hearts {
+            justify-content: center !important;
+          }
+          .no-reviews {
+            text-align: center !important;
+          }
           .related-grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+          }
+          .related-heading {
+            font-size: 28px !important;
+            line-height: 36px !important;
+            margin-bottom: 28px !important;
+          }
+          .related-title {
+            font-size: 16px !important;
+            line-height: 22px !important;
+          }
+          .related-price,
+          .related-action {
+            font-size: 15px !important;
+          }
+          .related-image {
+            margin-bottom: 12px !important;
+          }
+        }
+        @media (max-width: 720px) {
+          .related-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
           }
         }
         @media (max-width: 600px) {
           .fest-container {
             padding: 0 16px;
           }
+          .rakhi-banner {
+            padding: 44px 20px;
+            margin-bottom: 48px;
+            border-radius: 12px;
+          }
+          /* Phone: arrows move to the bottom row beside the dots so they never cover the text */
+          .rakhi-banner.has-nav {
+            padding: 44px 20px 76px;
+          }
+          .banner-arrow {
+            top: auto !important;
+            bottom: 14px !important;
+            transform: none !important;
+          }
+          .banner-dots {
+            bottom: 29px !important;
+          }
+          .banner-svg-medallion {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 12px;
+          }
+          .banner-content {
+            gap: 12px;
+          }
+          .banner-sub {
+            font-size: 15px;
+            letter-spacing: 1.5px;
+          }
           .banner-title {
-            font-size: 38px;
+            font-size: clamp(28px, 8vw, 34px) !important;
+            line-height: 1.2 !important;
           }
           .banner-desc {
-            font-size: 18px !important;
-            line-height: 26px !important;
+            font-size: 17px !important;
+            line-height: 25px !important;
+          }
+          .product-row {
+            gap: 20px;
+            margin-bottom: 56px;
+          }
+          .product-image-container {
+            max-width: 280px;
+          }
+          .product-details-container {
+            gap: 16px;
           }
           .detail-title {
-            font-size: 28px !important;
+            font-size: 24px !important;
+            line-height: 32px !important;
           }
           .detail-desc {
-            font-size: 18px !important;
-            line-height: 26px !important;
+            font-size: 16px !important;
+            line-height: 24px !important;
+          }
+          .detail-price {
+            font-size: 30px;
+            line-height: 38px;
+          }
+          .detail-old-price {
+            font-size: 17px !important;
+          }
+          .cart-button {
+            height: 52px;
+            font-size: 18px;
+          }
+          .review-section-label {
+            font-size: 20px;
+          }
+          .review-box {
+            padding: 16px;
+          }
+          .review-hearts :global(svg) {
+            width: 22px;
+            height: 22px;
           }
           .review-text {
             font-size: 16px !important;
             line-height: 24px !important;
           }
           .reviewer-name {
-            font-size: 20px !important;
+            font-size: 18px !important;
+          }
+          .related-section {
+            padding-top: 40px !important;
+          }
+          .related-section-spaced {
+            margin-top: 56px !important;
+          }
+          .related-heading {
+            font-size: 24px !important;
+            line-height: 32px !important;
+            margin-bottom: 20px !important;
           }
           .related-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px 12px;
+          }
+          .related-title {
+            font-size: 15px !important;
+            line-height: 21px !important;
+          }
+          .related-price {
+            font-size: 15px !important;
+          }
+          .related-action {
+            font-size: 14px !important;
+          }
+          .related-image {
+            margin-bottom: 10px !important;
+            border-radius: 12px !important;
+          }
+          .related-meta {
+            flex-wrap: wrap;
+            column-gap: 8px;
+          }
+          .review-modal {
+            width: 100% !important;
+            padding: 20px !important;
+            gap: 16px !important;
+          }
+          .review-modal-actions button {
+            flex: 1;
+          }
+        }
+        /* Very narrow phones: price and action don't fit side by side, so stack them centered */
+        @media (max-width: 374px) {
+          .related-meta {
+            flex-direction: column;
+            justify-content: center !important;
+            align-items: center !important;
           }
         }
       `}</style>

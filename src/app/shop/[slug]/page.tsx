@@ -200,11 +200,22 @@ export default function ProductDetailsPage() {
       .filter(Boolean)
       .join(", ");
 
+    // IDs of the chosen option values, so the server can price the order itself
+    const optionIds: number[] = [];
+    (productData.attributes || []).forEach((attr: any) => {
+      const chosen = selectedAttributes[attr.name]?.value?.split(", ") || [];
+      (attr.values || []).forEach((v: any) => {
+        if (chosen.includes(v.value)) optionIds.push(v.id);
+      });
+    });
+
     addToBag({
       id: `${productData.id}-${Date.now()}`,
       title: `${productData.title}${attrSummary ? ` (${attrSummary})` : ""}`,
       price: finalPrice,
       image: productData.image || (productData.images && productData.images[0]) || "",
+      productId: productData.id,
+      optionIds,
     });
   };
 
@@ -295,11 +306,12 @@ export default function ProductDetailsPage() {
       <Navbar />
       <CartDrawer />
 
-      <main style={{ flex: 1, backgroundColor: "#fff", padding: "40px 0 80px 0" }}>
+      <main className="details-main" style={{ flex: 1, backgroundColor: "#fff", padding: "40px 0 80px 0" }}>
         <div className="details-container">
-          
+
           <button
             onClick={() => router.back()}
+            className="back-btn"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -337,9 +349,11 @@ export default function ProductDetailsPage() {
           {/* Two-Column Grid */}
           <div className="details-layout">
             
-            {/* LEFT COLUMN: Seamless Edge-to-Edge Cover Bento Grid Gallery */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+            {/* LEFT COLUMN: Seamless Edge-to-Edge Cover Bento Grid Gallery
+                (≤992px: becomes a swipeable scroll-snap carousel) */}
+            <div className="gallery-col" style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
               <div
+                className="bento-grid"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(2, 1fr)",
@@ -392,6 +406,7 @@ export default function ProductDetailsPage() {
                       />
                       {isSelected && (
                         <div
+                          className="main-view-badge"
                           style={{
                             position: "absolute",
                             top: "12px",
@@ -417,7 +432,7 @@ export default function ProductDetailsPage() {
             </div>
 
             {/* RIGHT COLUMN: Configurator & Reviews */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+            <div className="info-col" style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
               
               {/* Top Row: Description & Price side-by-side */}
               <div className="desc-price-row">
@@ -443,16 +458,16 @@ export default function ProductDetailsPage() {
                     alignItems: "flex-end",
                   }}
                 >
-                  <span style={{ fontSize: "36px", lineHeight: "44px", fontWeight: 400, color: "#3F3B38" }}>
+                  <span className="price-now" style={{ fontSize: "36px", lineHeight: "44px", fontWeight: 400, color: "#3F3B38" }}>
                     ₹{calculateTotalPrice().toLocaleString("en-IN")}
                   </span>
                   {productData.discount_price && (
-                    <span style={{ fontSize: "18px", textDecoration: "line-through", color: "#999" }}>
+                    <span className="price-was" style={{ fontSize: "18px", textDecoration: "line-through", color: "#999" }}>
                       ₹{calculateOriginalTotalPrice().toLocaleString("en-IN")}
                     </span>
                   )}
                   {productData.is_free_delivery && (
-                    <span style={{ fontSize: "14px", color: "#4E8E76", fontWeight: 600, marginTop: "4px" }}>
+                    <span className="price-free" style={{ fontSize: "14px", color: "#4E8E76", fontWeight: 600, marginTop: "4px" }}>
                       🚚 Free Delivery
                     </span>
                   )}
@@ -503,6 +518,7 @@ export default function ProductDetailsPage() {
                             placeholder={`Enter ${attr.name.toLowerCase()} details...`}
                             value={currentSelectedStr}
                             onChange={(e) => handleAttributeChange(attr.name, e.target.value, validValues)}
+                            className="attr-input"
                             style={{
                               width: "100%",
                               padding: "10px 14px",
@@ -522,6 +538,7 @@ export default function ProductDetailsPage() {
                               return (
                                 <label
                                   key={opt.id || opt.value}
+                                  className="option-chip"
                                   style={{
                                     display: "flex",
                                     alignItems: "center",
@@ -559,6 +576,7 @@ export default function ProductDetailsPage() {
                                   key={opt.id || opt.value}
                                   type="button"
                                   onClick={() => handleAttributeChange(attr.name, opt.value, validValues)}
+                                  className="option-chip"
                                   style={{
                                     padding: "10px 16px",
                                     borderRadius: "10px",
@@ -616,10 +634,11 @@ export default function ProductDetailsPage() {
 
               {/* Reviews Section */}
               <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginTop: "10px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h3 className="font-serif" style={{ fontSize: "22px", color: "#3F3B38", margin: 0 }}>Customer Reviews</h3>
+                <div className="reviews-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h3 className="font-serif reviews-title" style={{ fontSize: "22px", color: "#3F3B38", margin: 0 }}>Customer Reviews</h3>
                   <button
                     onClick={() => setShowReviewForm(!showReviewForm)}
+                    className="write-review-btn"
                     style={{
                       backgroundColor: showReviewForm ? "#FAF6F0" : "#D98A9C",
                       color: showReviewForm ? "#3F3B38" : "#fff",
@@ -639,6 +658,7 @@ export default function ProductDetailsPage() {
                 {showReviewForm && (
                   <form
                     onSubmit={handleReviewSubmit}
+                    className="review-form"
                     style={{
                       display: "flex",
                       flexDirection: "column",
@@ -684,6 +704,7 @@ export default function ProductDetailsPage() {
                             key={star}
                             type="button"
                             onClick={() => setNewRating(star)}
+                            className="rating-btn"
                             style={{ background: "none", border: "none", cursor: "pointer", padding: "2px" }}
                           >
                             <Heart size={22} fill={star <= newRating ? "#D98A9C" : "none"} color="#3F3B38" />
@@ -738,7 +759,7 @@ export default function ProductDetailsPage() {
                 )}
                 
                 {reviewsList.length === 0 ? (
-                  <div style={{ border: "1px solid #EBE5DB", borderRadius: "12px", padding: "16px", backgroundColor: "#FAF6F0" }}>
+                  <div className="review-card" style={{ border: "1px solid #EBE5DB", borderRadius: "12px", padding: "16px", backgroundColor: "#FAF6F0" }}>
                     <span className="font-serif" style={{ fontSize: "16px", color: "#D98A9C", fontWeight: 500, display: "block", marginBottom: "4px" }}>
                       Ayush Sharma
                     </span>
@@ -755,6 +776,7 @@ export default function ProductDetailsPage() {
                   reviewsList.map((item) => (
                     <div
                       key={item.id || Math.random()}
+                      className="review-card"
                       style={{
                         border: "1px solid #D9A85C",
                         borderRadius: "15px",
@@ -783,18 +805,19 @@ export default function ProductDetailsPage() {
             </div>
           </div>
 
-          {/* RELATED PRODUCTS GRID */}
+          {/* RELATED PRODUCTS GRID (≤992px: swipeable scroll-snap carousel) */}
           {relatedProducts.length > 0 && (
-            <div style={{ borderTop: "1px solid #EBE5DB", paddingTop: "60px", marginTop: "40px" }}>
-              <h2 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
+            <div className="related-section" style={{ borderTop: "1px solid #EBE5DB", paddingTop: "60px", marginTop: "40px" }}>
+              <h2 className="font-serif related-title" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
                 You may also Like:
               </h2>
 
               <div className="related-grid">
                 {relatedProducts.map((prod) => (
-                  <div key={prod.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div key={prod.id} className="related-card" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <a
                       href={`/shop/${prod.slug || prod.id}`}
+                      className="related-img-link"
                       style={{
                         width: "100%",
                         aspectRatio: "338/422",
@@ -823,10 +846,10 @@ export default function ProductDetailsPage() {
                         </div>
                       )}
                     </a>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+                    <div className="related-info" style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
                       <a
                         href={`/shop/${prod.slug || prod.id}`}
-                        className="font-serif"
+                        className="font-serif related-name"
                         style={{
                           fontSize: "20px",
                           lineHeight: "28px",
@@ -839,8 +862,8 @@ export default function ProductDetailsPage() {
                       >
                         {prod.title}
                       </a>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                        <span className="font-sans" style={{ fontSize: "18px", fontWeight: 500, color: "#3F3B38" }}>
+                      <div className="related-price-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                        <span className="font-sans related-price" style={{ fontSize: "18px", fontWeight: 500, color: "#3F3B38" }}>
                           ₹{parseInt(prod.base_price || "2000").toLocaleString("en-IN")}
                         </span>
                         <button
@@ -852,7 +875,7 @@ export default function ProductDetailsPage() {
                               image: prod.image || "",
                             })
                           }
-                          className="font-sans"
+                          className="font-sans related-add-btn"
                           style={{
                             background: "none",
                             border: "none",
@@ -880,15 +903,19 @@ export default function ProductDetailsPage() {
 
       <style jsx>{`
         .details-container {
+          --gutter: 120px;
           max-width: 1920px;
           margin: 0 auto;
-          padding: 0 120px;
+          padding: 0 var(--gutter);
         }
-        .bento-tile-card:hover .bento-tile-img {
-          transform: scale(1.05);
-        }
-        .bento-tile-card:hover {
-          box-shadow: 0px 10px 28px rgba(0, 0, 0, 0.12) !important;
+        /* Hover zoom only where a real hover exists (no "stuck" zoom after a tap) */
+        @media (hover: hover) {
+          .bento-tile-card:hover .bento-tile-img {
+            transform: scale(1.05);
+          }
+          .bento-tile-card:hover {
+            box-shadow: 0px 10px 28px rgba(0, 0, 0, 0.12) !important;
+          }
         }
         .details-layout {
           display: grid;
@@ -907,45 +934,254 @@ export default function ProductDetailsPage() {
           grid-template-columns: repeat(4, 1fr);
           gap: 30px;
         }
+        /* Keep every related card's price row on the same line even when titles wrap differently */
+        .related-info {
+          flex: 1 1 auto;
+        }
+        .related-price-row {
+          margin-top: auto;
+        }
+        /* Invisible ≥40px tap area for the related "Add to bag" links (no visual change) */
+        .related-add-btn {
+          position: relative;
+        }
+        .related-add-btn::before {
+          content: "";
+          position: absolute;
+          left: -6px;
+          right: 0;
+          top: -8px;
+          bottom: -10px;
+        }
+
+        /* Touch screens (and anything ≤992px): comfortable tap targets */
+        @media (max-width: 992px), (pointer: coarse) {
+          .back-btn {
+            min-height: 40px;
+            margin-bottom: 4px !important;
+          }
+          .option-chip {
+            min-height: 44px;
+          }
+          .attr-input {
+            min-height: 44px;
+          }
+          .write-review-btn {
+            min-height: 40px;
+          }
+          .rating-btn {
+            min-width: 40px;
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+          }
+        }
 
         @media (max-width: 1200px) {
           .details-container {
-            padding: 0 40px;
+            --gutter: 40px;
           }
           .details-layout {
             gap: 40px;
           }
         }
+
+        /* ═════ Tablets & phones: image stacked above info ═════ */
         @media (max-width: 992px) {
-          .details-layout {
-            grid-template-columns: 1fr;
-          }
-          .related-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        @media (max-width: 600px) {
           .details-container {
-            padding: 0 16px;
+            --gutter: 24px;
+          }
+          .details-main {
+            padding: 24px 0 64px 0 !important;
           }
           .page-title {
-            font-size: 28px !important;
-            line-height: 38px !important;
-            margin-bottom: 24px !important;
+            font-size: 32px !important;
+            line-height: 42px !important;
+            margin-bottom: 20px !important;
+            overflow-wrap: anywhere;
           }
+          .details-layout {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 28px;
+            margin-bottom: 48px;
+          }
+
+          /* Gallery → swipeable carousel that bleeds to the screen edges (next image peeks in) */
+          .bento-grid {
+            display: flex !important;
+            gap: 12px !important;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            scroll-snap-type: x mandatory;
+            scroll-padding: 0 var(--gutter);
+            margin: -6px calc(-1 * var(--gutter)) 0;
+            padding: 6px var(--gutter) 16px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+          }
+          .bento-grid::-webkit-scrollbar {
+            display: none;
+          }
+          /* Softer shadow so it isn't clipped by the scroller (the pink border still marks the selected image) */
+          .bento-tile-card {
+            flex: 0 0 auto;
+            width: 48% !important;
+            height: auto !important;
+            aspect-ratio: 1 / 1;
+            scroll-snap-align: start;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+          }
+          .bento-tile-card:only-child {
+            width: 100% !important;
+            aspect-ratio: 4 / 3;
+          }
+
+          .reviews-header {
+            flex-wrap: wrap;
+            gap: 12px;
+          }
+          .reviews-title {
+            font-size: 22px !important;
+            line-height: 30px !important;
+          }
+
+          /* Related products → swipeable carousel */
+          .related-section {
+            padding-top: 40px !important;
+            margin-top: 0 !important;
+          }
+          .related-title {
+            font-size: 24px !important;
+            line-height: 32px !important;
+            margin-bottom: 20px !important;
+          }
+          .related-grid {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            scroll-snap-type: x mandatory;
+            scroll-padding: 0 var(--gutter);
+            margin: 0 calc(-1 * var(--gutter));
+            padding: 4px var(--gutter) 16px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+          }
+          .related-grid::-webkit-scrollbar {
+            display: none;
+          }
+          .related-card {
+            flex: 0 0 30%;
+            min-width: 0;
+            scroll-snap-align: start;
+          }
+          .related-img-link {
+            margin-bottom: 12px !important;
+          }
+          .related-name {
+            font-size: 17px !important;
+            line-height: 24px !important;
+          }
+          .related-price-row {
+            flex-wrap: wrap;
+            align-items: baseline !important;
+            gap: 0 10px;
+          }
+          .related-price {
+            font-size: 16px !important;
+          }
+          .related-add-btn {
+            font-size: 15px !important;
+            line-height: 22px;
+          }
+        }
+
+        /* ═════ Phones ═════ */
+        @media (max-width: 600px) {
+          .details-container {
+            --gutter: 16px;
+          }
+          .details-main {
+            padding: 20px 0 56px 0 !important;
+          }
+          .page-title {
+            font-size: 26px !important;
+            line-height: 34px !important;
+            margin-bottom: 16px !important;
+            letter-spacing: 0.5px !important;
+          }
+          .details-layout {
+            gap: 24px;
+            margin-bottom: 40px;
+          }
+          .bento-tile-card {
+            width: 84% !important;
+            border-radius: 14px !important;
+          }
+          .bento-tile-card:only-child {
+            width: 100% !important;
+            aspect-ratio: 1 / 1;
+          }
+          .info-col {
+            gap: 24px !important;
+          }
+          /* Price first, on one line, then the description */
           .desc-price-row {
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
+          }
+          .product-price {
+            order: -1;
+            flex-direction: row !important;
+            flex-wrap: wrap;
+            align-items: baseline !important;
+            gap: 2px 12px;
+          }
+          .price-now {
+            font-size: 30px !important;
+            line-height: 38px !important;
+          }
+          .price-was {
+            font-size: 16px !important;
+          }
+          .price-free {
+            flex-basis: 100%;
+            margin-top: 0 !important;
           }
           .product-desc {
             font-size: 15px !important;
-            line-height: 22px !important;
+            line-height: 23px !important;
           }
-          .product-price {
-            font-size: 28px !important;
+          .reviews-title {
+            font-size: 20px !important;
+            line-height: 28px !important;
+          }
+          .review-form {
+            padding: 16px !important;
+          }
+          .review-card {
+            padding: 16px !important;
+          }
+          .related-title {
+            font-size: 22px !important;
+            line-height: 30px !important;
           }
           .related-grid {
-            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+          .related-card {
+            flex-basis: 44%;
+          }
+          .related-name {
+            font-size: 15px !important;
+            line-height: 21px !important;
+          }
+          .related-price {
+            font-size: 15px !important;
+          }
+          .related-add-btn {
+            font-size: 14px !important;
           }
         }
       `}</style>

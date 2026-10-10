@@ -103,7 +103,7 @@ export default function SpecialOffers() {
           <div className="banner-grid">
             
             {/* Left Box: Spring Sale Banner */}
-            <div style={{ position: "relative", width: "100%" }}>
+            <div className="so-banner-wrap" style={{ position: "relative", width: "100%" }}>
               <Link
                 href={banner1?.button_url || banner1?.link_url || "/shop"}
                 className="spring-banner"
@@ -134,7 +134,7 @@ export default function SpecialOffers() {
                   <path d="M20 80 Q40 50 60 40" stroke="#8FB9A8" strokeWidth="2" fill="none" />
                 </svg>
 
-                <span className="font-sans font-bold" style={{ fontSize: "16px", letterSpacing: "3px", color: "#3F3B38", marginBottom: "16px", display: "inline-block" }}>
+                <span className="font-sans font-bold so-banner-label" style={{ fontSize: "16px", letterSpacing: "3px", color: "#3F3B38", marginBottom: "16px", display: "inline-block" }}>
                   SPECIAL OFFER
                 </span>
                 <h1 className="font-serif spring-title">
@@ -144,6 +144,7 @@ export default function SpecialOffers() {
                   {banner1?.subtitle || "Personalized handmade frames and keepsakes that tell your story."}
                 </p>
                 <div
+                  className="so-banner-date"
                   style={{
                     border: "1px solid #D9A85C",
                     borderRadius: "4px",
@@ -163,11 +164,12 @@ export default function SpecialOffers() {
 
               {/* Main Banner Carousel Dots */}
               {mainBanners.length > 1 && (
-                <div style={{ position: "absolute", bottom: "16px", right: "24px", display: "flex", gap: "6px", zIndex: 10 }}>
+                <div className="so-dots" style={{ position: "absolute", bottom: "16px", right: "24px", display: "flex", gap: "6px", zIndex: 10 }}>
                   {mainBanners.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setMainBannerIdx(idx)}
+                      className="so-dot"
                       style={{
                         width: idx === mainBannerIdx ? "20px" : "8px",
                         height: "8px",
@@ -189,6 +191,7 @@ export default function SpecialOffers() {
               {/* Card 1: Gold 50% OFF */}
               <Link
                 href={banner2?.button_url || banner2?.link_url || "/shop"}
+                className="so-offer-card"
                 style={{
                   flex: 1,
                   backgroundColor: "#D9A85C",
@@ -240,6 +243,7 @@ export default function SpecialOffers() {
               {/* Card 2: Green Special Offer */}
               <Link
                 href={banner3?.button_url || banner3?.link_url || "/shop"}
+                className="so-offer-card"
                 style={{
                   flex: 1,
                   backgroundColor: "#8FB9A8",
@@ -306,23 +310,24 @@ export default function SpecialOffers() {
                   </Link>
 
                   {/* Right side: Product details */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div className="so-prod-details" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                     <Link href={productUrl} style={{ textDecoration: "none" }}>
-                      <h3 className="font-serif" style={{ fontSize: "24px", color: "#3F3B38", margin: 0, cursor: "pointer" }}>
+                      <h3 className="font-serif so-prod-title" style={{ fontSize: "24px", color: "#3F3B38", margin: 0, cursor: "pointer" }}>
                         {prod.title}
                       </h3>
                     </Link>
-                    <p className="font-sans" style={{ fontSize: "14px", color: "#8FB9A8", lineHeight: "20px", margin: 0 }}>
+                    <p className="font-sans so-prod-desc" style={{ fontSize: "14px", color: "#8FB9A8", lineHeight: "20px", margin: 0 }}>
                       {prod.description || "Handcrafted with love, designed to celebrate the timeless bond."}
                     </p>
-                    <span className="font-serif" style={{ fontSize: "28px", color: "#3F3B38" }}>
+                    <span className="font-serif so-prod-price" style={{ fontSize: "28px", color: "#3F3B38" }}>
                       ₹{prod.base_price ?? prod.price}
                     </span>
-                    
+
                     {/* Add to Cart Button */}
                     <div>
                       <button
                         onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
+                        className="so-cart-btn"
                         style={{
                           width: "100%",
                           height: "36px",
@@ -389,24 +394,24 @@ export default function SpecialOffers() {
 
             {/* Right side: Wedding Frames details */}
             <div className="wedding-details" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <span className="font-serif" style={{ fontSize: "28px", color: "#D9A85C", letterSpacing: "1px", margin: 0 }}>
+              <span className="font-serif so-wedding-label" style={{ fontSize: "28px", color: "#D9A85C", letterSpacing: "1px", margin: 0 }}>
                 WEDDING SPECIALS
               </span>
-              
+
               {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIdx] ? (
                 <Link href={`/shop/${weddingSpecials[activeWeddingIdx]?.slug || weddingSpecials[activeWeddingIdx]?.id}`} style={{ textDecoration: "none" }}>
-                  <h3 className="font-serif" style={{ fontSize: "36px", color: "#3F3B38", margin: 0, cursor: "pointer" }}>
+                  <h3 className="font-serif so-wedding-title" style={{ fontSize: "36px", color: "#3F3B38", margin: 0, cursor: "pointer" }}>
                     {weddingSpecials[activeWeddingIdx]?.title}
                   </h3>
                 </Link>
               ) : (
-                <h3 className="font-serif" style={{ fontSize: "36px", color: "#3F3B38", margin: 0 }}>
+                <h3 className="font-serif so-wedding-title" style={{ fontSize: "36px", color: "#3F3B38", margin: 0 }}>
                   WEDDING FRAMES
                 </h3>
               )}
 
               {/* Row of 3 square couple thumbnails */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
+              <div className="so-wedding-thumbs" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
                 {weddingSpecials.length > 0 ? (
                   weddingSpecials.slice(0, 3).map((wItem, i) => (
                     <div
@@ -459,17 +464,17 @@ export default function SpecialOffers() {
                 )}
               </div>
 
-              <p className="font-sans" style={{ fontSize: "16px", color: "#8FB9A8", lineHeight: "26px", margin: 0 }}>
+              <p className="font-sans so-wedding-desc" style={{ fontSize: "16px", color: "#8FB9A8", lineHeight: "26px", margin: 0 }}>
                 {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIdx]?.description
                   ? weddingSpecials[activeWeddingIdx].description
                   : "Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts. Top-rated options include customized text frames, elegant tabletop glass and pearl designs, and sterling silver anniversary frames that track a couple's journey over time."}
               </p>
 
-              <span className="font-serif" style={{ fontSize: "36px", color: "#3F3B38" }}>
+              <span className="font-serif so-wedding-price" style={{ fontSize: "36px", color: "#3F3B38" }}>
                 ₹{weddingSpecials.length > 0 ? weddingSpecials[activeWeddingIdx]?.base_price : "2000"}
               </span>
 
-              <div>
+              <div className="so-wedding-cta">
                 <button
                   onClick={() => {
                     if (weddingSpecials.length > 0) {
@@ -508,8 +513,8 @@ export default function SpecialOffers() {
           {/* ═══════════════════════════════════════════════════════
               "You may also Like:" SECTION
               ═══════════════════════════════════════════════════════ */}
-          <div style={{ borderTop: "1px solid #EBE5DB", paddingTop: "60px" }}>
-            <h2 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
+          <div className="so-related-section" style={{ borderTop: "1px solid #EBE5DB", paddingTop: "60px" }}>
+            <h2 className="font-serif so-section-title" style={{ fontSize: "28px", color: "#3F3B38", marginBottom: "40px", margin: "0 0 40px 0" }}>
               You may also Like:
             </h2>
 
@@ -517,9 +522,10 @@ export default function SpecialOffers() {
               {relatedItems.map((prod) => {
                 const productUrl = `/shop/${prod.slug || prod.id}`;
                 return (
-                  <div key={prod.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div key={prod.id} className="so-related-card" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <Link href={productUrl} style={{ width: "100%", textDecoration: "none" }}>
                       <div
+                        className="so-related-image"
                         style={{
                           width: "100%",
                           aspectRatio: "338/422",
@@ -544,19 +550,19 @@ export default function SpecialOffers() {
                       </div>
                     </Link>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+                    <div className="so-related-info" style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
                       <Link href={productUrl} style={{ textDecoration: "none" }}>
-                        <h4 className="font-serif" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0, cursor: "pointer" }}>
+                        <h4 className="font-serif so-related-title" style={{ fontSize: "22px", lineHeight: "30px", fontWeight: 400, color: "#3F3B38", textAlign: "center", margin: 0, cursor: "pointer" }}>
                           {prod.title}
                         </h4>
                       </Link>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                        <span className="font-sans" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
+                      <div className="so-related-meta" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                        <span className="font-sans so-related-price" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
                           ₹{prod.base_price ?? prod.price}
                         </span>
                         <button
                           onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
-                          className="font-sans"
+                          className="font-sans so-related-action"
                           style={{
                             background: "none",
                             border: "none",
@@ -593,14 +599,20 @@ export default function SpecialOffers() {
           gap: 30px;
           margin-bottom: 80px;
         }
+        /* The wrapper is the grid item; the banner grows to fit its text and stretches to the
+           height of the offer cards beside it (a fixed aspect ratio clipped the date/handle text) */
+        .so-banner-wrap {
+          display: flex;
+          flex-direction: column;
+        }
         .spring-banner {
           position: relative;
           width: 100%;
-          aspect-ratio: 1150/460;
+          flex: 1 0 auto;
           background-color: #fff;
           border: 6px solid #D98A9C;
           border-radius: 15px;
-          display: flex;
+          display: flex !important;
           flex-direction: column;
           align-items: center;
           justify-content: center;
@@ -681,6 +693,13 @@ export default function SpecialOffers() {
           grid-template-columns: repeat(4, 1fr);
           gap: 30px;
         }
+        /* Cards in a row share one height; pin price/action to the bottom so they line up when titles wrap */
+        .so-related-info {
+          flex: 1;
+        }
+        .so-related-meta {
+          margin-top: auto;
+        }
 
         @media (max-width: 1200px) {
           .offers-container {
@@ -693,51 +712,262 @@ export default function SpecialOffers() {
           .wedding-section {
             gap: 40px;
           }
+          /* Touch-sized controls (tablets, iPad) */
+          .so-dot {
+            position: relative;
+          }
+          .so-dot::after {
+            content: "";
+            position: absolute;
+            inset: -16px -3px;
+          }
+          .so-cart-btn {
+            height: 40px !important;
+            border-radius: 20px !important;
+          }
+          .related-grid {
+            gap: 24px;
+          }
+          .so-related-title {
+            font-size: 18px !important;
+            line-height: 26px !important;
+          }
+          .so-related-price,
+          .so-related-action {
+            font-size: 17px !important;
+          }
+          /* 40px tap box; a text underline keeps the line under the words instead of at the box edge */
+          .so-related-action {
+            min-height: 40px;
+            display: inline-flex !important;
+            align-items: center;
+            border-bottom: none !important;
+            padding: 0 !important;
+            text-decoration: underline;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 6px;
+          }
         }
         @media (max-width: 992px) {
           .banner-grid {
             grid-template-columns: 1fr;
+            gap: 24px;
+            margin-bottom: 56px;
           }
           .spring-banner {
-            aspect-ratio: auto;
-            padding: 60px 20px;
+            padding: 56px 24px;
+          }
+          /* Offer cards side by side under the main banner */
+          .cards-stack {
+            flex-direction: row;
+            gap: 20px;
+          }
+          .so-offer-card {
+            min-height: 180px;
           }
           .products-grid {
-            grid-template-columns: 1fr;
-            gap: 40px;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px 24px;
+            margin-bottom: 56px;
+          }
+          .prod-card {
+            grid-template-columns: 1fr 1.3fr;
+            gap: 16px;
+          }
+          .so-prod-details {
+            gap: 10px !important;
+          }
+          .so-prod-title {
+            font-size: 20px !important;
+            line-height: 28px !important;
+          }
+          .so-prod-price {
+            font-size: 24px !important;
           }
           .wedding-section {
             grid-template-columns: 1fr;
+            gap: 24px;
+            padding-top: 48px;
+            margin-bottom: 56px;
+          }
+          .mandala-svg {
+            width: 260px;
+            height: 260px;
+          }
+          .so-wedding-label {
+            font-size: 24px !important;
+          }
+          .so-wedding-title {
+            font-size: 30px !important;
+            line-height: 38px !important;
+          }
+          /* Price + button right under the photos; the (often long) description follows */
+          .so-wedding-price {
+            order: 1;
+          }
+          .so-wedding-cta {
+            order: 2;
+          }
+          .so-wedding-desc {
+            order: 3;
           }
           .related-grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+          }
+          .so-section-title {
+            font-size: 28px !important;
+            line-height: 36px !important;
+            margin-bottom: 28px !important;
+          }
+          .so-related-title {
+            font-size: 16px !important;
+            line-height: 22px !important;
+          }
+          .so-related-price,
+          .so-related-action {
+            font-size: 15px !important;
+          }
+          .so-related-image {
+            margin-bottom: 12px !important;
+          }
+        }
+        @media (max-width: 720px) {
+          /* One product per row: compact image-left card */
+          .products-grid {
+            grid-template-columns: 1fr;
+            gap: 28px;
+          }
+          .prod-card {
+            grid-template-columns: min(38%, 180px) 1fr;
+            gap: 16px;
+          }
+          .related-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
           }
         }
         @media (max-width: 600px) {
           .offers-container {
             padding: 0 16px;
           }
+          .banner-grid {
+            gap: 16px;
+            margin-bottom: 40px;
+          }
+          .spring-banner {
+            padding: 40px 16px;
+            border-width: 4px;
+          }
           .spring-title {
-            font-size: 32px;
-            line-height: 40px;
+            font-size: clamp(26px, 8vw, 32px) !important;
+            line-height: 1.2 !important;
+            letter-spacing: 1px;
+          }
+          .so-banner-label {
+            font-size: 13px !important;
+            letter-spacing: 2px !important;
+            margin-bottom: 12px !important;
           }
           .banner-desc {
             font-size: 14px !important;
             line-height: 22px !important;
           }
+          .so-banner-date {
+            font-size: 14px !important;
+            padding: 8px 16px !important;
+            margin-bottom: 16px !important;
+          }
           .floral-svg-left, .floral-svg-right {
-            width: 80px;
-            height: 80px;
+            width: 72px;
+            height: 72px;
+          }
+          .cards-stack {
+            flex-direction: column;
+            gap: 16px;
+          }
+          .so-offer-card {
+            min-height: 0;
+          }
+          .products-grid {
+            gap: 24px;
+            margin-bottom: 40px;
           }
           .prod-card {
-            grid-template-columns: 1fr;
+            gap: 14px;
           }
-          .prod-image-box {
-            max-width: 240px;
-            margin: 0 auto;
+          .so-prod-details {
+            gap: 8px !important;
+          }
+          .so-prod-title {
+            font-size: 18px !important;
+            line-height: 24px !important;
+          }
+          .so-prod-price {
+            font-size: 22px !important;
+          }
+          .wedding-section {
+            padding-top: 40px;
+            gap: 16px;
+            margin-bottom: 40px;
+          }
+          .mandala-svg {
+            width: 200px;
+            height: 200px;
+          }
+          .wedding-details {
+            gap: 16px !important;
+          }
+          .so-wedding-label {
+            font-size: 20px !important;
+          }
+          .so-wedding-title {
+            font-size: 26px !important;
+            line-height: 32px !important;
+          }
+          .so-wedding-thumbs {
+            gap: 12px !important;
+          }
+          .so-wedding-price {
+            font-size: 30px !important;
+          }
+          .so-related-section {
+            padding-top: 40px !important;
+          }
+          .so-section-title {
+            font-size: 24px !important;
+            line-height: 32px !important;
+            margin-bottom: 20px !important;
           }
           .related-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px 12px;
+          }
+          .so-related-title {
+            font-size: 15px !important;
+            line-height: 21px !important;
+          }
+          .so-related-price {
+            font-size: 15px !important;
+          }
+          .so-related-action {
+            font-size: 14px !important;
+          }
+          .so-related-image {
+            margin-bottom: 10px !important;
+            border-radius: 12px !important;
+          }
+          .so-related-meta {
+            flex-wrap: wrap;
+            column-gap: 8px;
+          }
+        }
+        /* Very narrow phones: price and action don't fit side by side, so stack them centered */
+        @media (max-width: 374px) {
+          .so-related-meta {
+            flex-direction: column;
+            justify-content: center !important;
+            align-items: center !important;
           }
         }
       ` }} />

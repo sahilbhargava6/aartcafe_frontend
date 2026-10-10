@@ -81,7 +81,6 @@ export default function SpecialOffersDashboard() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
-        ...prod,
         is_special_offer: updatedStatus,
       }),
     })

@@ -79,7 +79,6 @@ export default function NewDiscoversDashboard() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
-        ...prod,
         is_new_discovery: updatedStatus,
       }),
     })

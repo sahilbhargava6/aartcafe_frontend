@@ -25,13 +25,16 @@ export default function Shop() {
   const { addToBag } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
-  
+  // Product-flag collection from the URL, e.g. /shop?collection=bestsellers
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const cat = params.get("category");
       if (cat) setSelectedCategory(cat);
+      const collection = params.get("collection");
+      if (collection === "bestsellers") setSelectedCollection(collection);
     }
   }, []);
 
@@ -111,7 +114,8 @@ export default function Shop() {
             categories: Array.isArray(p.categories) && p.categories.length > 0 ? p.categories.map((c: any) => c.name) : [p.category?.name || "Uncategorized"],
             image: p.image || "",
             description: p.description || "",
-            isFreeDelivery: !!p.is_free_delivery
+            isFreeDelivery: !!p.is_free_delivery,
+            isBestseller: !!p.is_bestseller
           }));
           setAllProducts(formatted);
           setFilteredProducts(formatted);
@@ -133,6 +137,10 @@ export default function Shop() {
   useEffect(() => {
     let result = allProducts;
 
+    if (selectedCollection === "bestsellers") {
+      result = result.filter((p) => p.isBestseller);
+    }
+
     if (selectedCategory) {
       result = result.filter((p) => (p.categories && Array.isArray(p.categories)) ? p.categories.includes(selectedCategory) : p.category === selectedCategory);
     }
@@ -141,25 +149,26 @@ export default function Shop() {
     result = result.filter((p) => p.price >= minPrice && p.price <= maxPrice);
 
     setFilteredProducts(result);
-  }, [selectedCategory, minPrice, maxPrice, allProducts]);
+  }, [selectedCollection, selectedCategory, minPrice, maxPrice, allProducts]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#fff" }}>
       <Navbar />
       <CartDrawer />
 
-      <main style={{ flex: 1, backgroundColor: "#fff", padding: "40px 0 80px 0" }}>
+      <main className="shop-main" style={{ flex: 1, backgroundColor: "#fff", padding: "40px 0 80px 0" }}>
         <div className="shop-container">
-          
+
           {/* Main Grid Wrapper with responsive styling */}
           <div className="shop-layout">
-            
+
             {/* ═══════════════════════════════════════════════════════
                 LEFT SIDEBAR: FILTERS
+                (≤992px: becomes a compact block of category chips + price row)
                 ═══════════════════════════════════════════════════════ */}
             <aside className="shop-sidebar">
               <h2
-                className="font-serif"
+                className="font-serif shop-filter-heading"
                 style={{
                   fontSize: "24px",
                   lineHeight: "32px",
@@ -173,17 +182,17 @@ export default function Shop() {
               </h2>
 
               {/* Categories Box */}
-              <div className="filter-box">
+              <div className="filter-box filter-box--categories">
                 <h3 className="font-serif filter-box-title">
                   Categories
                 </h3>
-                <div style={{ flex: 1 }}>
-                  <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "8px", padding: 0, margin: 0 }}>
+                <div className="category-list-wrap" style={{ flex: 1 }}>
+                  <ul className="category-list" style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "8px", padding: 0, margin: 0 }}>
                     {categories.map((cat) => (
-                      <li key={cat}>
+                      <li key={cat} className="category-item">
                         <button
                           onClick={() => handleCategoryClick(cat)}
-                          className="font-sans"
+                          className={`font-sans category-btn${selectedCategory === cat ? " is-active" : ""}`}
                           style={{
                             background: "none",
                             border: "none",
@@ -207,11 +216,11 @@ export default function Shop() {
               </div>
 
               {/* Prices Box */}
-              <div className="filter-box">
+              <div className="filter-box filter-box--price">
                 <h3 className="font-serif filter-box-title">
                   Prices
                 </h3>
-                <div style={{ paddingRight: "4px", marginTop: "16px" }}>
+                <div className="price-slider-wrap" style={{ paddingRight: "4px", marginTop: "16px" }}>
                   <PriceSlider
                     min={0}
                     max={10000}
@@ -230,12 +239,12 @@ export default function Shop() {
             {/* ═══════════════════════════════════════════════════════
                 RIGHT PRODUCTS PANEL
                 ═══════════════════════════════════════════════════════ */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
-              
+            <div className="shop-products-panel" style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
+
               {/* Header Title & Active Filter Summary */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+              <div className="shop-header-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
                 <h1
-                  className="font-serif"
+                  className="font-serif shop-title"
                   style={{
                     fontSize: "36px",
                     lineHeight: "48px",
@@ -244,22 +253,28 @@ export default function Shop() {
                     margin: 0,
                   }}
                 >
-                  {selectedCategory && selectedCategory !== "All" ? selectedCategory.toUpperCase() : "SHOP"}
+                  {selectedCategory && selectedCategory !== "All"
+                    ? selectedCategory.toUpperCase()
+                    : selectedCollection === "bestsellers"
+                    ? "BESTSELLERS"
+                    : "SHOP"}
                 </h1>
 
-                {(selectedCategory || minPrice > 0 || maxPrice < 10000) && (
+                {(selectedCollection || selectedCategory || minPrice > 0 || maxPrice < 10000) && (
                   <button
                     onClick={() => {
+                      setSelectedCollection(null);
                       setSelectedCategory(null);
                       setMinPrice(0);
                       setMaxPrice(10000);
                       if (typeof window !== "undefined") {
                         const url = new URL(window.location.href);
                         url.searchParams.delete("category");
+                        url.searchParams.delete("collection");
                         window.history.pushState({}, "", url.toString());
                       }
                     }}
-                    className="font-sans"
+                    className="font-sans shop-clear-btn"
                     style={{
                       background: "none",
                       border: "none",
@@ -294,12 +309,14 @@ export default function Shop() {
                   ))}
                 </div>
               ) : filteredProducts.length === 0 ? (
-                <div style={{ padding: "80px 0", textAlign: "center", color: "#6E6E6E" }}>
-                  <p className="font-sans" style={{ fontSize: "22px" }}>No products match the selected filters.</p>
+                <div className="shop-empty" style={{ padding: "80px 0", textAlign: "center", color: "#6E6E6E" }}>
+                  <p className="font-sans shop-empty-text" style={{ fontSize: "22px" }}>No products match the selected filters.</p>
                   <button
                     onClick={() => {
+                      setSelectedCollection(null);
                       setSelectedCategory(null);
-                      setSelectedPriceRange(null);
+                      setMinPrice(0);
+                      setMaxPrice(10000);
                     }}
                     className="underline-link"
                     style={{ marginTop: "16px" }}
@@ -330,6 +347,7 @@ export default function Shop() {
                               });
                             }}
                             title={isInWishlist(prod.id) ? "Remove from Wishlist" : "Add to Wishlist"}
+                            className="wishlist-btn"
                             style={{
                               position: "absolute",
                               top: "14px",
@@ -420,10 +438,10 @@ export default function Shop() {
                         </Link>
 
                         {/* Details below card */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "14px", width: "100%" }}>
+                        <div className="card-details" style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "14px", width: "100%" }}>
                           <Link href={prod.slug ? `/shop/${prod.slug}` : `/shop/${prod.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                             <h4
-                              className="font-serif"
+                              className="font-serif card-title"
                               style={{
                                 fontSize: "22px",
                                 lineHeight: "30px",
@@ -437,25 +455,25 @@ export default function Shop() {
                             </h4>
                           </Link>
                           
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-                              <span className="font-sans" style={{ fontSize: "20px", color: "#3F3B38", fontWeight: 500 }}>
+                          <div className="card-price-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div className="card-price-group" style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
+                              <span className="font-sans card-price" style={{ fontSize: "20px", color: "#3F3B38", fontWeight: 500 }}>
                                 ₹{prod.price.toLocaleString("en-IN")}
                               </span>
                               {prod.discountPrice && (
-                                <span className="font-sans" style={{ fontSize: "14px", textDecoration: "line-through", color: "#999" }}>
+                                <span className="font-sans card-price-was" style={{ fontSize: "14px", textDecoration: "line-through", color: "#999" }}>
                                   ₹{prod.basePrice.toLocaleString("en-IN")}
                                 </span>
                               )}
                             </div>
-                            
+
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 addToBag(prod);
                               }}
-                              className="font-sans"
+                              className="font-sans card-add-btn"
                               style={{
                                 background: "none",
                                 border: "none",
@@ -485,21 +503,35 @@ export default function Shop() {
 
       {/* CSS Styles for responsiveness and overlay hover state */}
       <style jsx global>{`
-        .product-card:hover .hover-overlay {
-          opacity: 1 !important;
+        /* Only on devices that can hover (avoids a "stuck" overlay after a tap on touch screens) */
+        @media (hover: hover) {
+          .product-card:hover .hover-overlay {
+            opacity: 1 !important;
+          }
+        }
+        /* Phones: uniform 4:5 cards so the 2-column grid rows line up */
+        @media (max-width: 600px) {
+          .shop-products-grid .product-card {
+            aspect-ratio: 4 / 5 !important;
+            border-radius: 12px !important;
+          }
         }
       `}</style>
 
       <style jsx>{`
         .shop-container {
+          --gutter: 40px;
           max-width: 1920px;
           margin: 0 auto;
-          padding: 0 40px;
+          padding: 0 var(--gutter);
         }
         .shop-layout {
           display: grid;
           grid-template-columns: 294px 1fr;
           gap: 47px;
+        }
+        .shop-layout > * {
+          min-width: 0;
         }
         .shop-sidebar {
           display: flex;
@@ -536,37 +568,245 @@ export default function Shop() {
           flex-direction: column;
           width: 100%;
         }
+        /* Invisible ≥40px tap areas (no visual change): "Add to bag" grows into the row gap below, the heart by 4px */
+        .card-add-btn {
+          position: relative;
+        }
+        .card-add-btn::before {
+          content: "";
+          position: absolute;
+          left: -6px;
+          right: 0;
+          top: -4px;
+          bottom: -14px;
+        }
+        .wishlist-btn::after {
+          content: "";
+          position: absolute;
+          inset: -4px;
+          border-radius: 50%;
+        }
 
-        @media (max-width: 992px) {
-          .shop-layout {
-            grid-template-columns: 1fr;
-            gap: 40px;
-          }
-          .shop-sidebar {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-          }
-          .filter-box {
-            min-height: 200px;
-            height: auto;
+        /* Small laptops (1200–1399px): keep 3 columns next to the sidebar */
+        @media (max-width: 1399px) {
+          .shop-products-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
           }
         }
-        @media (max-width: 600px) {
-          .shop-container {
-            padding: 0 16px;
+
+        /* iPad Pro portrait / small landscape tablets: sidebar stays, grid never collapses to 1 column */
+        @media (max-width: 1199px) {
+          .shop-products-grid {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 48px 24px;
           }
+        }
+
+        /* Touch screens that still show the sidebar: give each category a 40px tap target */
+        @media (min-width: 993px) and (pointer: coarse) {
+          .category-list {
+            gap: 2px !important;
+          }
+          .category-btn {
+            min-height: 40px;
+          }
+        }
+
+        /* ═════ Tablets & phones: single column, filters become a compact block above the grid ═════ */
+        @media (max-width: 992px) {
+          .shop-container {
+            --gutter: 24px;
+          }
+          .shop-main {
+            padding: 24px 0 64px 0 !important;
+          }
+          .shop-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+          }
+          /* Let the title row sit above the filters (panel children join the layout flow) */
+          .shop-products-panel {
+            display: contents !important;
+          }
+          .shop-header-row {
+            order: -1;
+          }
+          .shop-title {
+            font-size: 32px !important;
+            line-height: 40px !important;
+          }
+          .shop-clear-btn {
+            font-size: 16px !important;
+            min-height: 40px;
+            padding: 0 !important;
+          }
+
+          /* Filters */
           .shop-sidebar {
-            grid-template-columns: 1fr;
-            gap: 20px;
+            gap: 12px;
+          }
+          .shop-filter-heading {
+            display: none;
           }
           .filter-box {
-            min-height: 180px;
-            height: auto;
+            min-height: 0;
           }
-          .filter-box-title {
-            font-size: 26px;
-            line-height: 34px;
+          .filter-box--categories {
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            background: transparent;
+          }
+          .filter-box--categories .filter-box-title {
+            display: none;
+          }
+          /* Categories → one swipeable row of chips, bleeding to the screen edges */
+          .category-list {
+            flex-direction: row !important;
+            flex-wrap: nowrap;
+            gap: 8px !important;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            scroll-snap-type: x proximity;
+            scroll-padding: 0 var(--gutter);
+            margin: 0 calc(-1 * var(--gutter)) !important;
+            padding: 2px var(--gutter) 4px !important;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+          }
+          .category-list::-webkit-scrollbar {
+            display: none;
+          }
+          .category-item {
+            flex: 0 0 auto;
+            scroll-snap-align: start;
+          }
+          .category-btn {
+            width: auto !important;
+            min-height: 40px;
+            padding: 0 16px !important;
+            border: 1px solid #e5d5c5 !important;
+            border-radius: 999px !important;
+            background: #fff !important;
+            font-size: 15px !important;
+            line-height: 20px !important;
+            white-space: nowrap;
+          }
+          .category-btn.is-active {
+            border: 1.5px solid #d9a85c !important;
+            background: rgba(217, 168, 92, 0.12) !important;
+            color: #3f3b38 !important;
+            font-weight: 500 !important;
+          }
+          /* Price → one compact row: label + slider */
+          .filter-box--price {
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 10px 14px 0 18px;
+            border-width: 1.5px;
+            border-radius: 12px;
+          }
+          .filter-box--price .filter-box-title {
+            flex: 0 0 auto;
+            font-size: 17px !important;
+            line-height: 24px !important;
+            margin: 0;
+          }
+          .price-slider-wrap {
+            flex: 1 1 auto;
+            min-width: 0;
+            margin-top: 0 !important;
+            padding-right: 0 !important;
+          }
+
+          /* Product grid: 3 columns */
+          .shop-products-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 36px 16px;
+            margin-top: 8px;
+          }
+          .shop-empty {
+            padding: 48px 0 !important;
+          }
+          .card-details {
+            margin-top: 10px !important;
+            gap: 4px !important;
+          }
+          .card-title {
+            font-size: 18px !important;
+            line-height: 25px !important;
+          }
+          .card-price-row {
+            flex-wrap: wrap;
+            align-items: baseline !important;
+            gap: 0 12px;
+          }
+          .card-price {
+            font-size: 17px !important;
+          }
+          .card-add-btn {
+            font-size: 16px !important;
+            line-height: 22px !important;
+          }
+        }
+
+        /* ═════ Phones ═════ */
+        @media (max-width: 600px) {
+          .shop-container {
+            --gutter: 16px;
+          }
+          .shop-main {
+            padding: 20px 0 56px 0 !important;
+          }
+          .shop-title {
+            font-size: 26px !important;
+            line-height: 34px !important;
+          }
+          .shop-clear-btn {
+            font-size: 15px !important;
+          }
+          .category-btn {
+            font-size: 14px !important;
+            padding: 0 14px !important;
+          }
+          .filter-box--price {
+            gap: 10px;
+            padding: 8px 10px 0 14px;
+          }
+          .filter-box--price .filter-box-title {
+            font-size: 16px !important;
+          }
+          /* Product grid: 2 columns, price + "Add to bag" stacked */
+          .shop-products-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 28px 12px;
+          }
+          .card-title {
+            font-size: 15px !important;
+            line-height: 21px !important;
+          }
+          .card-price-row {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 0;
+          }
+          .card-price {
+            font-size: 16px !important;
+          }
+          .card-add-btn {
+            font-size: 14px !important;
+            line-height: 20px !important;
+          }
+          .wishlist-btn {
+            top: 8px !important;
+            right: 8px !important;
+            width: 34px !important;
+            height: 34px !important;
+          }
+          .shop-empty-text {
+            font-size: 17px !important;
           }
         }
       `}</style>

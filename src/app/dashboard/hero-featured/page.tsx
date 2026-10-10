@@ -87,7 +87,6 @@ export default function HeroFeaturedDashboard() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
-        ...prod,
         is_hero_featured: updatedStatus,
       }),
     })

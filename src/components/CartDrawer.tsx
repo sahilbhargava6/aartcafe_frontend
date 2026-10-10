@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
-import { useCart } from "@/context/CartContext";
+import { useCart, formatCartTotal } from "@/context/CartContext";
 import { X, Plus, Minus, Trash2, ShoppingBag } from "lucide-react";
 
 export default function CartDrawer() {
@@ -27,7 +27,7 @@ export default function CartDrawer() {
 
   return (
     <>
-      {/* Background Overlay */}
+      {/* Background Overlay (above the floating WhatsApp button, which would otherwise cover the checkout button) */}
       <div
         className={`drawer-overlay ${isOpen ? "open" : ""}`}
         onClick={closeCart}
@@ -38,7 +38,7 @@ export default function CartDrawer() {
           width: "100%",
           height: "100%",
           backgroundColor: "rgba(0, 0, 0, 0.4)",
-          zIndex: 1000,
+          zIndex: 10000,
           transition: "opacity 0.3s ease",
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? "auto" : "none",
@@ -48,24 +48,32 @@ export default function CartDrawer() {
       {/* Cart Drawer Content */}
       <div
         ref={drawerRef}
+        className="cart-drawer"
         style={{
           position: "fixed",
           top: 0,
-          right: isOpen ? 0 : "-450px",
+          right: 0,
+          // Slide by its own width so it is fully off-screen at any width (it goes full-width on phones)
+          transform: isOpen ? "translateX(0)" : "translateX(100%)",
           width: "450px",
           maxWidth: "100%",
           height: "100%",
           backgroundColor: "#FCFAF7",
-          boxShadow: "-5px 0 25px rgba(0, 0, 0, 0.15)",
-          zIndex: 1001,
+          // Shadow only while open, otherwise it bleeds in from off-screen as a strip on the right edge
+          boxShadow: isOpen ? "-5px 0 25px rgba(0, 0, 0, 0.15)" : "none",
+          visibility: isOpen ? "visible" : "hidden",
+          zIndex: 10001,
           display: "flex",
           flexDirection: "column",
-          transition: "right 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+          transition: isOpen
+            ? "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
+            : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.3s",
           borderLeft: "1px solid #EBE5DB",
         }}
       >
         {/* Header */}
         <div
+          className="cart-drawer-header"
           style={{
             padding: "1.5rem",
             borderBottom: "1px solid #EBE5DB",
@@ -77,13 +85,15 @@ export default function CartDrawer() {
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <ShoppingBag size={20} color="#2A2A2A" />
             <h2
-              className="font-serif"
+              className="font-serif cart-drawer-title"
               style={{ fontSize: "1.5rem", fontWeight: 500, color: "#2A2A2A" }}
             >
               Your Bag
             </h2>
           </div>
           <button
+            className="cart-drawer-close"
+            aria-label="Close bag"
             onClick={closeCart}
             style={{
               background: "none",
@@ -104,7 +114,7 @@ export default function CartDrawer() {
         </div>
 
         {/* Item List */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "1.5rem" }}>
+        <div className="cart-drawer-body" style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain", padding: "1.5rem" }}>
           {cart.length === 0 ? (
             <div
               style={{
@@ -144,6 +154,7 @@ export default function CartDrawer() {
                     style={{
                       width: "80px",
                       height: "80px",
+                      flexShrink: 0,
                       backgroundColor: "#FAF6F0",
                       border: "1px solid #EBE5DB",
                       borderRadius: "8px",
@@ -170,10 +181,10 @@ export default function CartDrawer() {
                   </div>
 
                   {/* Details */}
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                     <div>
                       <h3
-                        className="font-serif"
+                        className="font-serif cart-drawer-item-title"
                         style={{ fontSize: "1.1rem", color: "#2A2A2A", marginBottom: "0.25rem" }}
                       >
                         {item.title}
@@ -185,9 +196,10 @@ export default function CartDrawer() {
                       )}
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div className="cart-drawer-item-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       {/* Quantity Controls */}
                       <div
+                        className="cart-drawer-qty"
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -198,6 +210,7 @@ export default function CartDrawer() {
                         }}
                       >
                         <button
+                          className="cart-drawer-qty-btn"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
                           style={{
                             border: "none",
@@ -216,6 +229,7 @@ export default function CartDrawer() {
                           {item.quantity}
                         </span>
                         <button
+                          className="cart-drawer-qty-btn"
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           style={{
                             border: "none",
@@ -235,9 +249,11 @@ export default function CartDrawer() {
                       {/* Price & Remove */}
                       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                         <span style={{ fontWeight: 600, fontSize: "1rem", color: "#2A2A2A" }}>
-                          ₹{item.price * item.quantity}
+                          {item.priceOnRequest ? "Price on request" : `₹${item.price * item.quantity}`}
                         </span>
                         <button
+                          className="cart-drawer-remove"
+                          aria-label="Remove item"
                           onClick={() => removeFromBag(item.id)}
                           style={{
                             background: "none",
@@ -264,6 +280,7 @@ export default function CartDrawer() {
         {/* Footer with Subtotal */}
         {cart.length > 0 && (
           <div
+            className="cart-drawer-footer"
             style={{
               padding: "1.5rem",
               borderTop: "1px solid #EBE5DB",
@@ -280,7 +297,7 @@ export default function CartDrawer() {
             >
               <span style={{ fontSize: "1.1rem", fontWeight: 500, color: "#6E6E6E" }}>Subtotal</span>
               <span className="font-serif" style={{ fontSize: "1.6rem", fontWeight: 600, color: "#2A2A2A" }}>
-                ₹{cartTotal}
+                {formatCartTotal(cart, cartTotal)}
               </span>
             </div>
             <a
@@ -314,6 +331,73 @@ export default function CartDrawer() {
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        @supports (height: 100dvh) {
+          .cart-drawer {
+            height: 100dvh !important;
+          }
+        }
+        .cart-drawer-footer {
+          padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)) !important;
+        }
+
+        /* Touch screens: 40px+ tap targets */
+        @media (max-width: 1024px) {
+          .cart-drawer-close {
+            width: 44px;
+            height: 44px;
+            padding: 0 !important;
+            margin-right: -10px;
+          }
+          .cart-drawer-qty-btn {
+            width: 40px !important;
+            height: 40px !important;
+          }
+          .cart-drawer-qty {
+            border-radius: 6px !important;
+          }
+          .cart-drawer-remove {
+            width: 40px;
+            height: 40px;
+            padding: 0 !important;
+            margin-right: -10px;
+          }
+          .cart-drawer-item-row {
+            margin-top: 0.5rem;
+            gap: 0.5rem;
+          }
+        }
+
+        /* Undo the global h2/h3 clamp, which blows these up to 38px/29px on tablets */
+        @media (max-width: 768px) {
+          .cart-drawer-title {
+            font-size: 1.5rem !important;
+            line-height: 1.3 !important;
+          }
+          .cart-drawer-item-title {
+            font-size: 1.05rem !important;
+            line-height: 1.35 !important;
+          }
+        }
+
+        /* Phones: full-width sheet with slightly tighter padding */
+        @media (max-width: 600px) {
+          .cart-drawer {
+            width: 100% !important;
+            border-left: none !important;
+          }
+          .cart-drawer-header {
+            padding: 0.75rem 1rem 0.75rem 1.25rem !important;
+          }
+          .cart-drawer-body {
+            padding: 1.25rem 1rem !important;
+          }
+          .cart-drawer-footer {
+            padding: 1.25rem 1rem calc(1.25rem + env(safe-area-inset-bottom, 0px)) !important;
+          }
+        }
+      `}</style>
     </>
   );
 }

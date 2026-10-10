@@ -152,6 +152,8 @@ export default function HeroCarousel() {
           position: relative;
           width: 850px;
           height: 380px;
+          /* Keep the full 850px stage on narrow screens so it scales around the middle photo, not off to the right */
+          flex-shrink: 0;
           transform-origin: center center;
         }
 
@@ -170,20 +172,21 @@ export default function HeroCarousel() {
             transform: scale(0.8);
           }
         }
+        /* Tablets and phones. On phones the outer two photos run off the screen edges, evenly on both sides */
         @media (max-width: 768px) {
           .carousel-wrapper {
-            height: 240px;
+            height: 290px;
           }
           .carousel-inner {
-            transform: scale(0.6);
+            transform: scale(0.72);
           }
         }
-        @media (max-width: 480px) {
+        @media (max-width: 400px) {
           .carousel-wrapper {
-            height: 200px;
+            height: 262px;
           }
           .carousel-inner {
-            transform: scale(0.48);
+            transform: scale(0.66);
           }
         }
       `}</style>

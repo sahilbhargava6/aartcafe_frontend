@@ -51,8 +51,9 @@ export default function SignIn() {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#fff" }}>
       <Navbar />
 
-      <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 20px" }}>
+      <main className="auth-main" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 20px" }}>
         <div
+          className="auth-card"
           style={{
             maxWidth: "480px",
             width: "100%",
@@ -66,10 +67,10 @@ export default function SignIn() {
             alignItems: "center",
           }}
         >
-          <h1 className="font-serif" style={{ fontSize: "32px", color: "#3F3B38", margin: "0 0 12px 0", fontWeight: 400, textAlign: "center" }}>
+          <h1 className="font-serif auth-title" style={{ fontSize: "32px", color: "#3F3B38", margin: "0 0 12px 0", fontWeight: 400, textAlign: "center" }}>
             Sign In
           </h1>
-          <p className="font-sans" style={{ fontSize: "16px", color: "#6E6E6E", textAlign: "center", margin: "0 0 32px 0", lineHeight: "24px" }}>
+          <p className="font-sans auth-intro" style={{ fontSize: "16px", color: "#6E6E6E", textAlign: "center", margin: "0 0 32px 0", lineHeight: "24px" }}>
             Log in to track orders, save favorites, and manage your custom requests.
           </p>
 
@@ -121,7 +122,7 @@ export default function SignIn() {
                 <label className="font-sans" style={{ fontSize: "14px", color: "#3F3B38", fontWeight: 500 }}>
                   Password
                 </label>
-                <a href="#" style={{ fontSize: "13px", color: "#D98A9C", textDecoration: "none" }}>
+                <a href="#" className="auth-forgot" style={{ fontSize: "13px", color: "#D98A9C", textDecoration: "none" }}>
                   Forgot password?
                 </a>
               </div>
@@ -151,9 +152,10 @@ export default function SignIn() {
                 id="remember"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
+                className="auth-check"
                 style={{ cursor: "pointer", accentColor: "#D9A85C", width: "16px", height: "16px" }}
               />
-              <label htmlFor="remember" className="font-sans" style={{ fontSize: "14px", color: "#6E6E6E", cursor: "pointer" }}>
+              <label htmlFor="remember" className="font-sans auth-check-label" style={{ fontSize: "14px", color: "#6E6E6E", cursor: "pointer" }}>
                 Remember me on this device
               </label>
             </div>
@@ -186,7 +188,7 @@ export default function SignIn() {
             </button>
           </form>
 
-          <div style={{ marginTop: "32px", textAlign: "center", fontSize: "15px", color: "#6E6E6E" }}>
+          <div className="auth-switch" style={{ marginTop: "32px", textAlign: "center", fontSize: "15px", color: "#6E6E6E" }}>
             Don&apos;t have an account?{" "}
             <Link href="/signup" style={{ color: "#D9A85C", fontWeight: 600, textDecoration: "underline" }}>
               Create Account
@@ -196,6 +198,59 @@ export default function SignIn() {
       </main>
 
       <Footer />
+
+      <style jsx>{`
+        /* Touch screens: bigger tap areas for the small text links, without moving them */
+        @media (max-width: 1024px) {
+          .auth-forgot {
+            padding: 10px 0 10px 12px;
+            margin: -10px 0;
+          }
+          .auth-switch > :global(a) {
+            display: inline-block;
+            padding: 10px 2px;
+            margin: -10px 0;
+          }
+          .auth-check-label {
+            padding: 10px 0;
+            margin: -10px 0;
+          }
+        }
+
+        /* Undo the global h1 clamp, which inflates the title to 48px on tablets */
+        @media (max-width: 768px) {
+          .auth-title {
+            font-size: 32px !important;
+            line-height: 1.25 !important;
+          }
+        }
+
+        /* Phones: tighter page and card padding so the form gets the width */
+        @media (max-width: 600px) {
+          .auth-main {
+            padding: 32px 16px 48px !important;
+          }
+          .auth-card {
+            padding: 32px 20px !important;
+            border-radius: 16px !important;
+          }
+          .auth-title {
+            font-size: 28px !important;
+          }
+          .auth-intro {
+            font-size: 15px !important;
+            line-height: 23px !important;
+            margin-bottom: 24px !important;
+          }
+          .auth-check {
+            width: 20px !important;
+            height: 20px !important;
+          }
+          .auth-forgot {
+            font-size: 14px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -88,6 +88,7 @@ export default function Navbar() {
   return (
     <>
       <header
+        className="site-header"
         style={{
           position: "sticky",
           top: 0,
@@ -102,6 +103,7 @@ export default function Navbar() {
         }}
       >
         <div
+          className="site-header-inner"
           style={{
             width: "100%",
             maxWidth: "1920px",
@@ -115,7 +117,7 @@ export default function Navbar() {
           {/* Brand/Logo */}
           <Link
             href="/"
-            className="font-serif"
+            className="font-serif site-logo"
             style={{
               fontSize: "24px",
               fontWeight: 400,
@@ -170,6 +172,7 @@ export default function Navbar() {
 
           {/* Utility Icons */}
           <div
+            className="nav-icons"
             style={{
               display: "flex",
               alignItems: "center",
@@ -178,6 +181,7 @@ export default function Navbar() {
           >
             {/* Search */}
             <button
+              className="nav-icon-btn"
               onClick={() => setSearchOpen(true)}
               style={{
                 background: "none",
@@ -296,7 +300,7 @@ export default function Navbar() {
 
             {/* Mobile Menu Toggle Button */}
             <button
-              className="mobile-toggle"
+              className="mobile-toggle nav-icon-btn"
               onClick={() => setMobileMenuOpen(true)}
               style={{
                 background: "none",
@@ -315,45 +319,73 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Mobile Drawer Overlay */}
+      {/* Mobile Drawer Overlay (full screen, above the floating WhatsApp button) */}
       {mobileMenuOpen && (
         <div
+          className="mobile-menu"
           style={{
             position: "fixed",
             top: 0,
             left: 0,
             width: "100%",
             height: "100%",
-            backgroundColor: "rgba(255, 255, 255, 0.98)",
-            zIndex: 1000,
+            backgroundColor: "#FFFFFF",
+            zIndex: 10000,
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
+            overflowY: "auto",
+            overscrollBehavior: "contain",
           }}
         >
-          <button
-            onClick={() => setMobileMenuOpen(false)}
+          {/* Top bar mirrors the header so the close button sits where the menu button was */}
+          <div
+            className="mobile-menu-top"
             style={{
-              position: "absolute",
-              top: "30px",
-              right: "30px",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "4px",
+              height: "100px",
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0 24px",
             }}
           >
-            <X size={32} color="#3F3B38" />
-          </button>
+            <Link
+              href="/"
+              className="font-serif"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ fontSize: "24px", fontWeight: 400, color: "#3F3B38", textDecoration: "none", whiteSpace: "nowrap" }}
+            >
+              Aartcafe
+            </Link>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              aria-label="Close menu"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                width: "44px",
+                height: "44px",
+                padding: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <X size={32} color="#3F3B38" />
+            </button>
+          </div>
 
           <nav
+            className="mobile-menu-nav"
             style={{
+              flex: 1,
               display: "flex",
               flexDirection: "column",
-              gap: "24px",
+              gap: "8px",
               alignItems: "center",
+              justifyContent: "center",
+              padding: "24px 20px 64px",
             }}
           >
             {navLinks.map((link) => {
@@ -362,7 +394,7 @@ export default function Navbar() {
                 <Link
                   key={link.name}
                   href={link.path}
-                  className="font-serif"
+                  className="font-serif mobile-menu-link"
                   onClick={() => setMobileMenuOpen(false)}
                   style={{
                     fontSize: "26px",
@@ -370,6 +402,7 @@ export default function Navbar() {
                     color: isActive ? "#D9A85C" : "#3F3B38",
                     textDecoration: "none",
                     transition: "color 0.2s ease",
+                    padding: "10px 16px",
                   }}
                 >
                   {link.name}
@@ -378,7 +411,7 @@ export default function Navbar() {
             })}
             <Link
               href="/wishlist"
-              className="font-serif"
+              className="font-serif mobile-menu-link"
               onClick={() => setMobileMenuOpen(false)}
               style={{
                 fontSize: "26px",
@@ -387,6 +420,7 @@ export default function Navbar() {
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
+                padding: "10px 16px",
               }}
             >
               <Heart size={24} /> My Wishlist ({wishlistCount})
@@ -398,22 +432,26 @@ export default function Navbar() {
       {/* Live Search Overlay/Modal */}
       {searchOpen && (
         <div
+          className="search-overlay"
           style={{
             position: "fixed",
             top: 0,
             left: 0,
             width: "100%",
             height: "100%",
-            backgroundColor: "rgba(255, 255, 255, 0.98)",
-            zIndex: 1000,
+            backgroundColor: "#FFFFFF",
+            zIndex: 10000,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             padding: "60px 20px 40px",
             overflowY: "auto",
+            overscrollBehavior: "contain",
           }}
         >
           <button
+            className="search-close"
+            aria-label="Close search"
             onClick={() => {
               setSearchOpen(false);
               setSearchQuery("");
@@ -433,13 +471,14 @@ export default function Navbar() {
 
           <div style={{ width: "100%", maxWidth: "680px", textAlign: "center" }}>
             <h2
-              className="font-serif"
+              className="font-serif search-title"
               style={{ fontSize: "2.2rem", marginBottom: "1.5rem", color: "#3F3B38", fontWeight: 400 }}
             >
               Search Aartcafe Catalog
             </h2>
             <div style={{ position: "relative", width: "100%", marginBottom: "24px" }}>
               <input
+                className="search-input"
                 type="text"
                 placeholder="Search by product name, category, or keyword..."
                 value={searchQuery}
@@ -458,6 +497,7 @@ export default function Navbar() {
                 }}
               />
               <Search
+                className="search-input-icon"
                 size={24}
                 color="#D9A85C"
                 style={{
@@ -494,6 +534,7 @@ export default function Navbar() {
                       <Link
                         key={prod.id}
                         href={`/shop/${prod.slug || prod.id}`}
+                        className="search-result"
                         onClick={() => {
                           setSearchOpen(false);
                           setSearchQuery("");
@@ -512,11 +553,11 @@ export default function Navbar() {
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FFF")}
                       >
                         {prod.image ? (
-                          <img src={prod.image} alt={prod.title} style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "10px" }} />
+                          <img src={prod.image} alt={prod.title} style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "10px", flexShrink: 0, overflow: "hidden" }} />
                         ) : (
-                          <div style={{ width: "50px", height: "50px", backgroundColor: "#EBE5DB", borderRadius: "10px" }} />
+                          <div style={{ width: "50px", height: "50px", backgroundColor: "#EBE5DB", borderRadius: "10px", flexShrink: 0 }} />
                         )}
-                        <div style={{ flex: 1 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="font-serif" style={{ fontSize: "16px", fontWeight: 500, color: "#3F3B38" }}>
                             {prod.title}
                           </div>
@@ -552,12 +593,99 @@ export default function Navbar() {
 
       {/* Global CSS for media queries */}
       <style jsx>{`
+        @supports (height: 100dvh) {
+          .mobile-menu,
+          .search-overlay {
+            height: 100dvh !important;
+          }
+        }
+
         @media (max-width: 1024px) {
           .desktop-nav {
             display: none !important;
           }
           .mobile-toggle {
             display: flex !important;
+          }
+          /* 44px tap targets for every header icon */
+          .nav-icon-btn {
+            width: 44px;
+            height: 44px;
+            padding: 0 !important;
+            flex-shrink: 0;
+          }
+          .nav-icons > :global(a) {
+            flex-shrink: 0;
+          }
+          .site-header-inner > :global(.site-logo) {
+            padding: 6px 0;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .site-header {
+            height: 70px !important;
+          }
+          .site-header-inner {
+            padding: 0 16px !important;
+            gap: 12px;
+          }
+          .nav-icons {
+            gap: 4px !important;
+          }
+          .mobile-menu-top {
+            height: 70px !important;
+            padding: 0 16px !important;
+          }
+
+          /* Search overlay: keep the close button clear of the title */
+          .search-overlay {
+            padding: 72px 16px 32px !important;
+          }
+          .search-close {
+            top: 13px !important;
+            right: 16px !important;
+            width: 44px;
+            height: 44px;
+            padding: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .search-title {
+            font-size: 28px !important;
+            line-height: 1.25 !important;
+            margin-bottom: 20px !important;
+          }
+          .search-overlay :global(.search-result) {
+            padding: 12px 16px !important;
+            gap: 12px !important;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .search-title {
+            font-size: 24px !important;
+          }
+          .search-input {
+            padding: 14px 48px 14px 20px !important;
+          }
+          .search-overlay :global(.search-input-icon) {
+            right: 18px !important;
+            width: 22px;
+            height: 22px;
+          }
+          .mobile-menu-nav > :global(.mobile-menu-link) {
+            font-size: 24px !important;
+          }
+        }
+
+        @media (max-width: 360px) {
+          .site-header-inner > :global(.site-logo) {
+            font-size: 22px !important;
+          }
+          .nav-icons {
+            gap: 0 !important;
           }
         }
       `}</style>

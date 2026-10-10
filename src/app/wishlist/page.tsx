@@ -17,20 +17,21 @@ export default function WishlistPage() {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#FAF6F0" }}>
       <Navbar />
 
-      <main style={{ flex: 1, maxWidth: "1200px", width: "100%", margin: "0 auto", padding: "40px 20px 80px" }}>
+      <main className="wishlist-main" style={{ flex: 1, maxWidth: "1200px", width: "100%", margin: "0 auto", padding: "40px 20px 80px" }}>
         {/* Page Title */}
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+        <div className="wishlist-header" style={{ textAlign: "center", marginBottom: "40px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", backgroundColor: "#F3EBE1", padding: "6px 16px", borderRadius: "20px", marginBottom: "12px" }}>
             <Heart size={16} color="#D98A9C" fill="#D98A9C" />
             <span style={{ fontSize: "14px", color: "#6E6E6E", fontWeight: 500 }}>Your Saved Favorites</span>
           </div>
-          <h1 className="font-serif" style={{ fontSize: "36px", color: "#3F3B38", margin: 0, fontWeight: 400 }}>
+          <h1 className="font-serif wishlist-title" style={{ fontSize: "36px", color: "#3F3B38", margin: 0, fontWeight: 400 }}>
             My Wishlist ({wishlist.length})
           </h1>
         </div>
 
         {wishlist.length === 0 ? (
           <div
+            className="wishlist-empty"
             style={{
               backgroundColor: "#FFF",
               borderRadius: "20px",
@@ -56,7 +57,7 @@ export default function WishlistPage() {
             >
               <Heart size={36} color="#D98A9C" />
             </div>
-            <h2 className="font-serif" style={{ fontSize: "24px", color: "#3F3B38", marginBottom: "10px" }}>
+            <h2 className="font-serif wishlist-empty-title" style={{ fontSize: "24px", color: "#3F3B38", marginBottom: "10px" }}>
               Your wishlist is empty
             </h2>
             <p style={{ color: "#6E6E6E", fontSize: "15px", marginBottom: "28px", lineHeight: "22px" }}>
@@ -83,6 +84,7 @@ export default function WishlistPage() {
           </div>
         ) : (
           <div
+            className="wishlist-grid"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
@@ -92,6 +94,7 @@ export default function WishlistPage() {
             {wishlist.map((item) => (
               <div
                 key={item.id}
+                className="wishlist-card"
                 style={{
                   backgroundColor: "#FFF",
                   borderRadius: "16px",
@@ -106,6 +109,7 @@ export default function WishlistPage() {
               >
                 {/* Remove Button */}
                 <button
+                  className="wishlist-remove"
                   onClick={() => removeFromWishlist(item.id)}
                   title="Remove from Wishlist"
                   style={{
@@ -130,7 +134,7 @@ export default function WishlistPage() {
                 </button>
 
                 {/* Product Image */}
-                <Link href={`/shop/${item.slug || item.id}`} style={{ position: "relative", height: "240px", backgroundColor: "#FAF6F0", display: "block" }}>
+                <Link href={`/shop/${item.slug || item.id}`} className="wishlist-card-image" style={{ position: "relative", height: "240px", backgroundColor: "#FAF6F0", display: "block" }}>
                   {item.image ? (
                     <Image
                       src={item.image}
@@ -146,20 +150,21 @@ export default function WishlistPage() {
                 </Link>
 
                 {/* Content */}
-                <div style={{ padding: "20px", display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
+                <div className="wishlist-card-body" style={{ padding: "20px", display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
                   <div>
-                    <span style={{ fontSize: "12px", color: "#8FB9A8", textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.5px" }}>
+                    <span className="wishlist-card-category" style={{ fontSize: "12px", color: "#8FB9A8", textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.5px" }}>
                       {item.category || "General"}
                     </span>
-                    <h3 className="font-serif" style={{ fontSize: "18px", color: "#3F3B38", margin: "6px 0 10px", fontWeight: 500 }}>
+                    <h3 className="font-serif wishlist-card-title" style={{ fontSize: "18px", color: "#3F3B38", margin: "6px 0 10px", fontWeight: 500 }}>
                       {item.title}
                     </h3>
-                    <p style={{ fontSize: "17px", fontWeight: 700, color: "#D9A85C", margin: "0 0 16px" }}>
+                    <p className="wishlist-card-price" style={{ fontSize: "17px", fontWeight: 700, color: "#D9A85C", margin: "0 0 16px" }}>
                       ₹{item.price.toLocaleString("en-IN")}
                     </p>
                   </div>
 
                   <button
+                    className="wishlist-move"
                     onClick={() => {
                       addToBag({
                         id: String(item.id),
@@ -198,6 +203,86 @@ export default function WishlistPage() {
       </main>
 
       <Footer />
+
+      <style jsx>{`
+        /* Touch screens: 40px tap target for the remove button */
+        @media (max-width: 1024px) {
+          .wishlist-remove {
+            width: 40px !important;
+            height: 40px !important;
+          }
+        }
+
+        /* Undo the global h1/h2/h3 clamp, which inflates these headings on tablets */
+        @media (max-width: 768px) {
+          .wishlist-title {
+            font-size: 32px !important;
+            line-height: 1.25 !important;
+          }
+          .wishlist-empty-title {
+            font-size: 24px !important;
+            line-height: 1.3 !important;
+          }
+          .wishlist-card-title {
+            font-size: 18px !important;
+            line-height: 1.35 !important;
+          }
+        }
+
+        /* Phones: two compact columns */
+        @media (max-width: 600px) {
+          .wishlist-main {
+            padding: 28px 16px 56px !important;
+          }
+          .wishlist-header {
+            margin-bottom: 24px !important;
+          }
+          .wishlist-title {
+            font-size: 28px !important;
+          }
+          .wishlist-empty {
+            padding: 40px 20px !important;
+          }
+          .wishlist-empty-title {
+            font-size: 22px !important;
+          }
+          .wishlist-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 14px !important;
+          }
+          .wishlist-card {
+            border-radius: 14px !important;
+          }
+          .wishlist-card > :global(.wishlist-card-image) {
+            height: auto !important;
+            aspect-ratio: 1 / 1;
+          }
+          .wishlist-remove {
+            top: 6px !important;
+            right: 6px !important;
+          }
+          .wishlist-card-body {
+            padding: 12px !important;
+          }
+          .wishlist-card-category {
+            font-size: 11px !important;
+          }
+          .wishlist-card-title {
+            font-size: 15px !important;
+            margin: 4px 0 6px !important;
+          }
+          .wishlist-card-price {
+            font-size: 15px !important;
+            margin-bottom: 12px !important;
+          }
+          .wishlist-move {
+            height: 42px !important;
+            font-size: 14px !important;
+            gap: 6px !important;
+            padding: 0 8px;
+          }
+        }
+      `}</style>
     </div>
   );
 }

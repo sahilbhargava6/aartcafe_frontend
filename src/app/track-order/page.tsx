@@ -14,7 +14,8 @@ const STAGES = [
 ];
 
 export default function TrackOrderPage() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [orderId, setOrderId] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [searched, setSearched] = useState(false);
@@ -22,17 +23,23 @@ export default function TrackOrderPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
+    if (!orderId.trim() || !phone.trim()) return;
 
     setLoading(true);
     setErrorMsg("");
     setSearched(true);
 
-    fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/orders/track?query=${encodeURIComponent(searchQuery.trim())}`)
+    const params = new URLSearchParams({ order_id: orderId.trim(), phone: phone.trim() });
+    fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/orders/track?${params}`, {
+      headers: { Accept: "application/json" },
+    })
       .then((res) => {
         if (!res.ok) {
-          if (res.status === 404) {
-            throw new Error("No orders found matching this Order ID or Phone Number.");
+          if (res.status === 404 || res.status === 422) {
+            throw new Error("No order found for this Order ID and Phone Number. Please check both and try again.");
+          }
+          if (res.status === 429) {
+            throw new Error("Too many attempts. Please wait a minute and try again.");
           }
           throw new Error("Failed to look up order. Please try again.");
         }
@@ -61,10 +68,11 @@ export default function TrackOrderPage() {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#FAF6F0" }}>
       <Navbar />
 
-      <main style={{ flex: 1, maxWidth: "1000px", width: "100%", margin: "0 auto", padding: "50px 20px 80px" }}>
+      <main className="track-main" style={{ flex: 1, maxWidth: "1000px", width: "100%", margin: "0 auto", padding: "50px 20px 80px" }}>
         {/* Page Header */}
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+        <div className="track-header" style={{ textAlign: "center", marginBottom: "40px" }}>
           <div
+            className="track-badge"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -82,16 +90,17 @@ export default function TrackOrderPage() {
           >
             <Package size={16} /> Order Tracking Portal
           </div>
-          <h1 className="font-serif" style={{ fontSize: "36px", color: "#3F3B38", margin: "0 0 12px", fontWeight: 400 }}>
+          <h1 className="font-serif track-title" style={{ fontSize: "36px", color: "#3F3B38", margin: "0 0 12px", fontWeight: 400 }}>
             Track Your Artisanal Order
           </h1>
-          <p style={{ color: "#6E6E6E", fontSize: "16px", maxWidth: "540px", margin: "0 auto", lineHeight: "24px" }}>
-            Enter your <strong>Order ID</strong> (e.g. #1) or <strong>WhatsApp Mobile Number</strong> below to view real-time preservation and shipping progress.
+          <p className="track-intro" style={{ color: "#6E6E6E", fontSize: "16px", maxWidth: "540px", margin: "0 auto", lineHeight: "24px" }}>
+            Enter your <strong>Order ID</strong> (e.g. #AART-12) and the <strong>Phone Number</strong> you ordered with to view real-time preservation and shipping progress.
           </p>
         </div>
 
         {/* Search Box */}
         <div
+          className="track-search-card"
           style={{
             backgroundColor: "#FFF",
             borderRadius: "20px",
@@ -101,13 +110,14 @@ export default function TrackOrderPage() {
             marginBottom: "40px",
           }}
         >
-          <form onSubmit={handleSearch} style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <div style={{ flex: 1, minWidth: "260px", position: "relative" }}>
+          <form onSubmit={handleSearch} className="track-form" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <div className="track-field" style={{ flex: 1, minWidth: "200px", position: "relative" }}>
               <input
                 type="text"
-                placeholder="Enter Order ID (e.g. 1) or Phone (e.g. 9267943830)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Order ID"
+                placeholder="Order ID (e.g. AART-12)"
+                value={orderId}
+                onChange={(e) => setOrderId(e.target.value)}
                 required
                 style={{
                   width: "100%",
@@ -127,8 +137,30 @@ export default function TrackOrderPage() {
                 style={{ position: "absolute", left: "18px", top: "50%", transform: "translateY(-50%)" }}
               />
             </div>
+            <div className="track-field" style={{ flex: 1, minWidth: "200px" }}>
+              <input
+                type="tel"
+                aria-label="Phone Number"
+                placeholder="Phone used for the order"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                style={{
+                  width: "100%",
+                  height: "52px",
+                  borderRadius: "26px",
+                  border: "1.5px solid #D9A85C",
+                  padding: "0 20px",
+                  fontSize: "16px",
+                  outline: "none",
+                  backgroundColor: "#FAF6F0",
+                  color: "#3F3B38",
+                }}
+              />
+            </div>
             <button
               type="submit"
+              className="track-submit"
               disabled={loading}
               style={{
                 height: "52px",
@@ -155,6 +187,7 @@ export default function TrackOrderPage() {
         {/* Results Area */}
         {errorMsg && (
           <div
+            className="track-error"
             style={{
               backgroundColor: "rgba(224, 90, 71, 0.1)",
               border: "1px solid #E05A47",
@@ -183,6 +216,7 @@ export default function TrackOrderPage() {
               return (
                 <div
                   key={ord.id}
+                  className="track-order-card"
                   style={{
                     backgroundColor: "#FFF",
                     borderRadius: "20px",
@@ -193,6 +227,7 @@ export default function TrackOrderPage() {
                 >
                   {/* Order Top Bar */}
                   <div
+                    className="track-topbar"
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
@@ -204,20 +239,20 @@ export default function TrackOrderPage() {
                       marginBottom: "30px",
                     }}
                   >
-                    <div>
+                    <div className="track-ref">
                       <div style={{ fontSize: "14px", color: "#6E6E6E" }}>Order Reference</div>
-                      <h2 className="font-serif" style={{ fontSize: "24px", color: "#3F3B38", margin: 0 }}>
+                      <h2 className="font-serif track-ref-id" style={{ fontSize: "24px", color: "#3F3B38", margin: 0 }}>
                         #AART-{ord.id}
                       </h2>
                     </div>
 
-                    <div>
-                      <div style={{ fontSize: "13px", color: "#6E6E6E", textAlign: "right" }}>Customer Name</div>
+                    <div className="track-meta track-customer">
+                      <div className="track-meta-label" style={{ fontSize: "13px", color: "#6E6E6E", textAlign: "right" }}>Customer Name</div>
                       <div style={{ fontSize: "16px", fontWeight: 600, color: "#3F3B38" }}>{ord.customer_name}</div>
                     </div>
 
-                    <div>
-                      <div style={{ fontSize: "13px", color: "#6E6E6E", textAlign: "right" }}>Order Date</div>
+                    <div className="track-meta track-date">
+                      <div className="track-meta-label" style={{ fontSize: "13px", color: "#6E6E6E", textAlign: "right" }}>Order Date</div>
                       <div style={{ fontSize: "15px", color: "#3F3B38" }}>
                         {new Date(ord.created_at).toLocaleDateString("en-IN", {
                           day: "numeric",
@@ -228,6 +263,7 @@ export default function TrackOrderPage() {
                     </div>
 
                     <div
+                      className="track-status"
                       style={{
                         backgroundColor:
                           ord.status === "completed"
@@ -253,14 +289,15 @@ export default function TrackOrderPage() {
                   </div>
 
                   {/* Stepper Timeline */}
-                  <div style={{ marginBottom: "40px" }}>
-                    <h3 className="font-serif" style={{ fontSize: "18px", color: "#3F3B38", marginBottom: "24px" }}>
+                  <div className="track-progress" style={{ marginBottom: "40px" }}>
+                    <h3 className="font-serif track-progress-title" style={{ fontSize: "18px", color: "#3F3B38", marginBottom: "24px" }}>
                       Handcrafting & Delivery Progress
                     </h3>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", position: "relative" }}>
+                    <div className="stepper" style={{ display: "flex", justifyContent: "space-between", position: "relative" }}>
                       {/* Connecting Line */}
                       <div
+                        className="stepper-line"
                         style={{
                           position: "absolute",
                           top: "22px",
@@ -272,6 +309,7 @@ export default function TrackOrderPage() {
                         }}
                       />
                       <div
+                        className="stepper-line"
                         style={{
                           position: "absolute",
                           top: "22px",
@@ -292,6 +330,7 @@ export default function TrackOrderPage() {
                         return (
                           <div
                             key={stage.key}
+                            className={`stepper-step${isDone ? " is-done" : ""}${idx < currentStep ? " line-done" : ""}`}
                             style={{
                               display: "flex",
                               flexDirection: "column",
@@ -303,6 +342,7 @@ export default function TrackOrderPage() {
                             }}
                           >
                             <div
+                              className="stepper-dot"
                               style={{
                                 width: "44px",
                                 height: "44px",
@@ -320,11 +360,13 @@ export default function TrackOrderPage() {
                             >
                               <IconComponent size={20} />
                             </div>
-                            <div style={{ fontSize: "14px", fontWeight: isDone ? 600 : 400, color: isDone ? "#3F3B38" : "#999" }}>
-                              {stage.label}
-                            </div>
-                            <div style={{ fontSize: "12px", color: "#999", marginTop: "4px", maxWidth: "120px" }}>
-                              {stage.desc}
+                            <div className="stepper-text" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                              <div className="stepper-label" style={{ fontSize: "14px", fontWeight: isDone ? 600 : 400, color: isDone ? "#3F3B38" : "#999" }}>
+                                {stage.label}
+                              </div>
+                              <div className="stepper-desc" style={{ fontSize: "12px", color: "#999", marginTop: "4px", maxWidth: "120px" }}>
+                                {stage.desc}
+                              </div>
                             </div>
                           </div>
                         );
@@ -333,18 +375,18 @@ export default function TrackOrderPage() {
                   </div>
 
                   {/* Items Purchased Table */}
-                  <div style={{ backgroundColor: "#FAF6F0", borderRadius: "14px", padding: "20px", marginBottom: "24px" }}>
+                  <div className="track-items" style={{ backgroundColor: "#FAF6F0", borderRadius: "14px", padding: "20px", marginBottom: "24px" }}>
                     <h4 style={{ fontSize: "15px", color: "#3F3B38", marginTop: 0, marginBottom: "12px", fontWeight: 600 }}>
                       Order Items Summary
                     </h4>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                       {itemsList.map((item: any, i: number) => (
-                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "14px" }}>
-                          <span style={{ color: "#3F3B38" }}>
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", fontSize: "14px" }}>
+                          <span style={{ color: "#3F3B38", minWidth: 0 }}>
                             {item.title} <span style={{ color: "#6E6E6E" }}>x{item.quantity}</span>
                           </span>
-                          <span style={{ fontWeight: 600, color: "#3F3B38" }}>
+                          <span style={{ fontWeight: 600, color: "#3F3B38", whiteSpace: "nowrap" }}>
                             ₹{(Number(item.price) * Number(item.quantity)).toLocaleString("en-IN")}
                           </span>
                         </div>
@@ -358,8 +400,9 @@ export default function TrackOrderPage() {
                   </div>
 
                   {/* WhatsApp Support Action */}
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <div className="track-actions" style={{ display: "flex", justifyContent: "flex-end" }}>
                     <a
+                      className="track-whatsapp"
                       href={`https://wa.me/919267943830?text=${encodeURIComponent(`Hi Aartcafe! I would like to inquire about my Order #AART-${ord.id}`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -387,6 +430,186 @@ export default function TrackOrderPage() {
       </main>
 
       <Footer />
+
+      <style jsx>{`
+        @media (max-width: 1024px) {
+          .track-whatsapp {
+            min-height: 44px;
+          }
+        }
+
+        /* Undo the global h1/h2/h3 clamp, which inflates these headings on tablets */
+        @media (max-width: 768px) {
+          .track-title {
+            font-size: 32px !important;
+            line-height: 1.25 !important;
+          }
+          .track-ref-id {
+            font-size: 24px !important;
+            line-height: 1.3 !important;
+          }
+          .track-progress-title {
+            font-size: 20px !important;
+            line-height: 1.35 !important;
+          }
+        }
+
+        /* Small screens: 2 x 2 order summary and a vertical progress tracker */
+        @media (max-width: 640px) {
+          .track-topbar {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 16px 12px !important;
+            align-items: start !important;
+          }
+          .track-ref {
+            order: 1;
+            min-width: 0;
+          }
+          .track-status {
+            order: 2;
+            justify-self: end;
+          }
+          .track-customer {
+            order: 3;
+            min-width: 0;
+          }
+          .track-date {
+            order: 4;
+            justify-self: end;
+            text-align: right;
+          }
+          .track-customer .track-meta-label {
+            text-align: left !important;
+          }
+
+          .stepper {
+            flex-direction: column;
+          }
+          .stepper-line {
+            display: none;
+          }
+          .stepper-step {
+            flex-direction: row !important;
+            align-items: flex-start !important;
+            text-align: left !important;
+            flex: none !important;
+            gap: 14px;
+            padding-bottom: 26px;
+          }
+          .stepper-step:last-child {
+            padding-bottom: 0;
+          }
+          /* Vertical connector from each step's circle down to the next one */
+          .stepper-step:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            left: 19px;
+            top: 44px;
+            bottom: 4px;
+            width: 2px;
+            border-radius: 1px;
+            background-color: #EBE5DB;
+          }
+          .stepper-step.line-done::after {
+            background-color: #D9A85C;
+          }
+          .stepper-dot {
+            width: 40px !important;
+            height: 40px !important;
+            margin-bottom: 0 !important;
+            flex-shrink: 0;
+          }
+          .stepper-text {
+            align-items: flex-start !important;
+            padding-top: 2px;
+            min-width: 0;
+          }
+          .stepper-label {
+            font-size: 15px !important;
+            line-height: 1.35;
+          }
+          .stepper-desc {
+            max-width: none !important;
+            font-size: 14px !important;
+            line-height: 1.4;
+            margin-top: 2px !important;
+          }
+        }
+
+        /* Phones */
+        @media (max-width: 600px) {
+          .track-main {
+            padding: 32px 16px 56px !important;
+          }
+          .track-header {
+            margin-bottom: 28px !important;
+          }
+          .track-badge {
+            font-size: 12px !important;
+            padding: 6px 14px !important;
+          }
+          .track-title {
+            font-size: 28px !important;
+          }
+          .track-intro {
+            font-size: 15px !important;
+            line-height: 23px !important;
+          }
+          .track-search-card {
+            padding: 16px !important;
+            border-radius: 16px !important;
+            margin-bottom: 28px !important;
+          }
+          .track-form {
+            flex-direction: column;
+          }
+          .track-field {
+            flex: none !important;
+            min-width: 0 !important;
+            width: 100%;
+          }
+          .track-submit {
+            width: 100%;
+            justify-content: center;
+          }
+          .track-error {
+            justify-content: flex-start !important;
+            align-items: flex-start !important;
+            text-align: left !important;
+            padding: 16px !important;
+            font-size: 14px !important;
+          }
+          .track-order-card {
+            padding: 20px 16px !important;
+            border-radius: 16px !important;
+          }
+          .track-topbar {
+            padding-bottom: 20px !important;
+            margin-bottom: 24px !important;
+          }
+          .track-ref-id {
+            font-size: 22px !important;
+          }
+          .track-progress {
+            margin-bottom: 28px !important;
+          }
+          .track-progress-title {
+            font-size: 18px !important;
+            margin-bottom: 18px !important;
+          }
+          .track-items {
+            padding: 16px !important;
+          }
+          .track-whatsapp {
+            width: 100%;
+            justify-content: center;
+            padding: 12px 20px !important;
+            border-radius: 24px !important;
+            font-size: 15px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

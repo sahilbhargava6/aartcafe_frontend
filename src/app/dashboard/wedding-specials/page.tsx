@@ -79,7 +79,6 @@ export default function WeddingSpecialsDashboard() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
-        ...prod,
         is_wedding_special: updatedStatus,
       }),
     })
