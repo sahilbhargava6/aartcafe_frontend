@@ -371,31 +371,17 @@ export default function SpecialOffers() {
               ═══════════════════════════════════════════════════════ */}
           <div className="wedding-section">
             
-            {/* Left side: Wedding Mandala Vector */}
+            {/* Left side: wedding illustrations on a mandala (built from public/images/wedding) */}
             <div className="mandala-container">
-              <svg className="mandala-svg" width="550" height="550" viewBox="0 0 400 400" fill="none">
-                <circle cx="200" cy="200" r="180" stroke="#8FB9A8" strokeWidth="1" strokeDasharray="3,3" />
-                <circle cx="200" cy="200" r="160" stroke="#8FB9A8" strokeWidth="1.5" />
-                <circle cx="200" cy="200" r="130" stroke="#8FB9A8" strokeWidth="1" />
-                {Array.from({ length: 24 }).map((_, i) => {
-                  const angle = (i * 360) / 24;
-                  return (
-                    <path
-                      key={i}
-                      d="M200 200 C230 140, 230 260, 200 200"
-                      stroke="#8FB9A8"
-                      strokeWidth="1"
-                      transform={`rotate(${angle} 200 200)`}
-                    />
-                  );
-                })}
-                <circle cx="200" cy="200" r="70" stroke="#D9A85C" strokeWidth="2" />
-                <g transform="translate(140, 140)" stroke="#3F3B38" strokeWidth="1.5" fill="none" strokeLinecap="round">
-                  <path d="M 40 40 C 30 20, 90 20, 80 40 Z" fill="#EFD3C7" />
-                  <path d="M 20 80 Q 60 50 100 80" stroke="#D98A9C" strokeWidth="2" />
-                  <circle cx="60" cy="30" r="8" fill="#FFF" />
-                </g>
-              </svg>
+              <img
+                className="wedding-art"
+                src="/images/wedding/wedding-specials-art.webp"
+                width={550}
+                height={550}
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
             </div>
 
             {/* Right side: Wedding Frames details */}
@@ -700,8 +686,9 @@ export default function SpecialOffers() {
           display: flex;
           justify-content: center;
         }
-        .mandala-svg {
-          max-width: 100%;
+        .wedding-art {
+          width: 100%;
+          max-width: 550px;
           height: auto;
         }
         .related-grid {
@@ -806,9 +793,9 @@ export default function SpecialOffers() {
             padding-top: 48px;
             margin-bottom: 56px;
           }
-          .mandala-svg {
-            width: 260px;
-            height: 260px;
+          /* Larger than the old 260px drawing so the wedding pictures stay recognisable */
+          .wedding-art {
+            max-width: 380px;
           }
           .so-wedding-label {
             font-size: 24px !important;
@@ -927,9 +914,8 @@ export default function SpecialOffers() {
             gap: 16px;
             margin-bottom: 40px;
           }
-          .mandala-svg {
-            width: 200px;
-            height: 200px;
+          .wedding-art {
+            max-width: 300px;
           }
           .wedding-details {
             gap: 16px !important;
