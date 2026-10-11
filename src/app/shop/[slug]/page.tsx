@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import { useCart } from "@/context/CartContext";
+import { salePrice, originalPrice, formatRupees } from "@/lib/price";
 import { Heart, ChevronDown, Truck, ArrowLeft } from "lucide-react";
 
 // An attribute value as the API sends it; `links` are the options of other attributes it is
@@ -1003,14 +1004,19 @@ export default function ProductDetailsPage() {
                       </a>
                       <div className="related-price-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                         <span className="font-sans related-price" style={{ fontSize: "18px", fontWeight: 500, color: "#3F3B38" }}>
-                          ₹{parseInt(prod.base_price || "2000").toLocaleString("en-IN")}
+                          {formatRupees(salePrice(prod))}
+                          {originalPrice(prod) !== null && (
+                            <span style={{ marginLeft: "8px", fontSize: "13px", fontWeight: 400, color: "#BCAEA2", textDecoration: "line-through" }}>
+                              {formatRupees(originalPrice(prod) as number)}
+                            </span>
+                          )}
                         </span>
                         <button
                           onClick={() =>
                             addToBag({
                               id: prod.id,
                               title: prod.title,
-                              price: parseFloat(prod.base_price || "2000"),
+                              price: salePrice(prod),
                               image: prod.image || "",
                             })
                           }

@@ -91,6 +91,10 @@ export default function CategoriesDashboard() {
     setIsModalOpen(true);
   };
 
+  // Two levels only: a parent is always a main category, and one that has sub-categories stays main
+  const parentOptions = categories.filter((c) => !c.parent_id && (!editingCategory || c.id !== editingCategory.id));
+  const hasSubCategories = !!editingCategory && categories.some((c) => c.parent_id === editingCategory.id);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!categoryName.trim()) return;
@@ -379,16 +383,23 @@ export default function CategoriesDashboard() {
                 <select
                   value={parentId}
                   onChange={(e) => setParentId(e.target.value)}
+                  disabled={hasSubCategories}
                   style={{
                     height: "40px", borderRadius: "8px", border: "1px solid #D9A85C",
-                    padding: "0 12px", fontSize: "15px", outline: "none", color: "#3F3B38", backgroundColor: "#fff"
+                    padding: "0 12px", fontSize: "15px", outline: "none", color: "#3F3B38",
+                    backgroundColor: hasSubCategories ? "#F5F1EA" : "#fff"
                   }}
                 >
                   <option value="">-- None (Top Level) --</option>
-                  {categories.filter(c => !editingCategory || c.id !== editingCategory.id).map(c => (
+                  {parentOptions.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
+                <span className="font-sans" style={{ fontSize: "12px", color: "#8B7E74", lineHeight: 1.5 }}>
+                  {hasSubCategories
+                    ? "This category has sub-categories, so it stays a main category."
+                    : "Only main categories can be parents, so categories are never more than two levels deep."}
+                </span>
               </div>
 
               <button

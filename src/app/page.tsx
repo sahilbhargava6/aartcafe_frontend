@@ -223,7 +223,7 @@ export default function Home() {
                 }}
               >
                 MADE BY HANDS.<br />
-                MEANT FOR THE HEART.
+                KEPT FOREVER.
               </h1>
               <p
                 className="font-script hero-p"
@@ -235,7 +235,7 @@ export default function Home() {
                   marginTop: "40px",
                 }}
               >
-                Personalized handmade frames and keepsakes that tell your story.
+                Preserving What Matters, Personalising What You Love
               </p>
             </div>
 

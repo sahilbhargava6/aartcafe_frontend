@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { useCart, CartItem, formatCartTotal } from "@/context/CartContext";
+import { salePrice, originalPrice, formatRupees } from "@/lib/price";
 import { Trash2, Plus, Minus } from "lucide-react";
 
 export default function CartPage() {
@@ -461,10 +462,15 @@ export default function CartPage() {
                     </Link>
                     <div className="related-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                       <span className="font-sans related-price" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
-                        ₹{prod.base_price ?? prod.price}
+                        {formatRupees(salePrice(prod))}
+                        {originalPrice(prod) !== null && (
+                          <span style={{ marginLeft: "8px", fontSize: "14px", color: "#BCAEA2", textDecoration: "line-through" }}>
+                            {formatRupees(originalPrice(prod) as number)}
+                          </span>
+                        )}
                       </span>
                       <button
-                        onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
+                        onClick={() => addToBag({ id: prod.id, title: prod.title, price: salePrice(prod), image: prod.image || "" })}
                         className="font-sans related-add"
                         style={{
                           background: "none",

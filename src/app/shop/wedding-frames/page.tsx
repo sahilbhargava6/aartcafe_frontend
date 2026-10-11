@@ -6,6 +6,7 @@ import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { salePrice } from "@/lib/price";
 import { Heart, ChevronDown } from "lucide-react";
 
 export default function ProductDetails() {
@@ -71,7 +72,8 @@ export default function ProductDetails() {
   // Calculate dynamic total price based on selected surcharges
   const calculateTotalPrice = () => {
     if (!productData) return 2000;
-    let total = parseFloat(productData.base_price);
+    // Discounted price when one is set, like checkout
+    let total = salePrice(productData);
 
     const checkSurcharge = (attrName: string, selectedValue: string) => {
       const vals = getAttributeOptions(attrName);

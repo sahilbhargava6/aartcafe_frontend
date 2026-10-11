@@ -20,6 +20,8 @@ export default function ReviewsDashboard() {
 
   // Form Fields
   const [productId, setProductId] = useState("");
+  const [productQuery, setProductQuery] = useState("");
+  const [productListOpen, setProductListOpen] = useState(false);
   const [reviewerName, setReviewerName] = useState("");
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
@@ -103,7 +105,9 @@ export default function ReviewsDashboard() {
 
   const openAddModal = () => {
     setEditingReview(null);
-    setProductId(products[0]?.id || "");
+    setProductId("");
+    setProductQuery("");
+    setProductListOpen(false);
     setReviewerName("");
     setRating(5);
     setReviewText("");
@@ -112,16 +116,33 @@ export default function ReviewsDashboard() {
 
   const openEditModal = (rev: any) => {
     setEditingReview(rev);
-    setProductId(rev.product_id || "");
+    setProductId(rev.product_id ? String(rev.product_id) : "");
+    setProductQuery("");
+    setProductListOpen(false);
     setReviewerName(rev.reviewer_name);
     setRating(rev.rating);
     setReviewText(rev.review_text);
     setIsModalOpen(true);
   };
 
+  // Product picker: type to narrow the list instead of scrolling through every product
+  const selectedProduct = products.find((p) => String(p.id) === String(productId));
+  const productMatches = products
+    .filter((p) => String(p.title || "").toLowerCase().includes(productQuery.trim().toLowerCase()))
+    .sort((a, b) => String(a.title).localeCompare(String(b.title)));
+  const pickProduct = (prod: any) => {
+    setProductId(String(prod.id));
+    setProductQuery("");
+    setProductListOpen(false);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reviewerName.trim() || !reviewText.trim() || !productId) return;
+    if (!productId) {
+      alert("Choose the product this review is for.");
+      return;
+    }
+    if (!reviewerName.trim() || !reviewText.trim()) return;
 
     const url = editingReview
       ? `https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews/${editingReview.id}`
@@ -381,21 +402,75 @@ export default function ReviewsDashboard() {
 
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Product</label>
-                <select
-                  value={productId}
-                  onChange={(e) => setProductId(e.target.value)}
-                  style={{
-                    height: "40px", borderRadius: "8px", border: "1px solid #D9A85C",
-                    padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38", backgroundColor: "#fff",
-                  }}
-                  required
-                >
-                  <option value="" disabled>Select a product</option>
-                  {products.map((prod) => (
-                    <option key={prod.id} value={prod.id}>{prod.title}</option>
-                  ))}
-                </select>
+                <label htmlFor="review-product" style={{ fontSize: "14px", color: "#6E6E6E" }}>Product</label>
+                <div style={{ position: "relative" }}>
+                  <Search size={16} color="#B5A89C" style={{ position: "absolute", left: "12px", top: "20px", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                  <input
+                    id="review-product"
+                    type="text"
+                    role="combobox"
+                    aria-expanded={productListOpen}
+                    aria-controls="review-product-list"
+                    autoComplete="off"
+                    placeholder="Search products…"
+                    value={productListOpen ? productQuery : selectedProduct?.title || ""}
+                    onFocus={() => {
+                      setProductQuery("");
+                      setProductListOpen(true);
+                    }}
+                    onChange={(e) => {
+                      setProductQuery(e.target.value);
+                      setProductListOpen(true);
+                    }}
+                    onBlur={() => setTimeout(() => setProductListOpen(false), 150)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") e.currentTarget.blur();
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (productMatches[0]) pickProduct(productMatches[0]);
+                        e.currentTarget.blur();
+                      }
+                    }}
+                    style={{
+                      width: "100%", height: "40px", borderRadius: "8px", border: "1px solid #D9A85C", boxSizing: "border-box",
+                      padding: "0 12px 0 36px", fontSize: "16px", outline: "none", color: "#3F3B38", backgroundColor: "#fff",
+                    }}
+                  />
+                  {productListOpen && (
+                    <ul
+                      id="review-product-list"
+                      role="listbox"
+                      style={{
+                        position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 20, maxHeight: "240px", overflowY: "auto",
+                        margin: 0, padding: "4px", listStyle: "none", backgroundColor: "#fff", border: "1px solid #D9A85C",
+                        borderRadius: "8px", boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
+                      }}
+                    >
+                      {productMatches.length === 0 ? (
+                        <li style={{ padding: "10px 12px", fontSize: "14px", color: "#8B7E74" }}>No product matches “{productQuery.trim()}”</li>
+                      ) : (
+                        productMatches.map((prod) => {
+                          const isSelected = String(prod.id) === String(productId);
+                          return (
+                            <li key={prod.id} role="option" aria-selected={isSelected}>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => pickProduct(prod)}
+                                style={{
+                                  width: "100%", minHeight: "40px", padding: "8px 12px", border: "none", borderRadius: "6px", textAlign: "left",
+                                  backgroundColor: isSelected ? "#FFEAEF" : "transparent", color: "#3F3B38", fontSize: "15px", cursor: "pointer",
+                                }}
+                              >
+                                {prod.title}
+                              </button>
+                            </li>
+                          );
+                        })
+                      )}
+                    </ul>
+                  )}
+                </div>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>

@@ -459,8 +459,10 @@ export default function ProductsDashboard() {
 
   const openAddModal = () => {
     setEditingProduct(null);
-    setCategoryId(categories[0]?.id ? String(categories[0].id) : "");
-    setCategoryIds(categories[0]?.id ? [Number(categories[0].id)] : []);
+    // New products start in the "All" category (or the first one if there is no "All")
+    const startCategory = categories.find((c) => String(c.name).trim().toLowerCase() === "all") || categories[0];
+    setCategoryId(startCategory?.id ? String(startCategory.id) : "");
+    setCategoryIds(startCategory?.id ? [Number(startCategory.id)] : []);
     setTitle("");
     setBasePrice("");
     setDiscountPrice("");

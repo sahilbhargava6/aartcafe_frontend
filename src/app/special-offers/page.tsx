@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import { useCart } from "@/context/CartContext";
+import { salePrice, originalPrice, formatRupees } from "@/lib/price";
 
 export default function SpecialOffers() {
   const { addToBag } = useCart();
@@ -320,13 +321,18 @@ export default function SpecialOffers() {
                       {prod.description || "Handcrafted with love, designed to celebrate the timeless bond."}
                     </p>
                     <span className="font-serif so-prod-price" style={{ fontSize: "28px", color: "#3F3B38" }}>
-                      ₹{prod.base_price ?? prod.price}
+                      {formatRupees(salePrice(prod))}
+                      {originalPrice(prod) !== null && (
+                        <span className="font-sans" style={{ marginLeft: "10px", fontSize: "16px", color: "#BCAEA2", textDecoration: "line-through" }}>
+                          {formatRupees(originalPrice(prod) as number)}
+                        </span>
+                      )}
                     </span>
 
                     {/* Add to Cart Button */}
                     <div>
                       <button
-                        onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
+                        onClick={() => addToBag({ id: prod.id, title: prod.title, price: salePrice(prod), image: prod.image || "" })}
                         className="so-cart-btn"
                         style={{
                           width: "100%",
@@ -471,7 +477,12 @@ export default function SpecialOffers() {
               </p>
 
               <span className="font-serif so-wedding-price" style={{ fontSize: "36px", color: "#3F3B38" }}>
-                ₹{weddingSpecials.length > 0 ? weddingSpecials[activeWeddingIdx]?.base_price : "2000"}
+                {weddingSpecials[activeWeddingIdx] ? formatRupees(salePrice(weddingSpecials[activeWeddingIdx])) : "₹2000"}
+                {weddingSpecials[activeWeddingIdx] && originalPrice(weddingSpecials[activeWeddingIdx]) !== null && (
+                  <span className="font-sans" style={{ marginLeft: "12px", fontSize: "18px", color: "#BCAEA2", textDecoration: "line-through" }}>
+                    {formatRupees(originalPrice(weddingSpecials[activeWeddingIdx]) as number)}
+                  </span>
+                )}
               </span>
 
               <div className="so-wedding-cta">
@@ -479,7 +490,7 @@ export default function SpecialOffers() {
                   onClick={() => {
                     if (weddingSpecials.length > 0) {
                       const wObj = weddingSpecials[activeWeddingIdx];
-                      addToBag({ id: wObj.id, title: wObj.title, price: wObj.base_price, image: wObj.image || "" });
+                      addToBag({ id: wObj.id, title: wObj.title, price: salePrice(wObj), image: wObj.image || "" });
                     }
                   }}
                   style={{
@@ -558,10 +569,15 @@ export default function SpecialOffers() {
                       </Link>
                       <div className="so-related-meta" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                         <span className="font-sans so-related-price" style={{ fontSize: "20px", fontWeight: 400, color: "#3F3B38" }}>
-                          ₹{prod.base_price ?? prod.price}
+                          {formatRupees(salePrice(prod))}
+                          {originalPrice(prod) !== null && (
+                            <span style={{ marginLeft: "8px", fontSize: "14px", color: "#BCAEA2", textDecoration: "line-through" }}>
+                              {formatRupees(originalPrice(prod) as number)}
+                            </span>
+                          )}
                         </span>
                         <button
-                          onClick={() => addToBag({ id: prod.id, title: prod.title, price: prod.base_price ?? prod.price, image: prod.image || "" })}
+                          onClick={() => addToBag({ id: prod.id, title: prod.title, price: salePrice(prod), image: prod.image || "" })}
                           className="font-sans so-related-action"
                           style={{
                             background: "none",

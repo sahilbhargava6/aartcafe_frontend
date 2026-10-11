@@ -1,11 +1,38 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// "Shop Collections" links: the main categories with the most products. These are the current
+// ones, shown until the live list loads (and kept for the rest of the visit).
+let collectionsCache: string[] = ["Varmala Preservation", "Bouquet Preservation", "Resin Nameplates", "Lamps"];
+let collectionsLoaded = false;
+
+type FooterCategory = { name: string; parent_id: number | null; products_count: number };
+
 export default function Footer() {
   const pathname = usePathname();
+  const [collections, setCollections] = useState<string[]>(collectionsCache);
+
+  useEffect(() => {
+    if (collectionsLoaded) return;
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/categories")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((categories: FooterCategory[]) => {
+        if (!Array.isArray(categories)) return;
+        const top = categories
+          .filter((c) => !c.parent_id && c.products_count > 0 && c.name.trim().toLowerCase() !== "all")
+          .sort((a, b) => b.products_count - a.products_count)
+          .slice(0, 4)
+          .map((c) => c.name);
+        if (top.length === 0) return;
+        collectionsCache = top;
+        collectionsLoaded = true;
+        setCollections(top);
+      })
+      .catch(() => {});
+  }, []);
 
   // Determine gradient color based on the current active page
   const isGoldPage =
@@ -62,26 +89,18 @@ export default function Footer() {
             Shop Collections
           </h3>
           <ul className="footer-links" style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.9rem", color: "#6E6E6E" }}>
-            <li>
-              <Link href="/shop" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#C88E56")} onMouseLeave={(e) => (e.currentTarget.style.color = "#6E6E6E")}>
-                Personalized Frames
-              </Link>
-            </li>
-            <li>
-              <Link href="/shop" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#C88E56")} onMouseLeave={(e) => (e.currentTarget.style.color = "#6E6E6E")}>
-                Handmade Rakhis
-              </Link>
-            </li>
-            <li>
-              <Link href="/shop" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#C88E56")} onMouseLeave={(e) => (e.currentTarget.style.color = "#6E6E6E")}>
-                Gift Hampers
-              </Link>
-            </li>
-            <li>
-              <Link href="/shop" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#C88E56")} onMouseLeave={(e) => (e.currentTarget.style.color = "#6E6E6E")}>
-                Home &amp; Living Decor
-              </Link>
-            </li>
+            {collections.map((name) => (
+              <li key={name}>
+                <Link
+                  href={`/shop?category=${encodeURIComponent(name)}`}
+                  style={{ transition: "color 0.2s" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#C88E56")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#6E6E6E")}
+                >
+                  {name}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
 
