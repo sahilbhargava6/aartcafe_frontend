@@ -72,6 +72,7 @@ export default function CartPage() {
             option_ids: item.optionIds,
             quantity: item.quantity,
             price_on_request: item.priceOnRequest || undefined,
+            image: item.image || undefined,
           })),
         }),
       });
@@ -97,7 +98,7 @@ export default function CartPage() {
 
     const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919267943830"; // Business WhatsApp Number (+91 9267943830)
 
-    const itemDetails = (order.items as { title: string; price: number; quantity: number; price_on_request?: boolean }[])
+    const itemDetails = (order.items as { title: string; price: number; quantity: number; price_on_request?: boolean; image?: string }[])
       .map((item, idx) => {
         const titleClean = item.title
           .replace(/\b(NA|N\/A|none|null|-)\b,?\s*/gi, "")
@@ -107,7 +108,9 @@ export default function CartPage() {
           .replace(/\(\s*\)/g, "")
           .trim();
 
-        return `*${idx + 1}. ${titleClean}*\n   ▫️ Quantity: ${item.quantity}\n   ▫️ Price: ${item.price_on_request ? "On request" : `₹${item.price * item.quantity}`}`;
+        // The photo the customer selected for this item, as a link the shop can open
+        const photo = item.image?.startsWith("http") ? `\n   ▫️ Photo: ${item.image}` : "";
+        return `*${idx + 1}. ${titleClean}*\n   ▫️ Quantity: ${item.quantity}\n   ▫️ Price: ${item.price_on_request ? "On request" : `₹${item.price * item.quantity}`}${photo}`;
       })
       .join("\n\n");
 

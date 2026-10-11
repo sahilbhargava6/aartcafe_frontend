@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Plus, Edit2, Trash2, X, Upload, Check, Loader2, Search, Filter } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Upload, Check, Loader2, Search, Filter, ChevronDown } from "lucide-react";
 import * as XLSX from "xlsx";
 
 import imageCompression from "browser-image-compression";
@@ -63,6 +63,33 @@ async function compressImageToWebp(file: File): Promise<string> {
       reader.readAsDataURL(fileToProcess);
     });
   }
+}
+
+// An option is "available only with" the options of other attributes it links to (no links =
+// available with anything). Links are kept by name: every option gets a new id on each save.
+type OptionLink = { attribute: string; value: string };
+
+// Names and option texts are matched the way the server matches them: trimmed, any case
+const sameText = (a: unknown, b: unknown) =>
+  String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
+
+// Rewrites the links of every option of every attribute; `change` returns the new link, or null to drop it
+function mapOptionLinks(attrs: any[], change: (link: OptionLink) => OptionLink | null): any[] {
+  return attrs.map((attr) => ({
+    ...attr,
+    values: attr.values.map((v: any) => ({ ...v, links: (v.links || []).map(change).filter(Boolean) })),
+  }));
+}
+
+// Photos an option can show: the product's saved photos (new uploads stay data: URLs until saved)
+function savedPhotoUrls(mainImage: string, gallery: string[]): string[] {
+  return Array.from(new Set([mainImage, ...gallery].filter((url) => /^https?:\/\//i.test(url || ""))));
+}
+
+// When an option panel closes with focus inside it, focus goes back to the button that opened it
+function returnFocusToToggle(panelKey: string) {
+  const panel = document.getElementById(`opt-${panelKey}-panel`);
+  if (panel?.contains(document.activeElement)) document.getElementById(`opt-${panelKey}-toggle`)?.focus();
 }
 
 export default function ProductsDashboard() {
@@ -244,8 +271,10 @@ export default function ProductsDashboard() {
   };
 
   // Attribute Form Fields (Optional)
-  // attributes: Array of { name: string, values: Array<{ value: string, price_modifier: number }> }
+  // attributes: Array of { name: string, type: string, values: Array<{ value: string, price_modifier: number, image: string, links: OptionLink[] }> }
   const [attributes, setAttributes] = useState<any[]>([]);
+  // The one open option panel: "links-<attrIndex>-<valIndex>" or "photo-<attrIndex>-<valIndex>"
+  const [optionPanel, setOptionPanel] = useState<string | null>(null);
 
   // File Upload State
   const [uploading, setUploading] = useState(false);
@@ -416,6 +445,18 @@ export default function ProductsDashboard() {
     fetchData();
   }, []);
 
+  // Escape closes the open option panel
+  useEffect(() => {
+    if (!optionPanel) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      returnFocusToToggle(optionPanel);
+      setOptionPanel(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [optionPanel]);
+
   const openAddModal = () => {
     setEditingProduct(null);
     setCategoryId(categories[0]?.id ? String(categories[0].id) : "");
@@ -434,6 +475,7 @@ export default function ProductsDashboard() {
     setIsFestiveSpecial(false);
     setIsActive(true);
     setAttributes([]);
+    setOptionPanel(null);
     setIsModalOpen(true);
   };
 
@@ -467,8 +509,14 @@ export default function ProductsDashboard() {
           values: attr.values ? attr.values.map((v: any) => ({
             value: v.value,
             price_modifier: parseFloat(v.price_modifier || "0"),
-            parent_attribute_name: v.parent?.attribute?.name || "",
-            parent_value_name: v.parent?.value || ""
+            image: v.image || "",
+            // Products saved before option links existed only have a single "depends on" parent
+            links: (Array.isArray(v.links) ? v.links : v.parent ? [v.parent] : [])
+              .map((l: any) => ({
+                attribute: l.attribute?.name || prod.attributes.find((a: any) => a.id === l.product_attribute_id)?.name || "",
+                value: l.value || "",
+              }))
+              .filter((l: OptionLink) => l.attribute && l.value)
           })) : []
         }))
       );
@@ -476,6 +524,7 @@ export default function ProductsDashboard() {
       setAttributes([]);
     }
 
+    setOptionPanel(null);
     setIsModalOpen(true);
   };
 
@@ -510,7 +559,7 @@ export default function ProductsDashboard() {
 
   // Attributes Management
   const addAttribute = () => {
-    setAttributes([...attributes, { name: "", type: "select", values: [{ value: "", price_modifier: 0, parent_attribute_name: "", parent_value_name: "" }] }]);
+    setAttributes([...attributes, { name: "", type: "select", values: [{ value: "", price_modifier: 0, image: "", links: [] }] }]);
   };
 
   const addPredefinedAttribute = (name: string) => {
@@ -526,17 +575,25 @@ export default function ProductsDashboard() {
     const newAttr = {
       name: found.name,
       type: "select",
-      values: found.values.map(v => ({ value: v, price_modifier: 0, parent_attribute_name: "", parent_value_name: "" }))
+      values: found.values.map(v => ({ value: v, price_modifier: 0, image: "", links: [] }))
     };
     setAttributes([...attributes, newAttr]);
   };
 
   const removeAttribute = (index: number) => {
-    setAttributes(attributes.filter((_, i) => i !== index));
+    const removedName = attributes[index].name;
+    const rest = attributes.filter((_, i) => i !== index);
+    // Options can no longer be "available only with" its options (unless another attribute has the same name)
+    setAttributes(rest.some((a) => sameText(a.name, removedName))
+      ? rest
+      : mapOptionLinks(rest, (l) => (sameText(l.attribute, removedName) ? null : l)));
+    setOptionPanel(null);
   };
 
   const updateAttributeName = (index: number, newName: string) => {
-    const updated = [...attributes];
+    // Links to this attribute's options follow the new name
+    const oldName = attributes[index].name;
+    const updated = mapOptionLinks(attributes, (l) => (sameText(l.attribute, oldName) ? { ...l, attribute: newName } : l));
     updated[index].name = newName;
     setAttributes(updated);
   };
@@ -549,18 +606,28 @@ export default function ProductsDashboard() {
 
   const addAttributeValue = (attrIndex: number) => {
     const updated = [...attributes];
-    updated[attrIndex].values.push({ value: "", price_modifier: 0, parent_attribute_name: "", parent_value_name: "" });
+    updated[attrIndex].values.push({ value: "", price_modifier: 0, image: "", links: [] });
     setAttributes(updated);
   };
 
   const removeAttributeValue = (attrIndex: number, valIndex: number) => {
+    const removedText = attributes[attrIndex].values[valIndex].value;
     const updated = [...attributes];
     updated[attrIndex].values = updated[attrIndex].values.filter((_: any, i: number) => i !== valIndex);
-    setAttributes(updated);
+    // Other options can no longer be "available only with" the removed one (unless its text is still listed)
+    const stillListed = updated[attrIndex].values.some((v: any) => sameText(v.value, removedText));
+    setAttributes(stillListed
+      ? updated
+      : mapOptionLinks(updated, (l) => (sameText(l.attribute, updated[attrIndex].name) && sameText(l.value, removedText) ? null : l)));
+    setOptionPanel(null);
   };
 
   const updateAttributeValueText = (attrIndex: number, valIndex: number, text: string) => {
-    const updated = [...attributes];
+    // Links to this option follow its new text
+    const attrName = attributes[attrIndex].name;
+    const oldText = attributes[attrIndex].values[valIndex].value;
+    const updated = mapOptionLinks(attributes, (l) =>
+      (sameText(l.attribute, attrName) && sameText(l.value, oldText) ? { ...l, value: text } : l));
     updated[attrIndex].values[valIndex].value = text;
     setAttributes(updated);
   };
@@ -571,12 +638,35 @@ export default function ProductsDashboard() {
     setAttributes(updated);
   };
 
-  const updateAttributeValueDependency = (attrIndex: number, valIndex: number, parentAttr: string, parentVal: string) => {
+  const updateAttributeValueLinks = (attrIndex: number, valIndex: number, links: OptionLink[]) => {
     const updated = [...attributes];
-    updated[attrIndex].values[valIndex].parent_attribute_name = parentAttr;
-    updated[attrIndex].values[valIndex].parent_value_name = parentVal;
+    updated[attrIndex].values[valIndex].links = links;
     setAttributes(updated);
   };
+
+  // Ticks or unticks an option of another attribute in this option's "available only with" list
+  const toggleAttributeValueLink = (attrIndex: number, valIndex: number, link: OptionLink) => {
+    const links: OptionLink[] = attributes[attrIndex].values[valIndex].links || [];
+    const isThisLink = (l: OptionLink) => sameText(l.attribute, link.attribute) && sameText(l.value, link.value);
+    updateAttributeValueLinks(attrIndex, valIndex, links.some(isThisLink) ? links.filter((l) => !isThisLink(l)) : [...links, link]);
+  };
+
+  const updateAttributeValueImage = (attrIndex: number, valIndex: number, url: string) => {
+    const updated = [...attributes];
+    updated[attrIndex].values[valIndex].image = url;
+    setAttributes(updated);
+  };
+
+  const toggleOptionPanel = (key: string) => setOptionPanel(optionPanel === key ? null : key);
+
+  const closeOptionPanel = () => {
+    if (optionPanel) returnFocusToToggle(optionPanel);
+    setOptionPanel(null);
+  };
+
+  // Photos an option can be linked to, and whether newly added photos still need a save first
+  const savedPhotos = savedPhotoUrls(image, images);
+  const hasUnsavedPhotos = [image, ...images].some((url) => typeof url === "string" && url.startsWith("data:"));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -592,6 +682,12 @@ export default function ProductsDashboard() {
 
     const method = editingProduct ? "PUT" : "POST";
 
+    // A link is only kept while it points to a listed option of another named attribute
+    const linkTargetExists = (link: OptionLink, ownAttrName: string) =>
+      !sameText(link.attribute, ownAttrName) &&
+      attributes.some((a) => a.name.trim() !== "" && sameText(a.name, link.attribute) &&
+        a.values.some((v: any) => v.value.trim() !== "" && sameText(v.value, link.value)));
+
     // Clean up empty attributes
     const cleanAttributes = attributes
       .filter((attr) => attr.name.trim() !== "")
@@ -603,8 +699,10 @@ export default function ProductsDashboard() {
           .map((v: any) => ({
             value: v.value.trim(),
             price_modifier: v.price_modifier || 0,
-            parent_attribute_name: v.parent_attribute_name || "",
-            parent_value_name: v.parent_value_name || ""
+            image: v.image && savedPhotos.includes(v.image) ? v.image : null,
+            links: (v.links || [])
+              .filter((l: OptionLink) => linkTargetExists(l, attr.name))
+              .map((l: OptionLink) => ({ attribute: l.attribute.trim(), value: l.value.trim() }))
           }))
       }));
 
@@ -672,6 +770,208 @@ export default function ProductsDashboard() {
       .catch((err) => {
         alert(err.message);
       });
+  };
+
+  // Attributes an option of attributes[attrIndex] can be linked to: the other named attributes
+  const linkableAttributes = (attrIndex: number) =>
+    attributes
+      .map((attr, index) => ({ attr, index }))
+      .filter(({ attr, index }) => index !== attrIndex && attr.name.trim() !== "" && !sameText(attr.name, attributes[attrIndex].name));
+
+  // Short text for an option's links, e.g. "Color: Red, Blue · Size: M" ("" when it has none)
+  const optionLinksSummary = (attrIndex: number, val: any) =>
+    linkableAttributes(attrIndex)
+      .map(({ attr: other }) => {
+        const linked = other.values
+          .filter((ov: any) => ov.value.trim() !== "" &&
+            (val.links || []).some((l: OptionLink) => sameText(l.attribute, other.name) && sameText(l.value, ov.value)))
+          .map((ov: any) => ov.value.trim());
+        return linked.length > 0 ? `${other.name.trim()}: ${linked.join(", ")}` : "";
+      })
+      .filter(Boolean)
+      .join(" · ");
+
+  const optionToggleStyle = (isSet: boolean, isOpen: boolean): React.CSSProperties => ({
+    display: "inline-flex", alignItems: "center", gap: "6px", minWidth: 0, height: "28px", padding: "0 8px",
+    borderRadius: "6px", border: `1px solid ${isSet || isOpen ? "#D9A85C" : "#EAEAEA"}`,
+    backgroundColor: isOpen ? "#FFF9F0" : "#fff", color: isSet ? "#3F3B38" : "#6E6E6E", fontSize: "12px", cursor: "pointer",
+  });
+
+  const optionPanelStyle: React.CSSProperties = {
+    display: "flex", flexDirection: "column", gap: "10px", marginLeft: "10px", padding: "10px 12px",
+    border: "1px solid #D9A85C", borderRadius: "8px", backgroundColor: "#fff",
+  };
+
+  const panelButtonStyle = (primary: boolean): React.CSSProperties => ({
+    height: "28px", padding: "0 14px", borderRadius: "6px", fontSize: "12px", fontWeight: 500, cursor: "pointer",
+    border: primary ? "1px solid #D98A9C" : "1px solid #EAEAEA", backgroundColor: primary ? "#D98A9C" : "#fff", color: primary ? "#fff" : "#6E6E6E",
+  });
+
+  const photoTileStyle = (selected: boolean, dashed = false): React.CSSProperties => ({
+    width: "100%", aspectRatio: "1 / 1", padding: "2px", borderRadius: "8px", overflow: "hidden", cursor: "pointer",
+    border: selected ? "2px solid #D98A9C" : `2px ${dashed ? "dashed" : "solid"} #EBE5DB`, backgroundColor: selected ? "#FFEAEF" : "#fff",
+    display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#8B7E74",
+  });
+
+  // "Available only with" panel: a heading per other attribute and a checkbox per option of it
+  const renderLinksPanel = (attrIndex: number, valIndex: number, val: any) => {
+    const links: OptionLink[] = val.links || [];
+    const others = linkableAttributes(attrIndex);
+    return (
+      <div id={`opt-links-${attrIndex}-${valIndex}-panel`} role="group" aria-label="Available only with" style={optionPanelStyle}>
+        <p style={{ margin: 0, fontSize: "12px", color: "#6E6E6E", lineHeight: 1.5 }}>
+          <b style={{ color: "#3F3B38" }}>{val.value.trim() ? `"${val.value.trim()}"` : "This option"}</b> can be picked only with the ticked options. Attributes with nothing ticked are not limited.
+        </p>
+        {others.length === 0 && (
+          <p style={{ margin: 0, fontSize: "12px", color: "#A09A92" }}>Give the other attributes a name first.</p>
+        )}
+        {others.map(({ attr: other, index: otherIndex }) => {
+          const options = other.values.filter((ov: any) => ov.value.trim() !== "");
+          return (
+            <div key={otherIndex} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "12px", fontWeight: 600, color: "#3F3B38", overflowWrap: "anywhere" }}>{other.name}</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {options.length === 0 && <span style={{ fontSize: "12px", color: "#A09A92" }}>No options yet</span>}
+                {options.map((ov: any, i: number) => {
+                  const checked = links.some((l) => sameText(l.attribute, other.name) && sameText(l.value, ov.value));
+                  return (
+                    <label
+                      key={i}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 10px", borderRadius: "16px",
+                        border: checked ? "1.5px solid #D98A9C" : "1.5px solid #EBE5DB", backgroundColor: checked ? "#FFEAEF" : "#fff",
+                        color: checked ? "#D98A9C" : "#3F3B38", fontSize: "12px", fontWeight: checked ? 600 : 400,
+                        cursor: "pointer", userSelect: "none", maxWidth: "100%", overflowWrap: "anywhere",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleAttributeValueLink(attrIndex, valIndex, { attribute: other.name, value: ov.value })}
+                        style={{ accentColor: "#D98A9C", cursor: "pointer", margin: 0 }}
+                      />
+                      {ov.value}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+          <button type="button" onClick={() => updateAttributeValueLinks(attrIndex, valIndex, [])} style={panelButtonStyle(false)}>
+            Clear
+          </button>
+          <button type="button" onClick={closeOptionPanel} style={panelButtonStyle(true)}>
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Photo panel: the product's saved photos, one of which is shown when the option is picked
+  const renderPhotoPanel = (attrIndex: number, valIndex: number, val: any, linkedPhoto: string) => {
+    const pickPhoto = (url: string) => {
+      updateAttributeValueImage(attrIndex, valIndex, url);
+      closeOptionPanel();
+    };
+    return (
+      <div id={`opt-photo-${attrIndex}-${valIndex}-panel`} role="group" aria-label="Photo for this option" style={optionPanelStyle}>
+        {savedPhotos.length === 0 ? (
+          <p style={{ margin: 0, fontSize: "12px", color: "#6E6E6E", lineHeight: 1.5 }}>
+            Save the product with its photos first, then link one here.
+          </p>
+        ) : (
+          <>
+            <p style={{ margin: 0, fontSize: "12px", color: "#6E6E6E", lineHeight: 1.5 }}>
+              Show this photo when <b style={{ color: "#3F3B38" }}>{val.value.trim() ? `"${val.value.trim()}"` : "this option"}</b> is picked:
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(60px, 1fr))", gap: "8px" }}>
+              <button type="button" aria-pressed={!linkedPhoto} onClick={() => pickPhoto("")} style={photoTileStyle(!linkedPhoto, true)}>
+                No photo
+              </button>
+              {savedPhotos.map((url, i) => (
+                <button
+                  key={url}
+                  type="button"
+                  aria-pressed={linkedPhoto === url}
+                  title={`Photo ${i + 1}`}
+                  onClick={() => pickPhoto(url)}
+                  style={photoTileStyle(linkedPhoto === url)}
+                >
+                  <img src={url} alt={`Photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "5px", display: "block" }} />
+                </button>
+              ))}
+            </div>
+            {hasUnsavedPhotos && (
+              <p style={{ margin: 0, fontSize: "11px", color: "#A09A92" }}>Photos added since the last save can be linked after saving.</p>
+            )}
+          </>
+        )}
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button type="button" onClick={closeOptionPanel} style={panelButtonStyle(true)}>
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Under each option: "Available only with ▾" and "Photo ▾" buttons, with the open panel inline below them
+  const renderOptionControls = (attrIndex: number, valIndex: number, val: any) => {
+    const linksKey = `links-${attrIndex}-${valIndex}`;
+    const photoKey = `photo-${attrIndex}-${valIndex}`;
+    const summary = optionLinksSummary(attrIndex, val);
+    const linkedPhoto = savedPhotos.includes(val.image) ? val.image : "";
+    const chevronStyle = (isOpen: boolean): React.CSSProperties => ({
+      flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s",
+    });
+    return (
+      <>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 14px", paddingLeft: "10px" }}>
+          {attributes.length > 1 && (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: "1 1 230px", minWidth: 0 }}>
+              <span style={{ fontSize: "11px", color: "#8B7E74", whiteSpace: "nowrap" }}>Available only with</span>
+              <button
+                type="button"
+                id={`opt-${linksKey}-toggle`}
+                aria-expanded={optionPanel === linksKey}
+                aria-controls={`opt-${linksKey}-panel`}
+                aria-label={`Available only with: ${summary || "any combination"}`}
+                title={summary || "Available with any option of the other attributes"}
+                onClick={() => toggleOptionPanel(linksKey)}
+                style={{ ...optionToggleStyle(summary !== "", optionPanel === linksKey), flex: 1, justifyContent: "space-between" }}
+              >
+                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summary || "Any combination"}</span>
+                <ChevronDown size={14} style={chevronStyle(optionPanel === linksKey)} />
+              </button>
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "11px", color: "#8B7E74" }}>Photo</span>
+            <button
+              type="button"
+              id={`opt-${photoKey}-toggle`}
+              aria-expanded={optionPanel === photoKey}
+              aria-controls={`opt-${photoKey}-panel`}
+              aria-label={linkedPhoto ? "Photo: linked" : "Photo: none"}
+              onClick={() => toggleOptionPanel(photoKey)}
+              style={{ ...optionToggleStyle(linkedPhoto !== "", optionPanel === photoKey), padding: linkedPhoto ? "0 6px 0 3px" : "0 8px" }}
+            >
+              {linkedPhoto ? (
+                <img src={linkedPhoto} alt="" style={{ width: "22px", height: "22px", objectFit: "cover", borderRadius: "4px", display: "block" }} />
+              ) : (
+                <span style={{ whiteSpace: "nowrap" }}>No photo</span>
+              )}
+              <ChevronDown size={14} style={chevronStyle(optionPanel === photoKey)} />
+            </button>
+          </div>
+        </div>
+        {optionPanel === linksKey && attributes.length > 1 && renderLinksPanel(attrIndex, valIndex, val)}
+        {optionPanel === photoKey && renderPhotoPanel(attrIndex, valIndex, val, linkedPhoto)}
+      </>
+    );
   };
 
   return (
@@ -1160,8 +1460,8 @@ export default function ProductsDashboard() {
                 />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "12px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
                   <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Original Price (₹)</label>
                   <input
                     type="number"
@@ -1176,7 +1476,7 @@ export default function ProductsDashboard() {
                   />
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
                   <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Discounted Price (₹) <span style={{ fontSize: "11px", color: "#D98A9C" }}>(Optional)</span></label>
                   <input
                     type="number"
@@ -1330,6 +1630,9 @@ export default function ProductsDashboard() {
                       <Plus size={16} /> Custom Attribute
                     </button>
                   </div>
+                  <p style={{ margin: 0, fontSize: "12px", color: "#8B7E74", lineHeight: 1.5 }}>
+                    Link an option to options of other attributes to make it available only with those (like Size A3 only with Gold leaf). Link a photo to show it when the option is picked.
+                  </p>
 
                   {/* Predefined Attribute Quick-Select */}
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -1367,8 +1670,8 @@ export default function ProductsDashboard() {
                       <X size={16} />
                     </button>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", width: "88%" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", width: "88%" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: "1 1 150px", minWidth: 0 }}>
                         <label style={{ fontSize: "12px", color: "#6E6E6E", fontWeight: 500 }}>Attribute Name</label>
                         <input
                           type="text"
@@ -1382,7 +1685,7 @@ export default function ProductsDashboard() {
                         />
                       </div>
 
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: "1 1 240px", minWidth: 0 }}>
                         <label style={{ fontSize: "12px", color: "#6E6E6E", fontWeight: 500 }}>Customer Input Type</label>
                         <select
                           value={attr.type || "select"}
@@ -1395,6 +1698,7 @@ export default function ProductsDashboard() {
                           <option value="select">🔘 Pill Buttons (Single Select)</option>
                           <option value="checkbox">☑️ Checkboxes (Multi-select)</option>
                           <option value="text">✍️ Text Input (Custom Text)</option>
+                          <option value="dropdown">🔽 Dropdown (Single Select)</option>
                         </select>
                       </div>
                     </div>
@@ -1420,7 +1724,7 @@ export default function ProductsDashboard() {
                               onChange={(e) => updateAttributeValueText(attrIndex, valIndex, e.target.value)}
                               placeholder="e.g. Medium / Gold"
                               style={{
-                                flex: 2, height: "32px", borderRadius: "6px", border: "1px solid #D9A85C",
+                                flex: 2, minWidth: 0, height: "32px", borderRadius: "6px", border: "1px solid #D9A85C",
                                 padding: "0 10px", fontSize: "14px", outline: "none", color: "#3F3B38"
                               }}
                             />
@@ -1430,7 +1734,7 @@ export default function ProductsDashboard() {
                               onChange={(e) => updateAttributeValueModifier(attrIndex, valIndex, parseFloat(e.target.value) || 0)}
                               placeholder="Price modifier (+)"
                               style={{
-                                flex: 1, height: "32px", borderRadius: "6px", border: "1px solid #D9A85C",
+                                flex: 1, minWidth: 0, height: "32px", borderRadius: "6px", border: "1px solid #D9A85C",
                                 padding: "0 10px", fontSize: "14px", outline: "none", color: "#3F3B38"
                               }}
                             />
@@ -1444,38 +1748,9 @@ export default function ProductsDashboard() {
                               </button>
                             )}
                           </div>
-                          
-                          {/* Dependency Selectors */}
-                          {attributes.length > 1 && (
-                            <div style={{ display: "flex", gap: "10px", paddingLeft: "10px", alignItems: "center" }}>
-                              <span style={{ fontSize: "11px", color: "#8B7E74" }}>Depends on:</span>
-                              <select
-                                value={`${val.parent_attribute_name}||${val.parent_value_name}`}
-                                onChange={(e) => {
-                                  const [pAttr, pVal] = e.target.value.split("||");
-                                  updateAttributeValueDependency(attrIndex, valIndex, pAttr || "", pVal || "");
-                                }}
-                                style={{
-                                  flex: 1, height: "26px", borderRadius: "4px", border: "1px solid #EAEAEA",
-                                  padding: "0 6px", fontSize: "12px", outline: "none", color: "#6E6E6E", backgroundColor: "#fff"
-                                }}
-                              >
-                                <option value="||">No dependency (Always available)</option>
-                                {attributes.map((otherAttr, otherIndex) => {
-                                  if (otherIndex === attrIndex || !otherAttr.name.trim()) return null;
-                                  return (
-                                    <optgroup key={otherIndex} label={otherAttr.name}>
-                                      {otherAttr.values.map((otherVal: any, oValIdx: number) => (
-                                        <option key={oValIdx} value={`${otherAttr.name}||${otherVal.value}`}>
-                                          {otherAttr.name} - {otherVal.value}
-                                        </option>
-                                      ))}
-                                    </optgroup>
-                                  );
-                                })}
-                              </select>
-                            </div>
-                          )}
+
+                          {/* "Available only with" links and the option's photo */}
+                          {renderOptionControls(attrIndex, valIndex, val)}
                         </div>
                       ))}
                     </div>
