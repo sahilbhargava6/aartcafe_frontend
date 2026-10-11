@@ -17,7 +17,8 @@ type Selections = { [key: string]: { value: string; modifier: number } };
 
 // Values like "NA" mean "not applicable" and are never offered
 const isRealOption = (v: Option) => !!v.value && !["na", "n/a", "none", "-", "null", ""].includes(v.value.toString().trim().toLowerCase());
-const isMultiChoice = (attr: Attribute) => attr.type === "checkbox" || attr.name.toLowerCase() === "options";
+// The dashboard's "Customer Input Type" decides (checkout allows several choices only for checkbox attributes)
+const isMultiChoice = (attr: Attribute) => attr.type === "checkbox";
 const splitChoice = (choice?: string) => (choice ? choice.split(", ").map((s) => s.trim()).filter(Boolean) : []);
 const findOption = (attr: Attribute, value: string) => (attr.values || []).find((v) => v.value === value);
 
