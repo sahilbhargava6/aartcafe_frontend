@@ -72,7 +72,8 @@ export default function CartPage() {
             option_ids: item.optionIds,
             quantity: item.quantity,
             price_on_request: item.priceOnRequest || undefined,
-            image: item.image || undefined,
+            // Photos stored as data: URLs are too big to send and can't go in the WhatsApp message anyway
+            image: item.image && !item.image.startsWith("data:") ? item.image : undefined,
           })),
         }),
       });

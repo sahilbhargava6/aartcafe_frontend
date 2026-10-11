@@ -823,7 +823,16 @@ export default function ProductsDashboard() {
           <b style={{ color: "#3F3B38" }}>{val.value.trim() ? `"${val.value.trim()}"` : "This option"}</b> can be picked only with the ticked options. Attributes with nothing ticked are not limited.
         </p>
         {others.length === 0 && (
-          <p style={{ margin: 0, fontSize: "12px", color: "#A09A92" }}>Give the other attributes a name first.</p>
+          <p style={{ margin: 0, fontSize: "12px", color: "#A09A92", lineHeight: 1.5 }}>
+            {attributes.length > 1 ? (
+              "Give the other attributes a name first."
+            ) : (
+              <>
+                Links work between two attributes. Add a second one with <b>+ Custom Attribute</b> (for example <b>Shapes</b> with
+                Round and Zig zag), then come back here and tick the options that go with this one.
+              </>
+            )}
+          </p>
         )}
         {others.map(({ attr: other, index: otherIndex }) => {
           const options = other.values.filter((ov: any) => ov.value.trim() !== "");
@@ -930,24 +939,22 @@ export default function ProductsDashboard() {
     return (
       <>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 14px", paddingLeft: "10px" }}>
-          {attributes.length > 1 && (
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: "1 1 230px", minWidth: 0 }}>
-              <span style={{ fontSize: "11px", color: "#8B7E74", whiteSpace: "nowrap" }}>Available only with</span>
-              <button
-                type="button"
-                id={`opt-${linksKey}-toggle`}
-                aria-expanded={optionPanel === linksKey}
-                aria-controls={`opt-${linksKey}-panel`}
-                aria-label={`Available only with: ${summary || "any combination"}`}
-                title={summary || "Available with any option of the other attributes"}
-                onClick={() => toggleOptionPanel(linksKey)}
-                style={{ ...optionToggleStyle(summary !== "", optionPanel === linksKey), flex: 1, justifyContent: "space-between" }}
-              >
-                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summary || "Any combination"}</span>
-                <ChevronDown size={14} style={chevronStyle(optionPanel === linksKey)} />
-              </button>
-            </div>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: "1 1 230px", minWidth: 0 }}>
+            <span style={{ fontSize: "11px", color: "#8B7E74", whiteSpace: "nowrap" }}>Available only with</span>
+            <button
+              type="button"
+              id={`opt-${linksKey}-toggle`}
+              aria-expanded={optionPanel === linksKey}
+              aria-controls={`opt-${linksKey}-panel`}
+              aria-label={`Available only with: ${summary || "any combination"}`}
+              title={summary || "Available with any option of the other attributes"}
+              onClick={() => toggleOptionPanel(linksKey)}
+              style={{ ...optionToggleStyle(summary !== "", optionPanel === linksKey), flex: 1, justifyContent: "space-between" }}
+            >
+              <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summary || "Any combination"}</span>
+              <ChevronDown size={14} style={chevronStyle(optionPanel === linksKey)} />
+            </button>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ fontSize: "11px", color: "#8B7E74" }}>Photo</span>
             <button
@@ -968,7 +975,7 @@ export default function ProductsDashboard() {
             </button>
           </div>
         </div>
-        {optionPanel === linksKey && attributes.length > 1 && renderLinksPanel(attrIndex, valIndex, val)}
+        {optionPanel === linksKey && renderLinksPanel(attrIndex, valIndex, val)}
         {optionPanel === photoKey && renderPhotoPanel(attrIndex, valIndex, val, linkedPhoto)}
       </>
     );
@@ -1631,7 +1638,9 @@ export default function ProductsDashboard() {
                     </button>
                   </div>
                   <p style={{ margin: 0, fontSize: "12px", color: "#8B7E74", lineHeight: 1.5 }}>
-                    Link an option to options of other attributes to make it available only with those (like Size A3 only with Gold leaf). Link a photo to show it when the option is picked.
+                    Customers choose the attributes from top to bottom, and each one lists only the options that go with the choices above it.
+                    Put each kind of choice in its own attribute (for example Sizes: 8x10, 10 inch and Shapes: Round, Zig zag), then use
+                    &ldquo;Available only with&rdquo; on an option to tick what it goes with. Link a photo to show it when the option is picked.
                   </p>
 
                   {/* Predefined Attribute Quick-Select */}

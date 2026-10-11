@@ -49,24 +49,38 @@ const fitsSelection = (attributes: Attribute[], attr: Attribute, value: Option, 
       })
   );
 
-const firstFitting = (attributes: Attribute[], attr: Attribute, selected: Selections) =>
-  (attr.values || []).filter(isRealOption).find((v) => fitsSelection(attributes, attr, v, selected));
+// Customers choose from top to bottom: an attribute offers only the options that go with the
+// choices in the attributes above it
+const fitsAbove = (attributes: Attribute[], index: number, value: Option, selected: Selections) =>
+  fitsSelection(attributes.slice(0, index), attributes[index], value, selected);
 
-// Single-choice attributes that lost their pick move to their first option that fits again
-const fillSingleChoices = (attributes: Attribute[], selected: Selections) => {
-  attributes.forEach((attr) => {
-    if (attr.type === "text" || isMultiChoice(attr) || splitChoice(selected[attr.name]?.value).length) return;
-    const first = firstFitting(attributes, attr, selected);
-    if (first) selected[attr.name] = choiceOf(attr, [first.value]);
-  });
+const firstFittingAbove = (attributes: Attribute[], index: number, selected: Selections) =>
+  (attributes[index].values || []).filter(isRealOption).find((v) => fitsAbove(attributes, index, v, selected));
+
+// After a choice in attribute `index` changed, the attributes below it keep only the choices that
+// still go with the ones above; single-choice ones that lost theirs move to their first option that fits
+const cascadeBelow = (attributes: Attribute[], index: number, selected: Selections) => {
+  for (let i = index + 1; i < attributes.length; i++) {
+    const attr = attributes[i];
+    if (attr.type === "text") continue;
+    const kept = splitChoice(selected[attr.name]?.value).filter((picked) => {
+      const option = findOption(attr, picked);
+      return !!option && fitsAbove(attributes, i, option, selected);
+    });
+    if (!kept.length && !isMultiChoice(attr)) {
+      const first = firstFittingAbove(attributes, i, selected);
+      if (first) kept.push(first.value);
+    }
+    selected[attr.name] = choiceOf(attr, kept);
+  }
   return selected;
 };
 
-// Starting choices: the first option of each attribute that fits the ones before it
+// Starting choices: the first option of each attribute that goes with the ones above it
 const initialSelections = (attributes: Attribute[]): Selections => {
   const selected: Selections = {};
-  attributes.forEach((attr) => {
-    const first = attr.type === "text" ? attr.values?.[0] : firstFitting(attributes, attr, selected);
+  attributes.forEach((attr, index) => {
+    const first = attr.type === "text" ? attr.values?.[0] : firstFittingAbove(attributes, index, selected);
     if (first) selected[attr.name] = choiceOf(attr, [first.value]);
   });
   return selected;
@@ -253,10 +267,11 @@ export default function ProductDetailsPage() {
     }));
   };
 
-  // Pick (or untick) an option. Choices in other attributes that can't go with it are dropped
-  // (single-choice ones move to their first option that fits) and the gallery shows its photo.
-  const chooseOption = (attr: Attribute, option: Option) => {
+  // Pick (or untick) an option of the attribute at `index`. The attributes below it are re-checked
+  // against the new choice, and the gallery shows the option's photo.
+  const chooseOption = (index: number, option: Option) => {
     const attributes: Attribute[] = productData?.attributes || [];
+    const attr = attributes[index];
     const current = splitChoice(selectedAttributes[attr.name]?.value);
     const untick = isMultiChoice(attr) && current.includes(option.value);
     const next: Selections = { ...selectedAttributes };
@@ -264,22 +279,16 @@ export default function ProductDetailsPage() {
       attr,
       untick ? current.filter((v) => v !== option.value) : isMultiChoice(attr) ? [...current, option.value] : [option.value]
     );
+    cascadeBelow(attributes, index, next);
 
-    if (!untick) {
-      attributes.forEach((other) => {
-        if (other.name === attr.name || other.type === "text") return;
-        const picked = splitChoice(next[other.name]?.value);
-        const kept = picked.filter((p) => {
-          const pickedValue = findOption(other, p);
-          return !pickedValue || pairFits(attr, option, other, pickedValue);
-        });
-        if (kept.length !== picked.length) next[other.name] = choiceOf(other, kept);
-      });
-      fillSingleChoices(attributes, next);
-
-      const photos = galleryOf(productData);
-      if (option.image && photos.includes(option.image)) setSelectedImageIndex(photos.indexOf(option.image));
-    }
+    // Show the chosen option's photo, or else the photo of an option the change picked further down
+    const photos = galleryOf(productData);
+    const pickedBelow = attributes.slice(index + 1).flatMap((below) => {
+      const before = splitChoice(selectedAttributes[below.name]?.value);
+      return splitChoice(next[below.name]?.value).filter((v) => !before.includes(v)).map((v) => findOption(below, v));
+    });
+    const photo = [untick ? undefined : option, ...pickedBelow].find((o) => o?.image && photos.includes(o.image))?.image;
+    if (photo) setSelectedImageIndex(photos.indexOf(photo));
     setSelectedAttributes(next);
   };
 
@@ -552,22 +561,24 @@ export default function ProductDetailsPage() {
                 </div>
               </div>
 
-              {/* Dynamic Attribute Customizers. Options that don't go with the current choices
-                  (the dashboard's "available only with" links) are greyed out; picking one switches to it. */}
+              {/* Dynamic Attribute Customizers. Customers choose from top to bottom; each attribute lists only
+                  the options that go with the choices above it (the dashboard's "available only with" links). */}
               {productData.attributes && productData.attributes.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-                  {productData.attributes.map((attr: Attribute) => {
+                  {productData.attributes.map((attr: Attribute, attrIndex: number) => {
                     const validValues = (attr.values || []).filter(isRealOption);
                     const isCheckbox = isMultiChoice(attr);
                     const isTextInput = attr.type === "text";
                     const isDropdown = attr.type === "dropdown";
 
-                    if (!isTextInput && validValues.length === 0) return null;
-
                     const currentSelectedStr = selectedAttributes[attr.name]?.value || "";
                     const checkedList = splitChoice(currentSelectedStr);
-                    const fits = (opt: Option) => fitsSelection(productData.attributes, attr, opt, selectedAttributes);
-                    const unavailableNote = "Not available with your other choices. Pick it to switch.";
+                    const shownValues = validValues.filter(
+                      (opt) => checkedList.includes(opt.value) || fitsAbove(productData.attributes, attrIndex, opt, selectedAttributes)
+                    );
+
+                    if (!isTextInput && shownValues.length === 0) return null;
+
                     // Small photo for options linked to one of the gallery photos
                     const swatch = (opt: Option) =>
                       opt.image ? (
@@ -604,8 +615,8 @@ export default function ProductDetailsPage() {
                             <select
                               value={currentSelectedStr}
                               onChange={(e) => {
-                                const opt = validValues.find((v) => v.value === e.target.value);
-                                if (opt) chooseOption(attr, opt);
+                                const opt = shownValues.find((v) => v.value === e.target.value);
+                                if (opt) chooseOption(attrIndex, opt);
                               }}
                               aria-label={attr.name}
                               style={{
@@ -627,10 +638,9 @@ export default function ProductDetailsPage() {
                                   Choose {attr.name.toLowerCase()}
                                 </option>
                               )}
-                              {validValues.map((opt) => (
+                              {shownValues.map((opt) => (
                                 <option key={opt.id || opt.value} value={opt.value}>
                                   {opt.value}
-                                  {fits(opt) ? "" : " (not with your other choices)"}
                                 </option>
                               ))}
                             </select>
@@ -643,36 +653,32 @@ export default function ProductDetailsPage() {
                         ) : isCheckbox ? (
                           /* CHECKBOX MULTI-SELECT OPTIONS */
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-                            {validValues.map((opt) => {
+                            {shownValues.map((opt) => {
                               const isChecked = checkedList.includes(opt.value);
-                              const available = isChecked || fits(opt);
                               return (
                                 <label
                                   key={opt.id || opt.value}
                                   className="option-chip"
-                                  title={available ? undefined : unavailableNote}
                                   style={{
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "8px",
                                     padding: "10px 16px",
                                     borderRadius: "10px",
-                                    border: isChecked ? "2px solid #D9A85C" : available ? "1px solid #E5D5C5" : "1px dashed #E5D5C5",
+                                    border: isChecked ? "2px solid #D9A85C" : "1px solid #E5D5C5",
                                     backgroundColor: isChecked ? "rgba(217, 168, 92, 0.1)" : "#FFFDF9",
                                     color: isChecked ? "#3F3B38" : "#6E6E6E",
                                     fontSize: "14px",
                                     fontWeight: isChecked ? 600 : 400,
                                     cursor: "pointer",
                                     userSelect: "none",
-                                    opacity: available ? 1 : 0.45,
-                                    textDecoration: available ? "none" : "line-through",
                                     transition: "all 0.2s ease",
                                   }}
                                 >
                                   <input
                                     type="checkbox"
                                     checked={isChecked}
-                                    onChange={() => chooseOption(attr, opt)}
+                                    onChange={() => chooseOption(attrIndex, opt)}
                                     style={{ accentColor: "#D9A85C", width: "16px", height: "16px", cursor: "pointer" }}
                                   />
                                   {swatch(opt)}
@@ -684,16 +690,14 @@ export default function ProductDetailsPage() {
                         ) : (
                           /* PILL / RADIO SINGLE-SELECT OPTIONS */
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-                            {validValues.map((opt) => {
+                            {shownValues.map((opt) => {
                               const isSelected = currentSelectedStr === opt.value;
-                              const available = isSelected || fits(opt);
                               return (
                                 <button
                                   key={opt.id || opt.value}
                                   type="button"
-                                  onClick={() => chooseOption(attr, opt)}
+                                  onClick={() => chooseOption(attrIndex, opt)}
                                   className="option-chip"
-                                  title={available ? undefined : unavailableNote}
                                   aria-pressed={isSelected}
                                   style={{
                                     display: "inline-flex",
@@ -701,14 +705,12 @@ export default function ProductDetailsPage() {
                                     gap: "8px",
                                     padding: opt.image ? "6px 16px 6px 6px" : "10px 16px",
                                     borderRadius: "10px",
-                                    border: isSelected ? "2px solid #D98A9C" : available ? "1px solid #D9A85C" : "1px dashed #D9A85C",
+                                    border: isSelected ? "2px solid #D98A9C" : "1px solid #D9A85C",
                                     backgroundColor: isSelected ? "rgba(217, 138, 156, 0.05)" : "#fff",
                                     color: isSelected ? "#3F3B38" : "#8FB9A8",
                                     fontSize: "14px",
                                     fontWeight: isSelected ? 600 : 400,
                                     cursor: "pointer",
-                                    opacity: available ? 1 : 0.45,
-                                    textDecoration: available ? "none" : "line-through",
                                     transition: "all 0.2s",
                                   }}
                                 >
