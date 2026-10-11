@@ -147,6 +147,19 @@ export default function OrdersPage() {
                       <span>📞 {order.customer_phone}</span>
                       {order.customer_email && <span>✉️ {order.customer_email}</span>}
                     </div>
+
+                    {/* Reference photo the customer attached in the bag */}
+                    {order.reference_image && (
+                      <a
+                        href={order.reference_image}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginTop: "10px", color: "#D98A9C", fontSize: "14px", fontWeight: 500, textDecoration: "none" }}
+                      >
+                        <img src={order.reference_image} alt="Reference" style={{ width: "44px", height: "44px", objectFit: "cover", borderRadius: "8px", border: "1px solid #EBE5DB" }} />
+                        📎 Reference image (open)
+                      </a>
+                    )}
                   </div>
 
                   {/* Actions & Status Dropdown */}

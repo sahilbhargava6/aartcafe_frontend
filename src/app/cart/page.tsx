@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import Link from "next/link";
 import { useCart, CartItem, formatCartTotal } from "@/context/CartContext";
 import { salePrice, originalPrice, formatRupees } from "@/lib/price";
+import { shrinkImage } from "@/lib/shrinkImage";
 import { Trash2, Plus, Minus } from "lucide-react";
 
 export default function CartPage() {
@@ -56,6 +57,25 @@ export default function CartPage() {
     if (submitting) return;
     setSubmitting(true);
 
+    // Upload the reference photo first, so the order and the WhatsApp message can link to it.
+    // If that fails the order still goes through and the customer sends the photo in WhatsApp.
+    let referenceImage: string | null = null;
+    if (attachedImage) {
+      try {
+        const form = new FormData();
+        form.append("image", await shrinkImage(attachedImage), "reference.jpg");
+        const res = await fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/order-images", {
+          method: "POST",
+          headers: { Accept: "application/json" },
+          body: form,
+        });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.url) referenceImage = data.url;
+      } catch (err) {
+        console.error("Failed to upload the reference image:", err);
+      }
+    }
+
     // Save the order first. The server prices every item itself, so the
     // WhatsApp message below uses the saved order, not the cart's prices.
     let order: any;
@@ -76,6 +96,7 @@ export default function CartPage() {
             // Photos stored as data: URLs are too big to send and can't go in the WhatsApp message anyway
             image: item.image && !item.image.startsWith("data:") ? item.image : undefined,
           })),
+          reference_image: referenceImage,
         }),
       });
       const data = await res.json().catch(() => null);
@@ -124,6 +145,7 @@ export default function CartPage() {
       `👤 *Name:* ${name.trim() || "Customer"}`,
       `📧 *Email:* ${email.trim() || "N/A"}`,
       `📞 *Phone:* ${phone.trim() || "N/A"}`,
+      ...(order.reference_image ? [`📎 *Reference Image:* ${order.reference_image}`] : []),
       "━━━━━━━━━━━━━━━━━━",
       "*Order Items:*",
       itemDetails,
@@ -137,8 +159,8 @@ export default function CartPage() {
     const encoded = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encoded}`;
 
-    if (attachedImage) {
-      alert("Since WhatsApp web links don't allow automatic image attachments, please attach your image manually once WhatsApp opens, or paste it into the chat!");
+    if (attachedImage && !order.reference_image) {
+      alert("We couldn't upload your reference image. Please attach it in the WhatsApp chat that opens next.");
     }
 
     clearCart();
@@ -390,7 +412,7 @@ export default function CartPage() {
                 </label>
                 {attachedImage && (
                   <span style={{ fontSize: "12px", color: "#8FB9A8" }}>
-                    * Image will need to be manually sent in WhatsApp.
+                    * This photo is sent with your order.
                   </span>
                 )}
               </div>
