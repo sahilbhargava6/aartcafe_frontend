@@ -316,9 +316,10 @@ export default function Home() {
               </a>
             </div>
 
-            {/* Carousel: 3 cards per view on laptops and tablets, 2 on phones */}
+            {/* Carousel: 3 cards per view on laptops and tablets, 2 on phones; moves on by itself every 4 seconds */}
             <SwipeCarousel
               ariaLabel="Customer's favorites"
+              autoPlay={4000}
               items={
                 bestsellerProducts.length > 0
                   ? bestsellerProducts

@@ -16,7 +16,12 @@ interface SwipeCarouselProps<T> {
   ariaLabel: string;
   // Vertical position of the arrows, e.g. "38%" to centre them on the image rather than the whole card
   arrowTop?: string;
+  // Move on by one card every this many milliseconds (back to the start after the last)
+  autoPlay?: number;
 }
+
+// How long auto-scrolling waits after the visitor touches the row or uses its arrows or dots
+const AUTOPLAY_PAUSE_AFTER_USE = 8000;
 
 // Horizontal, swipeable row with scroll-snap. On laptops it keeps the original look (arrows
 // outside the row); on tablets and phones the arrows move inside and page dots appear.
@@ -28,9 +33,17 @@ export default function SwipeCarousel<T>({
   gap = { desktop: 32, mobile: 14 },
   ariaLabel,
   arrowTop = "50%",
+  autoPlay,
 }: SwipeCarouselProps<T>) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ page: 0, pages: 1, atStart: true, atEnd: true });
+  // Auto-scrolling waits while the row is hovered or focused, and for a while after it is used
+  const hoveredRef = useRef(false);
+  const focusedRef = useRef(false);
+  const pausedUntilRef = useRef(0);
+  const pauseAfterUse = () => {
+    pausedUntilRef.current = Date.now() + AUTOPLAY_PAUSE_AFTER_USE;
+  };
 
   // Pages = distinct snap positions (one per card start, plus the very end if it falls between cards)
   const measure = useCallback(() => {
@@ -68,7 +81,26 @@ export default function SwipeCarousel<T>({
     };
   }, [measure, items.length]);
 
+  // Auto-scroll one card at a time; skipped while paused, while the tab is hidden, and for
+  // visitors who ask their device for reduced motion
+  useEffect(() => {
+    if (!autoPlay || position.pages <= 1) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = setInterval(() => {
+      const track = trackRef.current;
+      const first = track?.firstElementChild as HTMLElement | null;
+      if (!track || !first || document.hidden) return;
+      if (hoveredRef.current || focusedRef.current || Date.now() < pausedUntilRef.current) return;
+      const step = first.offsetWidth + (parseFloat(getComputedStyle(track).columnGap) || 0);
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      const next = track.scrollLeft >= maxScroll - 2 ? 0 : Math.min(track.scrollLeft + step, maxScroll);
+      track.scrollTo({ left: next, behavior: "smooth" });
+    }, autoPlay);
+    return () => clearInterval(timer);
+  }, [autoPlay, position.pages]);
+
   const goTo = (page: number) => {
+    pauseAfterUse();
     const track = trackRef.current;
     const first = track?.firstElementChild as HTMLElement | null;
     if (!track || !first) return;
@@ -93,7 +125,23 @@ export default function SwipeCarousel<T>({
   const scrollable = position.pages > 1;
 
   return (
-    <div className="swipe" style={cssVars} role="region" aria-roledescription="carousel" aria-label={ariaLabel}>
+    <div
+      className="swipe"
+      style={cssVars}
+      role="region"
+      aria-roledescription="carousel"
+      aria-label={ariaLabel}
+      onMouseEnter={() => (hoveredRef.current = true)}
+      onMouseLeave={() => (hoveredRef.current = false)}
+      onTouchStart={pauseAfterUse}
+      // Keyboard focus only (a mouse click on an arrow also focuses it, but shouldn't stop auto-scroll for good)
+      onFocus={(e) => {
+        if ((e.target as HTMLElement).matches?.(":focus-visible")) focusedRef.current = true;
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) focusedRef.current = false;
+      }}
+    >
       <div className="swipe-viewport">
         {scrollable && (
           <button type="button" className="swipe-arrow swipe-arrow--prev" onClick={() => goTo(position.page - 1)} disabled={position.atStart} aria-label="Previous">
