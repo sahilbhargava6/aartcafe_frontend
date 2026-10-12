@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import PriceSlider from "@/components/PriceSlider";
 import { useCart } from "@/context/CartContext";
 import { type CategoryNode, normalizeCategories, descendantIdsOf, flattenTree, pathTo, childrenOf } from "@/lib/categories";
+import { buildSearchIndex, searchProducts } from "@/lib/search";
 import { useWishlist } from "@/context/WishlistContext";
 import { Heart } from "lucide-react";
 
@@ -26,12 +27,12 @@ const CARD_LAYOUTS = [
 // Categories can go several levels deep, and a category can sit under several parents
 type ShopCategory = CategoryNode;
 
-// Keeps the filters in step with the address bar (?category=…&collection=…), including footer
-// links clicked while the shop is already open
-function UrlFilters({ onChange }: { onChange: (category: string | null, collection: string | null) => void }) {
+// Keeps the filters in step with the address bar (?category=…&collection=…&search=…), including
+// footer links and searches made while the shop is already open
+function UrlFilters({ onChange }: { onChange: (category: string | null, collection: string | null, search: string | null) => void }) {
   const params = useSearchParams();
   useEffect(() => {
-    onChange(params.get("category"), params.get("collection"));
+    onChange(params.get("category"), params.get("collection"), params.get("search"));
   }, [params, onChange]);
   return null;
 }
@@ -43,8 +44,12 @@ export default function Shop() {
   // Product-flag collection from the URL, e.g. /shop?collection=bestsellers
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
 
-  const applyUrlFilters = useCallback((category: string | null, collection: string | null) => {
+  // Words searched for in the site search ("See all results"), ranked like the search box
+  const [searchTerm, setSearchTerm] = useState<string | null>(null);
+
+  const applyUrlFilters = useCallback((category: string | null, collection: string | null, search: string | null) => {
     setSelectedCategory(category);
+    setSearchTerm(search?.trim() || null);
     setSelectedCollection(collection === "bestsellers" ? collection : null);
   }, []);
 
@@ -186,21 +191,28 @@ export default function Shop() {
       );
     }
 
+    // Search: only matching products, best match first
+    if (searchTerm) {
+      result = searchProducts(buildSearchIndex(result, categories), searchTerm);
+    }
+
     // Apply price filter
     result = result.filter((p) => p.price >= minPrice && p.price <= maxPrice);
 
     setFilteredProducts(result);
-  }, [selectedCollection, selectedCategory, minPrice, maxPrice, allProducts, categories]);
+  }, [selectedCollection, selectedCategory, searchTerm, minPrice, maxPrice, allProducts, categories]);
 
   const clearFilters = () => {
     setSelectedCollection(null);
     setSelectedCategory(null);
+    setSearchTerm(null);
     setMinPrice(0);
     setMaxPrice(10000);
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.delete("category");
       url.searchParams.delete("collection");
+      url.searchParams.delete("search");
       window.history.pushState({}, "", url.toString());
     }
   };
@@ -357,14 +369,16 @@ export default function Shop() {
                     margin: 0,
                   }}
                 >
-                  {selectedCategory && selectedCategory !== "All"
+                  {searchTerm
+                    ? `RESULTS FOR “${searchTerm.toUpperCase()}”`
+                    : selectedCategory && selectedCategory !== "All"
                     ? selectedCategory.toUpperCase()
                     : selectedCollection === "bestsellers"
                     ? "BESTSELLERS"
                     : "SHOP"}
                 </h1>
 
-                {(selectedCollection || selectedCategory || minPrice > 0 || maxPrice < 10000) && (
+                {(selectedCollection || selectedCategory || searchTerm || minPrice > 0 || maxPrice < 10000) && (
                   <button
                     onClick={clearFilters}
                     className="font-sans shop-clear-btn"
@@ -406,7 +420,8 @@ export default function Shop() {
                         aria-pressed={isActive}
                         className={`font-sans subcategory-chip${isActive ? " is-active" : ""}`}
                       >
-                        {cat.id === chipParent.id ? `All ${cat.name}` : cat.name}
+                        {/* "All …" chip; a name that already starts with "All" is not doubled */}
+                        {cat.id === chipParent.id && !/^all\b/i.test(cat.name.trim()) ? `All ${cat.name}` : cat.name}
                       </button>
                     );
                   })}

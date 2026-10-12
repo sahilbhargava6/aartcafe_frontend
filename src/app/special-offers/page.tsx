@@ -253,17 +253,12 @@ export default function SpecialOffers() {
               ═══════════════════════════════════════════════════════ */}
           <div className="wedding-section">
             
-            {/* Left side: wedding illustrations on a mandala (built from public/images/wedding) */}
+            {/* Left side: wedding illustrations on a slowly turning mandala (layers built from public/images/wedding) */}
             <div className="mandala-container">
-              <img
-                className="wedding-art"
-                src="/images/wedding/wedding-specials-art.webp"
-                width={550}
-                height={550}
-                alt=""
-                loading="lazy"
-                decoding="async"
-              />
+              <div className="wedding-art">
+                <img className="wedding-mandala" src="/images/wedding/wedding-mandala.webp" width={550} height={550} alt="" loading="lazy" decoding="async" />
+                <img className="wedding-items" src="/images/wedding/wedding-items.webp" width={550} height={550} alt="" loading="lazy" decoding="async" />
+              </div>
             </div>
 
             {/* Right side: Wedding Frames details */}
@@ -547,9 +542,30 @@ export default function SpecialOffers() {
           justify-content: center;
         }
         .wedding-art {
+          position: relative;
           width: 100%;
           max-width: 550px;
-          height: auto;
+          aspect-ratio: 1;
+        }
+        .wedding-art img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+        }
+        /* The mandala turns full circle once a minute behind the wedding items */
+        .wedding-mandala {
+          animation: wedding-mandala-spin 60s linear infinite;
+        }
+        @keyframes wedding-mandala-spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .wedding-mandala {
+            animation: none;
+          }
         }
         .related-grid {
           display: grid;

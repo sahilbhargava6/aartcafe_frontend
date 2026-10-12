@@ -688,17 +688,24 @@ export default function FestivalSpecials() {
           /* clip (unlike hidden) lets the box grow past its aspect ratio when a long title/button needs it */
           overflow: clip !important;
         }
-        /* Uploaded banner: the image sets the size; any text sits over it on a tint */
+        /* Uploaded banner: shown whole at its own shape, at most 420px tall and centred (the box
+           shrinks to the image); any text sits over it on a tint */
         .rakhi-banner--image {
           display: block;
+          width: fit-content;
+          max-width: 100%;
+          margin-left: auto;
+          margin-right: auto;
           aspect-ratio: auto;
           padding: 0 !important;
           background-color: #F7F2EE;
         }
         .rakhi-banner--image > img {
           display: block;
-          width: 100%;
+          width: auto;
+          max-width: 100%;
           height: auto;
+          max-height: 420px;
         }
         .rakhi-banner--image .banner-content {
           position: absolute;
