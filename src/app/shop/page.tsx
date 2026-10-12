@@ -8,6 +8,7 @@ import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import PriceSlider from "@/components/PriceSlider";
 import { useCart } from "@/context/CartContext";
+import { type CategoryNode, normalizeCategories, descendantIdsOf, flattenTree, pathTo, childrenOf } from "@/lib/categories";
 import { useWishlist } from "@/context/WishlistContext";
 import { Heart } from "lucide-react";
 
@@ -22,8 +23,8 @@ const CARD_LAYOUTS = [
   { width: 364, height: 364 },
 ];
 
-// Categories have two levels: main categories, and sub-categories with a parent_id
-type ShopCategory = { id: number; name: string; parent_id: number | null };
+// Categories can go several levels deep, and a category can sit under several parents
+type ShopCategory = CategoryNode;
 
 // Keeps the filters in step with the address bar (?category=…&collection=…), including footer
 // links clicked while the shop is already open
@@ -47,9 +48,14 @@ export default function Shop() {
     setSelectedCollection(collection === "bestsellers" ? collection : null);
   }, []);
 
+  // The branch the shopper went down to reach the selected category (a category with several
+  // parents can be reached more than one way); empty = work it out from the category
+  const [trail, setTrail] = useState<number[]>([]);
+
   // Shows a category (null = all products) and writes it to the address bar
-  const selectCategory = (cat: string | null) => {
+  const selectCategory = (cat: string | null, path: number[] = []) => {
     setSelectedCategory(cat);
+    setTrail(path);
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       if (cat) url.searchParams.set("category", cat);
@@ -59,7 +65,7 @@ export default function Shop() {
   };
 
   // Clicking the selected category again clears it
-  const handleCategoryClick = (cat: string) => selectCategory(selectedCategory === cat ? null : cat);
+  const handleCategoryClick = (cat: string, path: number[]) => selectCategory(selectedCategory === cat ? null : cat, path);
 
   const [categories, setCategories] = useState<ShopCategory[]>([]);
   const categoryListRef = useRef<HTMLUListElement>(null);
@@ -124,9 +130,8 @@ export default function Shop() {
       if (isMounted) {
         if (Array.isArray(catData) && catData.length > 0) {
           setCategories(
-            (catData as { id: number | string; name: string; parent_id: number | string | null }[])
-              .filter((c) => c.name)
-              .map((c) => ({ id: Number(c.id), name: c.name, parent_id: c.parent_id ? Number(c.parent_id) : null }))
+            normalizeCategories((catData as { id: number | string; name: string; parent_ids?: (number | string)[]; parent_id?: number | string | null }[]).filter((c) => c.name))
+              .map((c) => ({ id: c.id, name: c.name, parent_ids: c.parent_ids }))
           );
         }
 
@@ -173,9 +178,9 @@ export default function Shop() {
     }
 
     if (selectedCategory) {
-      // A main category also shows the products of its sub-categories
+      // A category also shows the products of every category below it
       const chosen = categories.find((c) => c.name === selectedCategory);
-      const ids = chosen ? [chosen.id, ...categories.filter((c) => c.parent_id === chosen.id).map((c) => c.id)] : [];
+      const ids = chosen ? [chosen.id, ...descendantIdsOf(categories, chosen.id)] : [];
       result = result.filter((p) =>
         ids.length > 0 ? p.categoryIds.some((id: number) => ids.includes(id)) : p.categories.includes(selectedCategory)
       );
@@ -200,15 +205,21 @@ export default function Shop() {
     }
   };
 
-  // Category tree: main categories A–Z, each with its sub-categories A–Z
-  const byName = (a: ShopCategory, b: ShopCategory) => a.name.localeCompare(b.name);
-  const isMain = (c: ShopCategory) => !c.parent_id || !categories.some((p) => p.id === c.parent_id);
-  const mainCategories = categories.filter(isMain).sort(byName);
-  const subCategoriesOf = (id: number) => categories.filter((c) => c.parent_id === id).sort(byName);
-  // The main category being browsed (directly, or through one of its sub-categories) and its sub-categories
+  // Category tree: main categories A–Z, each with its sub-categories (at any depth) A–Z beneath it
+  const categoryRows = flattenTree(categories);
+  const byId = (id: number) => categories.find((c) => c.id === id);
+  // The way down to the selected category: the branch clicked, or one worked out from its parents
   const selectedCat = categories.find((c) => c.name === selectedCategory);
-  const activeParent = selectedCat ? (isMain(selectedCat) ? selectedCat : categories.find((c) => c.id === selectedCat.parent_id)) : undefined;
-  const activeSubs = activeParent ? subCategoriesOf(activeParent.id) : [];
+  const trailFits = !!selectedCat && trail[trail.length - 1] === selectedCat.id
+    && trail.every((id, i) => byId(id) && (i === 0 ? byId(id)!.parent_ids.length === 0 : byId(id)!.parent_ids.includes(trail[i - 1])));
+  const selectedPath = selectedCat ? (trailFits ? trail : pathTo(categories, selectedCat).map((c) => c.id)) : [];
+  // Chips above the products: the selected category and what is under it; for a category with
+  // nothing under it, its parent and that parent's other sub-categories. "‹" steps back up a level.
+  const chipLevel = selectedCat && childrenOf(categories, selectedCat.id).length > 0 ? selectedPath.length - 1 : selectedPath.length - 2;
+  const chipParent = chipLevel >= 0 ? byId(selectedPath[chipLevel]) : undefined;
+  const chipParentPath = selectedPath.slice(0, chipLevel + 1);
+  const chipChildren = chipParent ? childrenOf(categories, chipParent.id) : [];
+  const chipBack = chipLevel > 0 ? byId(selectedPath[chipLevel - 1]) : undefined;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#fff" }}>
@@ -251,59 +262,57 @@ export default function Shop() {
                 </h3>
                 <div className="category-list-wrap" style={{ flex: 1 }}>
                   <ul ref={categoryListRef} className="category-list" style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "8px", padding: 0, margin: 0 }}>
-                    {mainCategories.map((cat) => {
-                      // A main category stays highlighted while one of its sub-categories is shown
-                      const isActive = activeParent?.id === cat.id;
-                      return (
-                        <React.Fragment key={cat.id}>
-                          <li className="category-item">
-                            <button
-                              onClick={() => handleCategoryClick(cat.name)}
-                              className={`font-sans category-btn${isActive ? " is-active" : ""}`}
-                              aria-pressed={isActive}
-                              style={{
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                fontSize: "20px",
-                                lineHeight: "30px",
-                                color: isActive ? "#D9A85C" : "#3F3B38",
-                                fontWeight: 400,
-                                textAlign: "left",
-                                width: "100%",
-                                padding: 0,
-                                transition: "color 0.2s ease",
-                              }}
-                            >
-                              {cat.name}
-                            </button>
-                          </li>
-                          {/* Sub-categories, indented under their parent (phones show them as chips above the products instead) */}
-                          {subCategoriesOf(cat.id).map((sub) => (
-                            <li key={sub.id} className="category-item category-item--sub">
-                              <button
-                                onClick={() => handleCategoryClick(sub.name)}
-                                className="font-sans category-btn category-btn--sub"
-                                aria-pressed={selectedCategory === sub.name}
-                                style={{
-                                  background: "none",
-                                  border: "none",
-                                  cursor: "pointer",
-                                  fontSize: "17px",
-                                  lineHeight: "26px",
-                                  color: selectedCategory === sub.name ? "#D9A85C" : "#6E6E6E",
-                                  fontWeight: 400,
-                                  textAlign: "left",
-                                  width: "100%",
-                                  padding: "0 0 0 18px",
-                                  transition: "color 0.2s ease",
-                                }}
-                              >
-                                {sub.name}
-                              </button>
-                            </li>
-                          ))}
-                        </React.Fragment>
+                    {categoryRows.map(({ category: cat, depth, path }) => {
+                      // A main category stays highlighted while anything under it is shown; a sub-category
+                      // listed under several parents only lights up on the branch being browsed
+                      const isActive = depth === 0 ? selectedPath[0] === cat.id : path.join("-") === selectedPath.join("-");
+                      return depth === 0 ? (
+                        <li key={path.join("-")} className="category-item">
+                          <button
+                            onClick={() => handleCategoryClick(cat.name, path)}
+                            className={`font-sans category-btn${isActive ? " is-active" : ""}`}
+                            aria-pressed={isActive}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              fontSize: "20px",
+                              lineHeight: "30px",
+                              color: isActive ? "#D9A85C" : "#3F3B38",
+                              fontWeight: 400,
+                              textAlign: "left",
+                              width: "100%",
+                              padding: 0,
+                              transition: "color 0.2s ease",
+                            }}
+                          >
+                            {cat.name}
+                          </button>
+                        </li>
+                      ) : (
+                        /* Sub-categories, indented one step per level (phones show them as chips above the products instead) */
+                        <li key={path.join("-")} className="category-item category-item--sub">
+                          <button
+                            onClick={() => handleCategoryClick(cat.name, path)}
+                            className="font-sans category-btn category-btn--sub"
+                            aria-pressed={isActive}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              fontSize: depth === 1 ? "17px" : "16px",
+                              lineHeight: "26px",
+                              color: isActive ? "#D9A85C" : "#6E6E6E",
+                              fontWeight: 400,
+                              textAlign: "left",
+                              width: "100%",
+                              padding: `0 0 0 ${18 * depth}px`,
+                              transition: "color 0.2s ease",
+                            }}
+                          >
+                            {cat.name}
+                          </button>
+                        </li>
                       );
                     })}
                   </ul>
@@ -374,20 +383,30 @@ export default function Shop() {
                 )}
               </div>
 
-              {/* Sub-categories of the main category being browsed, to narrow it down */}
-              {activeParent && activeSubs.length > 0 && (
-                <div className="subcategory-chips" role="group" aria-label={`${activeParent.name} sub-categories`}>
-                  {[activeParent, ...activeSubs].map((cat) => {
+              {/* Sub-categories of the category being browsed, to narrow it down */}
+              {chipParent && chipChildren.length > 0 && (
+                <div className="subcategory-chips" role="group" aria-label={`${chipParent.name} sub-categories`}>
+                  {chipBack && (
+                    <button
+                      type="button"
+                      onClick={() => selectCategory(chipBack.name, chipParentPath.slice(0, -1))}
+                      className="font-sans subcategory-chip"
+                      aria-label={`Back to ${chipBack.name}`}
+                    >
+                      ‹ {chipBack.name}
+                    </button>
+                  )}
+                  {[chipParent, ...chipChildren].map((cat) => {
                     const isActive = selectedCategory === cat.name;
                     return (
                       <button
                         key={cat.id}
                         type="button"
-                        onClick={() => selectCategory(cat.name)}
+                        onClick={() => selectCategory(cat.name, cat.id === chipParent.id ? chipParentPath : [...chipParentPath, cat.id])}
                         aria-pressed={isActive}
                         className={`font-sans subcategory-chip${isActive ? " is-active" : ""}`}
                       >
-                        {cat.id === activeParent.id ? `All ${cat.name}` : cat.name}
+                        {cat.id === chipParent.id ? `All ${cat.name}` : cat.name}
                       </button>
                     );
                   })}

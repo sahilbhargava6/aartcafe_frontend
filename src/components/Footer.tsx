@@ -13,7 +13,7 @@ const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919267943830
 let collectionsCache: string[] = ["Varmala Preservation", "Bouquet Preservation", "Resin Nameplates", "Lamps"];
 let collectionsLoaded = false;
 
-type FooterCategory = { name: string; parent_id: number | null; products_count: number; footer_order?: number | null };
+type FooterCategory = { name: string; parent_id?: number | null; parent_ids?: number[]; products_count: number; footer_order?: number | null };
 
 const linkHover = {
   onMouseEnter: (e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color = "#C88E56"),
@@ -38,7 +38,7 @@ export default function Footer() {
         const top = (chosen.length > 0
           ? chosen
           : categories
-              .filter((c) => !c.parent_id && c.products_count > 0 && c.name.trim().toLowerCase() !== "all")
+              .filter((c) => !(c.parent_ids ?? (c.parent_id ? [c.parent_id] : [])).length && c.products_count > 0 && c.name.trim().toLowerCase() !== "all")
               .sort((a, b) => b.products_count - a.products_count)
         )
           .slice(0, 4)

@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { ArrowUp, ArrowDown, X, Check } from "lucide-react";
+import { normalizeCategories, mainCategoriesOf, childrenOf, pathTo } from "@/lib/categories";
 
 const API = "https://aartcafe-backend-production-rjudvs.laravel.cloud/api";
 const MAX = 4;
 
-type Category = { id: number; name: string; parent_id: number | null; products_count?: number; footer_order?: number | null };
+type Category = { id: number; name: string; parent_ids: number[]; products_count?: number; footer_order?: number | null };
 
 // The footer's "Shop Collections" list: up to four categories or sub-categories, in the order shown
 export default function FooterCollectionsDashboard() {
@@ -22,7 +23,8 @@ export default function FooterCollectionsDashboard() {
         if (!res.ok) throw new Error("Failed to load categories.");
         return res.json();
       })
-      .then((data: Category[]) => {
+      .then((raw: (Omit<Category, "parent_ids"> & { parent_ids?: number[]; parent_id?: number | null })[]) => {
+        const data: Category[] = normalizeCategories(raw);
         setCategories(data);
         setSelected(
           data
@@ -35,11 +37,29 @@ export default function FooterCollectionsDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const byName = (a: Category, b: Category) => a.name.localeCompare(b.name);
-  const isMain = (c: Category) => !c.parent_id || !categories.some((p) => p.id === c.parent_id);
-  const mainCategories = categories.filter(isMain).sort(byName);
-  const subCategoriesOf = (id: number) => categories.filter((c) => c.parent_id === id).sort(byName);
+  const mainCategories = mainCategoriesOf(categories);
   const findCategory = (id: number) => categories.find((c) => c.id === id);
+
+  // Sub-categories as chips, each followed by its own sub-categories (as deep as they go)
+  const subTree = (parentId: number, path: number[]): React.ReactNode => {
+    const subs = childrenOf(categories, parentId).filter((c) => !path.includes(c.id));
+    if (subs.length === 0) return null;
+    return (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginLeft: "24px" }}>
+        {subs.map((sub) => {
+          const nested = subTree(sub.id, [...path, sub.id]);
+          return nested ? (
+            <div key={sub.id} style={{ flexBasis: "100%", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div>{chip(sub, true)}</div>
+              {nested}
+            </div>
+          ) : (
+            <React.Fragment key={sub.id}>{chip(sub, true)}</React.Fragment>
+          );
+        })}
+      </div>
+    );
+  };
 
   const toggle = (id: number) => {
     setStatus("idle");
@@ -145,13 +165,13 @@ export default function FooterCollectionsDashboard() {
           <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
             {selected.map((id, index) => {
               const category = findCategory(id);
-              const parent = category?.parent_id ? findCategory(category.parent_id) : undefined;
+              const where = category && category.parent_ids.length > 0 ? pathTo(categories, category).slice(0, -1).map((c) => c.name).join(" › ") : "";
               return (
                 <li key={id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", borderRadius: "10px", backgroundColor: "#FAF6F0" }}>
                   <span style={{ width: "22px", textAlign: "center", fontWeight: 600, color: "#D9A85C" }}>{index + 1}</span>
                   <span style={{ flex: 1, minWidth: 0, fontSize: "15px", color: "#3F3B38", overflowWrap: "anywhere" }}>
                     {category?.name || `Category #${id}`}
-                    {parent && <span style={{ fontSize: "12px", color: "#8B7E74" }}> (in {parent.name})</span>}
+                    {where && <span style={{ fontSize: "12px", color: "#8B7E74" }}> (in {where})</span>}
                   </span>
                   <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label="Move up" style={{ ...iconButton, opacity: index === 0 ? 0.35 : 1 }}>
                     <ArrowUp size={16} />
@@ -177,17 +197,12 @@ export default function FooterCollectionsDashboard() {
           <div style={{ padding: "20px", textAlign: "center", color: "#8FB9A8" }}>Loading categories...</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {mainCategories.map((main) => {
-              const subs = subCategoriesOf(main.id);
-              return (
-                <div key={main.id} style={{ display: "flex", flexDirection: "column", gap: "8px", paddingBottom: "12px", borderBottom: "1px dashed #EBE5DB" }}>
-                  <div>{chip(main, false)}</div>
-                  {subs.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginLeft: "24px" }}>{subs.map((sub) => chip(sub, true))}</div>
-                  )}
-                </div>
-              );
-            })}
+            {mainCategories.map((main) => (
+              <div key={main.id} style={{ display: "flex", flexDirection: "column", gap: "8px", paddingBottom: "12px", borderBottom: "1px dashed #EBE5DB" }}>
+                <div>{chip(main, false)}</div>
+                {subTree(main.id, [main.id])}
+              </div>
+            ))}
           </div>
         )}
       </div>

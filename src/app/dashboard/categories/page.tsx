@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { Plus, Edit2, Trash2, X, Search, Filter } from "lucide-react";
+import { type CategoryNode, normalizeCategories, descendantIdsOf, pathTo } from "@/lib/categories";
+
+type DashCategory = CategoryNode & { slug?: string; products_count?: number };
 
 export default function CategoriesDashboard() {
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<DashCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -17,7 +20,8 @@ export default function CategoriesDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [categoryName, setCategoryName] = useState("");
-  const [parentId, setParentId] = useState<string>("");
+  // A category can sit under several parents, at any depth
+  const [parentIds, setParentIds] = useState<number[]>([]);
 
   const fetchCategories = () => {
     setLoading(true);
@@ -27,7 +31,7 @@ export default function CategoriesDashboard() {
         return res.json();
       })
       .then((data) => {
-        setCategories(data);
+        setCategories(Array.isArray(data) ? normalizeCategories(data) : []);
         setError("");
       })
       .catch((err) => {
@@ -80,20 +84,29 @@ export default function CategoriesDashboard() {
   const openAddModal = () => {
     setEditingCategory(null);
     setCategoryName("");
-    setParentId("");
+    setParentIds([]);
     setIsModalOpen(true);
   };
 
   const openEditModal = (cat: any) => {
     setEditingCategory(cat);
     setCategoryName(cat.name);
-    setParentId(cat.parent_id ? String(cat.parent_id) : "");
+    setParentIds(cat.parent_ids || []);
     setIsModalOpen(true);
   };
 
-  // Two levels only: a parent is always a main category, and one that has sub-categories stays main
-  const parentOptions = categories.filter((c) => !c.parent_id && (!editingCategory || c.id !== editingCategory.id));
-  const hasSubCategories = !!editingCategory && categories.some((c) => c.parent_id === editingCategory.id);
+  // Each category once, named by its place in the tree ("Frames › Wedding Frames"), A–Z by that
+  // path. Left out: the category being edited and everything inside it (that would make a loop).
+  const categoryPath = (cat: DashCategory) => pathTo(categories, cat).map((c) => c.name).join(" › ");
+  const parentOptions = useMemo(() => {
+    const blocked = editingCategory ? new Set([editingCategory.id, ...descendantIdsOf(categories, editingCategory.id)]) : new Set<number>();
+    return categories
+      .filter((c) => !blocked.has(c.id))
+      .map((c) => ({ id: c.id, label: categoryPath(c) }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [categories, editingCategory]);
+  const toggleParent = (id: number) =>
+    setParentIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,7 +126,7 @@ export default function CategoriesDashboard() {
         "Accept": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ name: categoryName, parent_id: parentId ? parseInt(parentId) : null }),
+      body: JSON.stringify({ name: categoryName, parent_ids: parentIds }),
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
@@ -294,7 +307,7 @@ export default function CategoriesDashboard() {
               <tr style={{ backgroundColor: "#F9F6F0", borderBottom: "2px solid #D9A85C" }}>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>ID</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Name</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Parent</th>
+                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Parents</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Slug</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Products Count</th>
                 <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Actions</th>
@@ -306,7 +319,9 @@ export default function CategoriesDashboard() {
                   <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{cat.id}</td>
                   <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{cat.name}</td>
                   <td style={{ padding: "16px 24px", color: "#8B7E74" }}>
-                    {cat.parent ? cat.parent.name : <span style={{ opacity: 0.5 }}>None</span>}
+                    {cat.parent_ids?.length
+                      ? cat.parent_ids.map((id: number) => categories.find((c) => c.id === id)).filter((p): p is DashCategory => !!p).map(categoryPath).join(", ")
+                      : <span style={{ opacity: 0.5 }}>None</span>}
                   </td>
                   <td style={{ padding: "16px 24px", color: "#D98A9C" }}>{cat.slug}</td>
                   <td style={{ padding: "16px 24px", color: "#8FB9A8" }}>{cat.products_count ?? 0}</td>
@@ -379,26 +394,40 @@ export default function CategoriesDashboard() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label className="font-sans" style={{ fontSize: "14px", color: "#6E6E6E" }}>Parent Category (Optional)</label>
-                <select
-                  value={parentId}
-                  onChange={(e) => setParentId(e.target.value)}
-                  disabled={hasSubCategories}
+                <span className="font-sans" style={{ fontSize: "14px", color: "#6E6E6E" }}>Parent Categories (Optional)</span>
+                <div
+                  role="group"
+                  aria-label="Parent categories"
                   style={{
-                    height: "40px", borderRadius: "8px", border: "1px solid #D9A85C",
-                    padding: "0 12px", fontSize: "15px", outline: "none", color: "#3F3B38",
-                    backgroundColor: hasSubCategories ? "#F5F1EA" : "#fff"
+                    maxHeight: "220px", overflowY: "auto", border: "1px solid #D9A85C", borderRadius: "8px",
+                    padding: "6px 0", backgroundColor: "#fff",
                   }}
                 >
-                  <option value="">-- None (Top Level) --</option>
-                  {parentOptions.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                  {parentOptions.length === 0 ? (
+                    <div className="font-sans" style={{ padding: "8px 12px", fontSize: "14px", color: "#8B7E74" }}>No other categories yet.</div>
+                  ) : parentOptions.map((option) => (
+                    <label
+                      key={option.id}
+                      className="font-sans"
+                      style={{
+                        display: "flex", alignItems: "center", gap: "10px", padding: "7px 12px", cursor: "pointer",
+                        fontSize: "14px", color: "#3F3B38", backgroundColor: parentIds.includes(option.id) ? "#FFEAEF" : "transparent",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={parentIds.includes(option.id)}
+                        onChange={() => toggleParent(option.id)}
+                        style={{ accentColor: "#D98A9C", width: "16px", height: "16px", flexShrink: 0 }}
+                      />
+                      {option.label}
+                    </label>
                   ))}
-                </select>
+                </div>
                 <span className="font-sans" style={{ fontSize: "12px", color: "#8B7E74", lineHeight: 1.5 }}>
-                  {hasSubCategories
-                    ? "This category has sub-categories, so it stays a main category."
-                    : "Only main categories can be parents, so categories are never more than two levels deep."}
+                  {parentIds.length === 0
+                    ? "None ticked: this is a main category."
+                    : `Shows under ${parentIds.length === 1 ? "1 parent" : `${parentIds.length} parents`}. Tick more to show it in several places; sub-categories can have their own sub-categories.`}
                 </span>
               </div>
 

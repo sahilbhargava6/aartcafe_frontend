@@ -22,8 +22,7 @@ export default function SpecialOffers() {
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          const activeBanners = data.filter((b: any) => b.is_active);
-          setBanners(activeBanners.length > 0 ? activeBanners : data);
+          setBanners(data.filter((b: any) => b.is_active));
         }
       })
       .catch((err) => console.error("Error loading banners:", err));
@@ -59,10 +58,7 @@ export default function SpecialOffers() {
 
   const [mainBannerIdx, setMainBannerIdx] = React.useState(0);
 
-  const mainBanners = React.useMemo(() => {
-    const list = banners.filter((b: any) => b.position === "special_offers_main");
-    return list.length > 0 ? list : banners;
-  }, [banners]);
+  const mainBanners = React.useMemo(() => banners.filter((b: any) => b.position === "special_offers_main" && b.image_url), [banners]);
 
   React.useEffect(() => {
     if (mainBanners.length <= 1) return;
@@ -72,18 +68,33 @@ export default function SpecialOffers() {
     return () => clearInterval(timer);
   }, [mainBanners.length]);
 
-  const banner1 = mainBanners[mainBannerIdx] || banners[0] || null;
-  const banner2 = banners.find((b: any) => b.position === "special_offers_top_right") || banners[1] || null;
-  const banner3 = banners.find((b: any) => b.position === "special_offers_bottom_right") || banners[2] || null;
+  // Each slot only shows a banner saved for it in the dashboard; an empty slot is left out
+  const banner1 = mainBanners[mainBannerIdx % Math.max(mainBanners.length, 1)] || null;
+  const sideBanners = ["special_offers_top_right", "special_offers_bottom_right"]
+    .map((position) => banners.find((b: any) => b.position === position && b.image_url))
+    .filter(Boolean);
+  const bannerLink = (banner: any) => banner.button_url || banner.link_url || "/shop";
 
-  // A saved banner shows exactly its own text (none if left empty); the sample text is only for when there is no banner
-  const bannerText = (banner: { title?: string | null; subtitle?: string | null } | null, field: "title" | "subtitle", sample: string) =>
-    banner ? banner[field] || "" : sample;
-  const banner1Title = bannerText(banner1, "title", "MADE BY HANDS. MEANT FOR THE HEART.");
-  const banner1Subtitle = bannerText(banner1, "subtitle", "Personalized handmade frames and keepsakes that tell your story.");
-  const banner2Title = bannerText(banner2, "title", "MADE BY HANDS. MEANT FOR THE HEART.");
-  const banner3Title = bannerText(banner3, "title", "SPECIAL OFFER");
-  const banner3Subtitle = bannerText(banner3, "subtitle", "SAVE UP TO 40%");
+  // The images keep their own shape. The side column is sized so the main banner is exactly as tall
+  // as the two side cards stacked (gaps included); until the photos have loaded, 2.4 : 1 is used.
+  const [shapes, setShapes] = React.useState<Record<string, number>>({});
+  const rememberShape = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (!img.naturalWidth || !img.naturalHeight) return;
+    const ratio = img.naturalWidth / img.naturalHeight;
+    setShapes((prev) => (prev[img.src] === ratio ? prev : { ...prev, [img.src]: ratio }));
+  };
+  const BANNER_GAP = 24; // matches the .banner-grid and .cards-stack gaps
+  const bannerColumns = React.useMemo(() => {
+    const mainRatio = banner1 ? shapes[banner1.image_url] : undefined;
+    const sideRatios = sideBanners.map((b: any) => shapes[b.image_url]);
+    if (!mainRatio || sideRatios.some((r) => !r)) return "2.4fr 1fr";
+    // Main height = side width x (sum of 1/ratio) + the gaps between the cards, and the two columns
+    // share the row width minus the column gap; solving that gives the side column width
+    const stacked = sideRatios.reduce((sum, r) => sum + 1 / r, 0);
+    const stackGaps = BANNER_GAP * (sideRatios.length - 1);
+    return `1fr calc((100% - ${BANNER_GAP + mainRatio * stackGaps}px) / ${1 + mainRatio * stacked})`;
+  }, [banner1, sideBanners, shapes]);
 
   const defaultProducts = [
     { id: "so-1", title: "HANDMADE RAKHI", base_price: 2000, price: 2000, image: "", description: "Handcrafted with love, designed to celebrate the timeless bond between siblings." },
@@ -108,194 +119,58 @@ export default function SpecialOffers() {
         <div className="offers-container">
           
           {/* ═══════════════════════════════════════════════════════
-              HEADER SECTION: SPRING SALE BANNER + 2 SIDE CARDS
+              HEADER: MAIN BANNER + 2 SIDE CARDS
+              The banners from the dashboard, shown whole as uploaded (their designs carry their
+              own text). A slot without a banner is left out.
               ═══════════════════════════════════════════════════════ */}
-          <div className="banner-grid">
-            
-            {/* Left Box: Spring Sale Banner */}
-            <div className="so-banner-wrap" style={{ position: "relative", width: "100%" }}>
-              <Link
-                href={banner1?.button_url || banner1?.link_url || "/shop"}
-                className="spring-banner"
-                style={{
-                  textDecoration: "none",
-                  color: "inherit",
-                  display: "block",
-                  position: "relative",
-                  ...(banner1?.image_url
-                    ? {
-                        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url("${banner1.image_url}")`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }
-                    : {}),
-                }}
-              >
-                {/* Corner Floral SVGs */}
-                <svg className="floral-svg-left" width="120" height="120" viewBox="0 0 100 100">
-                  <path d="M10 90 Q30 60 40 40 T90 10" stroke="#8FB9A8" strokeWidth="2" fill="none" />
-                  <circle cx="30" cy="70" r="10" fill="#D98A9C" opacity="0.8" />
-                  <circle cx="45" cy="55" r="8" fill="#D98A9C" opacity="0.8" />
-                  <circle cx="20" cy="80" r="12" fill="#D98A9C" opacity="0.8" />
-                </svg>
-                <svg className="floral-svg-right" width="120" height="120" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="25" fill="#EFD3C7" opacity="0.75" />
-                  <circle cx="65" cy="35" r="15" fill="#D98A9C" opacity="0.7" />
-                  <path d="M20 80 Q40 50 60 40" stroke="#8FB9A8" strokeWidth="2" fill="none" />
-                </svg>
+          {(banner1?.image_url || sideBanners.length > 0) && (
+            <div
+              className={`banner-grid${banner1?.image_url && sideBanners.length > 0 ? "" : " banner-grid--single"}`}
+              style={{ "--so-cols": bannerColumns } as React.CSSProperties}
+            >
+              {banner1?.image_url && (
+                <div className="so-banner-wrap" style={{ position: "relative", width: "100%" }}>
+                  <Link href={bannerLink(banner1)} className="so-image-banner">
+                    <img src={banner1.image_url} alt={banner1.title || "Special offer"} onLoad={rememberShape} />
+                  </Link>
 
-                <span className="font-sans font-bold so-banner-label" style={{ fontSize: "16px", letterSpacing: "3px", color: "#3F3B38", marginBottom: "16px", display: "inline-block" }}>
-                  SPECIAL OFFER
-                </span>
-                {banner1Title && <h1 className="font-serif spring-title">{banner1Title}</h1>}
-                {banner1Subtitle && <p className="font-sans banner-desc" style={{ fontSize: "16px", color: "#8FB9A8", maxWidth: "600px", lineHeight: "26px", margin: "0 0 24px 0" }}>
-                  {banner1Subtitle}
-                </p>}
-                <div
-                  className="so-banner-date"
-                  style={{
-                    border: "1px solid #D9A85C",
-                    borderRadius: "4px",
-                    padding: "8px 24px",
-                    fontSize: "16px",
-                    color: "#D9A85C",
-                    display: "inline-block",
-                    marginBottom: "20px",
-                  }}
-                >
-                  23 September - 22 December
+                  {/* Main Banner Carousel Dots */}
+                  {mainBanners.length > 1 && (
+                    <div className="so-dots" style={{ position: "absolute", bottom: "16px", right: "24px", display: "flex", gap: "6px", zIndex: 10 }}>
+                      {mainBanners.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setMainBannerIdx(idx)}
+                          className="so-dot"
+                          aria-label={`Show banner ${idx + 1}`}
+                          style={{
+                            width: idx === mainBannerIdx ? "20px" : "8px",
+                            height: "8px",
+                            borderRadius: "4px",
+                            backgroundColor: idx === mainBannerIdx ? "#D98A9C" : "#BCAEA2",
+                            border: "none",
+                            cursor: "pointer",
+                            transition: "all 0.3s ease"
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <span className="font-sans" style={{ fontSize: "14px", color: "#3F3B38", opacity: 0.7, display: "block" }}>
-                  @reallygreatsite
-                </span>
-              </Link>
+              )}
 
-              {/* Main Banner Carousel Dots */}
-              {mainBanners.length > 1 && (
-                <div className="so-dots" style={{ position: "absolute", bottom: "16px", right: "24px", display: "flex", gap: "6px", zIndex: 10 }}>
-                  {mainBanners.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setMainBannerIdx(idx)}
-                      className="so-dot"
-                      style={{
-                        width: idx === mainBannerIdx ? "20px" : "8px",
-                        height: "8px",
-                        borderRadius: "4px",
-                        backgroundColor: idx === mainBannerIdx ? "#D98A9C" : "#BCAEA2",
-                        border: "none",
-                        cursor: "pointer",
-                        transition: "all 0.3s ease"
-                      }}
-                    />
+              {/* Right Column: the two side cards, stacked */}
+              {sideBanners.length > 0 && (
+                <div className="cards-stack">
+                  {sideBanners.map((banner) => (
+                    <Link key={banner.id} href={bannerLink(banner)} className="so-image-banner">
+                      <img src={banner.image_url} alt={banner.title || "Special offer"} onLoad={rememberShape} />
+                    </Link>
                   ))}
                 </div>
               )}
             </div>
-
-            {/* Right Column: Stacked 2 Cards */}
-            <div className="cards-stack">
-              
-              {/* Card 1: Gold 50% OFF */}
-              <Link
-                href={banner2?.button_url || banner2?.link_url || "/shop"}
-                className="so-offer-card"
-                style={{
-                  flex: 1,
-                  backgroundColor: "#D9A85C",
-                  borderRadius: "15px",
-                  padding: "20px",
-                  position: "relative",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
-                  overflow: "hidden",
-                  textDecoration: "none",
-                  color: "inherit",
-                  ...(banner2?.image_url
-                    ? {
-                        backgroundImage: `linear-gradient(rgba(217, 168, 92, 0.75), rgba(217, 168, 92, 0.75)), url("${banner2.image_url}")`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }
-                    : {}),
-                }}
-              >
-                {/* Background Text "Offer" */}
-                <span className="font-serif" style={{ position: "absolute", left: "12px", top: "12px", fontSize: "48px", color: "rgba(255,255,255,0.4)", fontStyle: "italic" }}>
-                  Offer
-                </span>
-                
-                {/* Right Top 50% OFF */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", width: "100%" }}>
-                  <span className="font-serif" style={{ fontSize: "40px", fontWeight: 700, color: "#fff", lineHeight: "40px" }}>50%</span>
-                  <span className="font-sans" style={{ fontSize: "14px", color: "#fff", letterSpacing: "2px" }}>OFF</span>
-                </div>
-
-                {/* Center Image / Title */}
-                {banner2Title && <div style={{ display: "flex", justifyContent: "center", margin: "10px 0" }}>
-                  <div style={{ padding: "8px 16px", backgroundColor: "rgba(255,255,255,0.9)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "#D9A85C", fontSize: "14px", fontWeight: 600, textAlign: "center" }}>
-                    {banner2Title}
-                  </div>
-                </div>}
-
-                {/* Bottom Shop Now action */}
-                <div style={{ display: "flex", justifyContent: "center" }}>
-                  <span className="font-sans" style={{ fontSize: "12px", color: "#fff", borderBottom: "1.5px solid #fff", paddingBottom: "2px", letterSpacing: "2px", fontWeight: 600 }}>
-                    SHOP NOW
-                  </span>
-                </div>
-              </Link>
-
-              {/* Card 2: Green Special Offer */}
-              <Link
-                href={banner3?.button_url || banner3?.link_url || "/shop"}
-                className="so-offer-card"
-                style={{
-                  flex: 1,
-                  backgroundColor: "#8FB9A8",
-                  borderRadius: "15px",
-                  padding: "20px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
-                  textDecoration: "none",
-                  color: "inherit",
-                  ...(banner3?.image_url
-                    ? {
-                        backgroundImage: `linear-gradient(rgba(143, 185, 168, 0.75), rgba(143, 185, 168, 0.75)), url("${banner3.image_url}")`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }
-                    : {}),
-                }}
-              >
-                <div
-                  style={{
-                    border: "2px solid #D9A85C",
-                    borderRadius: "8px",
-                    padding: "24px 20px",
-                    backgroundColor: "#fff",
-                    textAlign: "center",
-                    width: "90%",
-                  }}
-                >
-                  <span className="font-sans" style={{ fontSize: "10px", color: "#3F3B38", borderBottom: "1px solid #3F3B38", paddingBottom: "2px", letterSpacing: "2px", fontWeight: 700, display: "inline-block", marginBottom: "12px" }}>
-                    SHOP NOW
-                  </span>
-                  {banner3Title && <h4 className="font-serif" style={{ fontSize: "22px", color: "#3F3B38", margin: "0 0 6px 0", letterSpacing: "1px" }}>
-                    {banner3Title}
-                  </h4>}
-                  {banner3Subtitle && <p className="font-sans" style={{ fontSize: "12px", color: "#8FB9A8", fontWeight: 600, margin: 0, letterSpacing: "1px" }}>
-                    {banner3Subtitle}
-                  </p>}
-                </div>
-              </Link>
-            </div>
-          </div>
+          )}
 
           {/* ═══════════════════════════════════════════════════════
               PRODUCT GRID SECTION: 2x2 HANDMADE RAKHIS / OFFERS
@@ -602,57 +477,35 @@ export default function SpecialOffers() {
           margin: 0 auto;
           padding: 0 120px;
         }
+        /* The column widths are worked out from the banner images (--so-cols) so the main banner
+           and the two stacked side cards come out the same height */
         .banner-grid {
           display: grid;
-          grid-template-columns: 2.4fr 1fr;
-          gap: 30px;
+          grid-template-columns: var(--so-cols, 2.4fr 1fr);
+          align-items: start;
+          gap: 24px;
           margin-bottom: 80px;
         }
-        /* The wrapper is the grid item; the banner grows to fit its text and stretches to the
-           height of the offer cards beside it (a fixed aspect ratio clipped the date/handle text) */
-        .so-banner-wrap {
-          display: flex;
-          flex-direction: column;
-        }
-        .spring-banner {
-          position: relative;
-          width: 100%;
-          flex: 1 0 auto;
-          background-color: #fff;
-          border: 6px solid #D98A9C;
-          border-radius: 15px;
-          display: flex !important;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 40px;
-          text-align: center;
-          overflow: hidden;
-          box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
-        }
-        .spring-title {
-          font-size: 72px;
-          line-height: 80px;
-          color: #3F3B38;
-          margin: 0 0 16px 0;
-          letter-spacing: 2px;
-        }
-        .floral-svg-left {
-          position: absolute;
-          left: -10px;
-          bottom: -10px;
-          opacity: 0.9;
-        }
-        .floral-svg-right {
-          position: absolute;
-          right: 10px;
-          top: 10px;
-          opacity: 0.9;
+        .banner-grid--single {
+          grid-template-columns: 1fr;
         }
         .cards-stack {
           display: flex;
           flex-direction: column;
           gap: 24px;
+        }
+        /* A banner is shown whole, at its own shape: nothing cropped, no text over it */
+        .so-image-banner {
+          display: block;
+          border-radius: 15px;
+          overflow: hidden;
+          box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+          background-color: #F7F2EE;
+        }
+        .so-image-banner img {
+          display: block;
+          width: 100%;
+          height: auto;
         }
         .products-grid {
           display: grid;
@@ -715,10 +568,6 @@ export default function SpecialOffers() {
           .offers-container {
             padding: 0 40px;
           }
-          .spring-title {
-            font-size: 48px;
-            line-height: 56px;
-          }
           .wedding-section {
             gap: 40px;
           }
@@ -761,19 +610,18 @@ export default function SpecialOffers() {
         @media (max-width: 992px) {
           .banner-grid {
             grid-template-columns: 1fr;
-            gap: 24px;
+            gap: 20px;
             margin-bottom: 56px;
           }
-          .spring-banner {
-            padding: 56px 24px;
-          }
-          /* Offer cards side by side under the main banner */
+          /* Side cards next to each other under the main banner */
           .cards-stack {
             flex-direction: row;
+            align-items: flex-start;
             gap: 20px;
           }
-          .so-offer-card {
-            min-height: 180px;
+          .cards-stack > :global(*) {
+            flex: 1 1 0;
+            min-width: 0;
           }
           .products-grid {
             grid-template-columns: 1fr 1fr;
@@ -865,39 +713,12 @@ export default function SpecialOffers() {
             gap: 16px;
             margin-bottom: 40px;
           }
-          .spring-banner {
-            padding: 40px 16px;
-            border-width: 4px;
-          }
-          .spring-title {
-            font-size: clamp(26px, 8vw, 32px) !important;
-            line-height: 1.2 !important;
-            letter-spacing: 1px;
-          }
-          .so-banner-label {
-            font-size: 13px !important;
-            letter-spacing: 2px !important;
-            margin-bottom: 12px !important;
-          }
-          .banner-desc {
-            font-size: 14px !important;
-            line-height: 22px !important;
-          }
-          .so-banner-date {
-            font-size: 14px !important;
-            padding: 8px 16px !important;
-            margin-bottom: 16px !important;
-          }
-          .floral-svg-left, .floral-svg-right {
-            width: 72px;
-            height: 72px;
-          }
           .cards-stack {
             flex-direction: column;
             gap: 16px;
           }
-          .so-offer-card {
-            min-height: 0;
+          .so-image-banner {
+            border-radius: 12px;
           }
           .products-grid {
             gap: 24px;

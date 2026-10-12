@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Plus, Edit2, Trash2, X, Upload, Check, Loader2, Search, Filter, ChevronDown } from "lucide-react";
 import * as XLSX from "xlsx";
+import { normalizeCategories, mainCategoriesOf, childrenOf } from "@/lib/categories";
 
 import imageCompression from "browser-image-compression";
 
@@ -435,7 +436,7 @@ export default function ProductsDashboard() {
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          setCategories(data);
+          setCategories(normalizeCategories(data));
         }
       })
       .catch((err) => console.error("Error loading categories:", err));
@@ -983,6 +984,60 @@ export default function ProductsDashboard() {
     );
   };
 
+  // Ticking a category adds it to the product; the first one ticked is its main category
+  const toggleProductCategory = (catId: number, checked: boolean) => {
+    if (checked) {
+      setCategoryIds((prev) => (prev.includes(catId) ? prev : [...prev, catId]));
+      if (!categoryId) setCategoryId(String(catId));
+    } else {
+      const updated = categoryIds.filter((id) => id !== catId);
+      setCategoryIds(updated);
+      if (String(catId) === categoryId) setCategoryId(updated.length > 0 ? String(updated[0]) : "");
+    }
+  };
+
+  // The sub-categories under one category as chips, each followed by its own sub-categories
+  const renderSubCategories = (parentId: number, path: number[]): React.ReactNode => {
+    const subs = childrenOf(categories, parentId).filter((c) => !path.includes(c.id));
+    if (subs.length === 0) return null;
+    return (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginLeft: "28px" }}>
+        {subs.map((subCat) => {
+          const isSubSelected = categoryIds.includes(Number(subCat.id));
+          const nested = renderSubCategories(subCat.id, [...path, subCat.id]);
+          const chip = (
+            <label
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 12px",
+                borderRadius: "20px", border: isSubSelected ? "1.5px solid #8FB9A8" : "1.5px solid #EBE5DB",
+                backgroundColor: isSubSelected ? "#E9F5F0" : "#fff", color: isSubSelected ? "#4E8E76" : "#6E6E6E",
+                fontSize: "13px", fontWeight: isSubSelected ? 600 : 400, cursor: "pointer", userSelect: "none", transition: "all 0.2s ease",
+                alignSelf: "flex-start"
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={isSubSelected}
+                onChange={(e) => toggleProductCategory(Number(subCat.id), e.target.checked)}
+                style={{ accentColor: "#8FB9A8", cursor: "pointer" }}
+              />
+              {subCat.name}
+            </label>
+          );
+          // One with sub-categories of its own takes a full row, with them beneath it
+          return nested ? (
+            <div key={subCat.id} style={{ flexBasis: "100%", display: "flex", flexDirection: "column", gap: "8px" }}>
+              {chip}
+              {nested}
+            </div>
+          ) : (
+            <React.Fragment key={subCat.id}>{chip}</React.Fragment>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Header with add button */}
@@ -1381,9 +1436,8 @@ export default function ProductsDashboard() {
                   Categories <span style={{ fontSize: "12px", color: "#D98A9C" }}>(Select one or multiple)</span>
                 </label>
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", border: "1px solid #D9A85C", borderRadius: "10px", padding: "12px", backgroundColor: "#FAF6F0" }}>
-                  {categories.filter(c => !c.parent_id).map((mainCat) => {
+                  {mainCategoriesOf(categories).map((mainCat) => {
                     const isMainSelected = categoryIds.includes(Number(mainCat.id));
-                    const subCats = categories.filter(c => c.parent_id === mainCat.id);
                     return (
                       <div key={mainCat.id} style={{ display: "flex", flexDirection: "column", gap: "8px", paddingBottom: "12px", borderBottom: "1px dashed #EBE5DB" }}>
                         <label
@@ -1397,57 +1451,14 @@ export default function ProductsDashboard() {
                           <input
                             type="checkbox"
                             checked={isMainSelected}
-                            onChange={(e) => {
-                              const catId = Number(mainCat.id);
-                              if (e.target.checked) {
-                                setCategoryIds((prev) => [...prev, catId]);
-                                if (!categoryId) setCategoryId(String(catId));
-                              } else {
-                                const updated = categoryIds.filter((id) => id !== catId);
-                                setCategoryIds(updated);
-                                if (updated.length > 0) setCategoryId(String(updated[0]));
-                                else setCategoryId("");
-                              }
-                            }}
+                            onChange={(e) => toggleProductCategory(Number(mainCat.id), e.target.checked)}
                             style={{ accentColor: "#D98A9C", cursor: "pointer" }}
                           />
                           {mainCat.name}
                         </label>
 
-                        {/* Render Sub Categories */}
-                        {subCats.length > 0 && (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginLeft: "28px" }}>
-                            {subCats.map((subCat) => {
-                              const isSubSelected = categoryIds.includes(Number(subCat.id));
-                              return (
-                                <label
-                                  key={subCat.id}
-                                  style={{
-                                    display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 12px",
-                                    borderRadius: "20px", border: isSubSelected ? "1.5px solid #8FB9A8" : "1.5px solid #EBE5DB",
-                                    backgroundColor: isSubSelected ? "#E9F5F0" : "#fff", color: isSubSelected ? "#4E8E76" : "#6E6E6E",
-                                    fontSize: "13px", fontWeight: isSubSelected ? 600 : 400, cursor: "pointer", userSelect: "none", transition: "all 0.2s ease"
-                                  }}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isSubSelected}
-                                    onChange={(e) => {
-                                      const catId = Number(subCat.id);
-                                      if (e.target.checked) {
-                                        setCategoryIds((prev) => [...prev, catId]);
-                                      } else {
-                                        setCategoryIds(categoryIds.filter((id) => id !== catId));
-                                      }
-                                    }}
-                                    style={{ accentColor: "#8FB9A8", cursor: "pointer" }}
-                                  />
-                                  {subCat.name}
-                                </label>
-                              );
-                            })}
-                          </div>
-                        )}
+                        {/* Sub-categories, nested as deep as they go (one under several parents shows under each) */}
+                        {renderSubCategories(mainCat.id, [mainCat.id])}
                       </div>
                     );
                   })}

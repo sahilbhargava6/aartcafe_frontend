@@ -57,7 +57,8 @@ export default function FestivalSpecials() {
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           const active = data.filter((b: any) => b.is_active && (!b.position || b.position === 'all' || b.position === 'festival-specials' || b.position === 'festival_specials'));
-          setBanners(active.length > 0 ? active : data);
+          // Only banners saved for this page (or for all pages); never another page's banners
+          setBanners(active);
         }
       })
       .catch((err) => console.error("Error loading banners:", err));
@@ -153,22 +154,14 @@ export default function FestivalSpecials() {
         <div className="fest-container">
           
           {/* HERO BANNER CAROUSEL SECTION */}
+          {/* An uploaded banner is shown whole, at its own shape; text (over a tint) only if the banner has some */}
           <div
-            className={`rakhi-banner${banners.length > 1 ? " has-nav" : ""}`}
-            style={{
-              position: "relative",
-              overflow: "hidden",
-              ...(activeBanner?.image_url
-                ? {
-                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url("${activeBanner.image_url}")`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    transition: "background-image 0.5s ease-in-out",
-                  }
-                : {}),
-            }}
+            className={`rakhi-banner${activeBanner?.image_url ? " rakhi-banner--image" : ""}${banners.length > 1 ? " has-nav" : ""}`}
+            style={{ position: "relative", overflow: "hidden" }}
           >
-            {!activeBanner?.image_url && (
+            {activeBanner?.image_url ? (
+              <img key={activeBanner.id} src={activeBanner.image_url} alt={activeBanner.title || "Festive specials"} style={{ animation: "fadeIn 0.4s ease" }} />
+            ) : (
               <svg className="banner-svg-medallion" width="300" height="300" viewBox="0 0 200 200">
                 <circle cx="100" cy="100" r="85" fill="#EFD3C7" opacity="0.1" />
                 <path d="M5 100 Q 50 80, 100 100 T 195 100" stroke="#D9A85C" strokeWidth="3" fill="none" />
@@ -191,8 +184,9 @@ export default function FestivalSpecials() {
               </svg>
             )}
 
+            {(!activeBanner?.image_url || activeBannerTitle || activeBannerSubtitle || activeBanner?.button_url || activeBanner?.link_url) && (
             <div className="banner-content" key={activeBanner?.id || currentBannerIdx} style={{ animation: "fadeIn 0.4s ease" }}>
-              <span className="font-serif banner-sub">FESTIVE SPECIALS</span>
+              {!activeBanner?.image_url && <span className="font-serif banner-sub">FESTIVE SPECIALS</span>}
               {activeBannerTitle && <h1 className="font-serif banner-title">{activeBannerTitle}</h1>}
               {activeBannerSubtitle && <p
                 className="font-sans banner-desc"
@@ -226,6 +220,7 @@ export default function FestivalSpecials() {
                 </div>
               )}
             </div>
+            )}
 
             {/* Carousel Navigation & Indicators */}
             {banners.length > 1 && (
@@ -692,6 +687,25 @@ export default function FestivalSpecials() {
           overflow: hidden;
           /* clip (unlike hidden) lets the box grow past its aspect ratio when a long title/button needs it */
           overflow: clip !important;
+        }
+        /* Uploaded banner: the image sets the size; any text sits over it on a tint */
+        .rakhi-banner--image {
+          display: block;
+          aspect-ratio: auto;
+          padding: 0 !important;
+          background-color: #F7F2EE;
+        }
+        .rakhi-banner--image > img {
+          display: block;
+          width: 100%;
+          height: auto;
+        }
+        .rakhi-banner--image .banner-content {
+          position: absolute;
+          inset: 0;
+          justify-content: center;
+          padding: 40px 72px;
+          background: rgba(0, 0, 0, 0.4);
         }
         .banner-svg-medallion {
           position: absolute;
