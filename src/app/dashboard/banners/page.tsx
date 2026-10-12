@@ -140,7 +140,11 @@ export default function BannersDashboard() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !imageUrl.trim()) return;
+    // Title and subtitle are optional; a banner needs only its image
+    if (!imageUrl.trim()) {
+      alert("Please upload a banner image.");
+      return;
+    }
 
     const url = editingBanner
       ? `https://aartcafe-backend-production-rjudvs.laravel.cloud/api/banners/${editingBanner.id}`
@@ -157,8 +161,8 @@ export default function BannersDashboard() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
-        title,
-        subtitle,
+        title: title.trim() || null,
+        subtitle: subtitle.trim() || null,
         image_url: imageUrl,
         link_url: linkUrl,
         position: position,
@@ -247,7 +251,7 @@ export default function BannersDashboard() {
               {banners.map((banner) => (
                 <tr key={banner.id} style={{ borderBottom: "1px solid #EBE5DB" }}>
                   <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{banner.id}</td>
-                  <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{banner.title}</td>
+                  <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{banner.title || <span style={{ color: "#BCAEA2", fontWeight: 400 }}>(No title)</span>}</td>
                   <td style={{ padding: "16px 24px" }}>
                     <span style={{
                       padding: "4px 10px", borderRadius: "10px", fontSize: "12px", fontWeight: 600,
@@ -333,7 +337,7 @@ export default function BannersDashboard() {
 
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Title</label>
+                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Title <span style={{ fontSize: "12px", color: "#BCAEA2" }}>(Optional)</span></label>
                 <input
                   type="text"
                   value={title}
@@ -343,12 +347,11 @@ export default function BannersDashboard() {
                     padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38",
                   }}
                   placeholder="e.g. MADE BY HANDS. MEANT FOR THE HEART."
-                  required
                 />
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Subtitle / Description</label>
+                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Subtitle / Description <span style={{ fontSize: "12px", color: "#BCAEA2" }}>(Optional)</span></label>
                 <input
                   type="text"
                   value={subtitle}

@@ -76,6 +76,15 @@ export default function SpecialOffers() {
   const banner2 = banners.find((b: any) => b.position === "special_offers_top_right") || banners[1] || null;
   const banner3 = banners.find((b: any) => b.position === "special_offers_bottom_right") || banners[2] || null;
 
+  // A saved banner shows exactly its own text (none if left empty); the sample text is only for when there is no banner
+  const bannerText = (banner: { title?: string | null; subtitle?: string | null } | null, field: "title" | "subtitle", sample: string) =>
+    banner ? banner[field] || "" : sample;
+  const banner1Title = bannerText(banner1, "title", "MADE BY HANDS. MEANT FOR THE HEART.");
+  const banner1Subtitle = bannerText(banner1, "subtitle", "Personalized handmade frames and keepsakes that tell your story.");
+  const banner2Title = bannerText(banner2, "title", "MADE BY HANDS. MEANT FOR THE HEART.");
+  const banner3Title = bannerText(banner3, "title", "SPECIAL OFFER");
+  const banner3Subtitle = bannerText(banner3, "subtitle", "SAVE UP TO 40%");
+
   const defaultProducts = [
     { id: "so-1", title: "HANDMADE RAKHI", base_price: 2000, price: 2000, image: "", description: "Handcrafted with love, designed to celebrate the timeless bond between siblings." },
     { id: "so-2", title: "HANDMADE RAKHI", base_price: 2000, price: 2000, image: "", description: "Handcrafted with love, designed to celebrate the timeless bond between siblings." },
@@ -138,12 +147,10 @@ export default function SpecialOffers() {
                 <span className="font-sans font-bold so-banner-label" style={{ fontSize: "16px", letterSpacing: "3px", color: "#3F3B38", marginBottom: "16px", display: "inline-block" }}>
                   SPECIAL OFFER
                 </span>
-                <h1 className="font-serif spring-title">
-                  {banner1?.title || "MADE BY HANDS. MEANT FOR THE HEART."}
-                </h1>
-                <p className="font-sans banner-desc" style={{ fontSize: "16px", color: "#8FB9A8", maxWidth: "600px", lineHeight: "26px", margin: "0 0 24px 0" }}>
-                  {banner1?.subtitle || "Personalized handmade frames and keepsakes that tell your story."}
-                </p>
+                {banner1Title && <h1 className="font-serif spring-title">{banner1Title}</h1>}
+                {banner1Subtitle && <p className="font-sans banner-desc" style={{ fontSize: "16px", color: "#8FB9A8", maxWidth: "600px", lineHeight: "26px", margin: "0 0 24px 0" }}>
+                  {banner1Subtitle}
+                </p>}
                 <div
                   className="so-banner-date"
                   style={{
@@ -227,11 +234,11 @@ export default function SpecialOffers() {
                 </div>
 
                 {/* Center Image / Title */}
-                <div style={{ display: "flex", justifyContent: "center", margin: "10px 0" }}>
+                {banner2Title && <div style={{ display: "flex", justifyContent: "center", margin: "10px 0" }}>
                   <div style={{ padding: "8px 16px", backgroundColor: "rgba(255,255,255,0.9)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "#D9A85C", fontSize: "14px", fontWeight: 600, textAlign: "center" }}>
-                    {banner2?.title || "MADE BY HANDS. MEANT FOR THE HEART."}
+                    {banner2Title}
                   </div>
-                </div>
+                </div>}
 
                 {/* Bottom Shop Now action */}
                 <div style={{ display: "flex", justifyContent: "center" }}>
@@ -279,12 +286,12 @@ export default function SpecialOffers() {
                   <span className="font-sans" style={{ fontSize: "10px", color: "#3F3B38", borderBottom: "1px solid #3F3B38", paddingBottom: "2px", letterSpacing: "2px", fontWeight: 700, display: "inline-block", marginBottom: "12px" }}>
                     SHOP NOW
                   </span>
-                  <h4 className="font-serif" style={{ fontSize: "22px", color: "#3F3B38", margin: "0 0 6px 0", letterSpacing: "1px" }}>
-                    {banner3?.title || "SPECIAL OFFER"}
-                  </h4>
-                  <p className="font-sans" style={{ fontSize: "12px", color: "#8FB9A8", fontWeight: 600, margin: 0, letterSpacing: "1px" }}>
-                    {banner3?.subtitle || "SAVE UP TO 40%"}
-                  </p>
+                  {banner3Title && <h4 className="font-serif" style={{ fontSize: "22px", color: "#3F3B38", margin: "0 0 6px 0", letterSpacing: "1px" }}>
+                    {banner3Title}
+                  </h4>}
+                  {banner3Subtitle && <p className="font-sans" style={{ fontSize: "12px", color: "#8FB9A8", fontWeight: 600, margin: 0, letterSpacing: "1px" }}>
+                    {banner3Subtitle}
+                  </p>}
                 </div>
               </Link>
             </div>

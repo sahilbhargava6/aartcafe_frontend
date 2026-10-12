@@ -101,6 +101,12 @@ export default function FestivalSpecials() {
 
   const activeBanner = banners[currentBannerIdx] || null;
 
+  // A saved banner shows exactly its own text (none if left empty); the sample text is only for when there is no banner
+  const bannerText = (banner: { title?: string | null; subtitle?: string | null } | null, field: "title" | "subtitle", sample: string) =>
+    banner ? banner[field] || "" : sample;
+  const activeBannerTitle = bannerText(activeBanner, "title", "Raksha Bandhan");
+  const activeBannerSubtitle = bannerText(activeBanner, "subtitle", "Celebrating the Bond of Siblings");
+
   const toggleReview = (id: string) => {
     setExpandedReviews(prev => ({ ...prev, [id]: !prev[id] }));
   };
@@ -187,10 +193,8 @@ export default function FestivalSpecials() {
 
             <div className="banner-content" key={activeBanner?.id || currentBannerIdx} style={{ animation: "fadeIn 0.4s ease" }}>
               <span className="font-serif banner-sub">FESTIVE SPECIALS</span>
-              <h1 className="font-serif banner-title">
-                {activeBanner?.title || "Raksha Bandhan"}
-              </h1>
-              <p
+              {activeBannerTitle && <h1 className="font-serif banner-title">{activeBannerTitle}</h1>}
+              {activeBannerSubtitle && <p
                 className="font-sans banner-desc"
                 style={{
                   fontSize: "24px",
@@ -200,8 +204,8 @@ export default function FestivalSpecials() {
                   margin: 0,
                 }}
               >
-                {activeBanner?.subtitle || "Celebrating the Bond of Siblings"}
-              </p>
+                {activeBannerSubtitle}
+              </p>}
               {(activeBanner?.button_url || activeBanner?.link_url) && (
                 <div style={{ marginTop: "20px" }}>
                   <Link
