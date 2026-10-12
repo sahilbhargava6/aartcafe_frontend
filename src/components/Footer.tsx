@@ -4,26 +4,43 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// "Shop Collections" links: the main categories with the most products. These are the current
-// ones, shown until the live list loads (and kept for the rest of the visit).
+const API = "https://aartcafe-backend-production-rjudvs.laravel.cloud/api";
+const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919267943830";
+
+// "Shop Collections" links: the categories chosen in Dashboard → Footer Collections, or else the
+// main categories with the most products. These are shown until the live list loads (and kept
+// for the rest of the visit).
 let collectionsCache: string[] = ["Varmala Preservation", "Bouquet Preservation", "Resin Nameplates", "Lamps"];
 let collectionsLoaded = false;
 
-type FooterCategory = { name: string; parent_id: number | null; products_count: number };
+type FooterCategory = { name: string; parent_id: number | null; products_count: number; footer_order?: number | null };
+
+const linkHover = {
+  onMouseEnter: (e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color = "#C88E56"),
+  onMouseLeave: (e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color = "#6E6E6E"),
+};
 
 export default function Footer() {
   const pathname = usePathname();
   const [collections, setCollections] = useState<string[]>(collectionsCache);
+  const [email, setEmail] = useState("");
+  const [signup, setSignup] = useState<{ state: "idle" | "sending" | "done" | "error"; message: string }>({ state: "idle", message: "" });
 
   useEffect(() => {
     if (collectionsLoaded) return;
-    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/categories")
+    fetch(`${API}/categories`)
       .then((res) => (res.ok ? res.json() : []))
       .then((categories: FooterCategory[]) => {
         if (!Array.isArray(categories)) return;
-        const top = categories
-          .filter((c) => !c.parent_id && c.products_count > 0 && c.name.trim().toLowerCase() !== "all")
-          .sort((a, b) => b.products_count - a.products_count)
+        const chosen = categories
+          .filter((c) => c.footer_order)
+          .sort((a, b) => Number(a.footer_order) - Number(b.footer_order));
+        const top = (chosen.length > 0
+          ? chosen
+          : categories
+              .filter((c) => !c.parent_id && c.products_count > 0 && c.name.trim().toLowerCase() !== "all")
+              .sort((a, b) => b.products_count - a.products_count)
+        )
           .slice(0, 4)
           .map((c) => c.name);
         if (top.length === 0) return;
@@ -33,6 +50,29 @@ export default function Footer() {
       })
       .catch(() => {});
   }, []);
+
+  const subscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (signup.state === "sending") return;
+    setSignup({ state: "sending", message: "" });
+    try {
+      const res = await fetch(`${API}/subscribers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const message = data?.errors?.email?.[0] || (res.status === 429 ? "Too many tries. Please wait a minute." : "We couldn't sign you up. Please try again.");
+        setSignup({ state: "error", message });
+        return;
+      }
+      setEmail("");
+      setSignup({ state: "done", message: data?.message === "Already subscribed" ? "You're already on our list. Thank you!" : "Thank you for subscribing!" });
+    } catch {
+      setSignup({ state: "error", message: "We couldn't reach our server. Please check your connection." });
+    }
+  };
 
   // Determine gradient color based on the current active page
   const isGoldPage =
@@ -107,24 +147,25 @@ export default function Footer() {
           </h3>
           <ul className="footer-links" style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.9rem", color: "#6E6E6E" }}>
             <li>
-              <Link href="/" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#C88E56")} onMouseLeave={(e) => (e.currentTarget.style.color = "#6E6E6E")}>
+              <Link href="/" style={{ transition: "color 0.2s" }} {...linkHover}>
                 About Our Craft
               </Link>
             </li>
             <li>
-              <Link href="/" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#C88E56")} onMouseLeave={(e) => (e.currentTarget.style.color = "#6E6E6E")}>
+              <Link href="/faqs" style={{ transition: "color 0.2s" }} {...linkHover}>
                 FAQs
               </Link>
             </li>
             <li>
-              <Link href="/" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#C88E56")} onMouseLeave={(e) => (e.currentTarget.style.color = "#6E6E6E")}>
-                Shipping &amp; Returns
-              </Link>
-            </li>
-            <li>
-              <Link href="/" style={{ transition: "color 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#C88E56")} onMouseLeave={(e) => (e.currentTarget.style.color = "#6E6E6E")}>
+              <a
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hello Aartcafe! I have a question.")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ transition: "color 0.2s" }}
+                {...linkHover}
+              >
                 Contact Us
-              </Link>
+              </a>
             </li>
           </ul>
         </div>
@@ -138,10 +179,7 @@ export default function Footer() {
             Subscribe to receive details on special offers, new launches, and festive specials.
           </p>
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              alert("Thank you for subscribing!");
-            }}
+            onSubmit={subscribe}
             className="footer-form"
             style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}
           >
@@ -149,7 +187,13 @@ export default function Footer() {
               className="footer-input"
               type="email"
               placeholder="Your email address"
+              aria-label="Your email address"
               required
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (signup.state !== "sending") setSignup({ state: "idle", message: "" });
+              }}
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -164,15 +208,22 @@ export default function Footer() {
             <button
               type="submit"
               className="btn-primary footer-join"
+              disabled={signup.state === "sending"}
               style={{
                 padding: "0.6rem 1.2rem",
                 fontSize: "0.85rem",
                 boxShadow: "none",
+                opacity: signup.state === "sending" ? 0.7 : 1,
               }}
             >
-              Join
+              {signup.state === "sending" ? "Joining…" : "Join"}
             </button>
           </form>
+          {signup.message && (
+            <p role="status" style={{ margin: 0, fontSize: "0.85rem", color: signup.state === "error" ? "#C0392B" : "#4E8E76" }}>
+              {signup.message}
+            </p>
+          )}
         </div>
       </div>
       

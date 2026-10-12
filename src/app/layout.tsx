@@ -22,9 +22,28 @@ const jost = Jost({
   display: "swap",
 });
 
+const siteTitle = "Aartcafe | Personalized Handmade Frames & Keepsakes";
+const siteDescription = "Personalized handmade frames, keepsakes, and festive treasures designed to tell your story. Handcrafted with love, meant for the heart.";
+
 export const metadata: Metadata = {
-  title: "Aartcafe | Personalized Handmade Frames & Keepsakes",
-  description: "Personalized handmade frames, keepsakes, and festive treasures designed to tell your story. Handcrafted with love, meant for the heart.",
+  // Link previews (WhatsApp, Facebook, …) need absolute addresses; product pages set their own photo
+  metadataBase: new URL("https://www.aartcafe.com"),
+  title: siteTitle,
+  description: siteDescription,
+  openGraph: {
+    type: "website",
+    siteName: "Aartcafe",
+    locale: "en_IN",
+    title: siteTitle,
+    description: siteDescription,
+    images: [{ url: "/images/share.jpg", width: 1200, height: 630, alt: "Aartcafe: Made by hands. Kept forever." }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteTitle,
+    description: siteDescription,
+    images: ["/images/share.jpg"],
+  },
 };
 
 import { WishlistProvider } from "@/context/WishlistContext";

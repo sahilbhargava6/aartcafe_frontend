@@ -254,11 +254,19 @@ export default function PagesDashboard() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   style={{
-                    height: "100px", borderRadius: "8px", border: "1px solid #D9A85C",
-                    padding: "8px 12px", fontSize: "16px", outline: "none", color: "#3F3B38", resize: "none",
+                    // The FAQs page holds many questions, so it gets a taller, resizable box
+                    height: slug.trim() === "faqs" ? "320px" : "100px", borderRadius: "8px", border: "1px solid #D9A85C",
+                    padding: "8px 12px", fontSize: "16px", outline: "none", color: "#3F3B38",
+                    resize: slug.trim() === "faqs" ? "vertical" : "none",
                   }}
                   placeholder="Page content goes here..."
                 />
+                {slug.trim() === "faqs" && (
+                  <span style={{ fontSize: "12px", color: "#8B7E74", lineHeight: 1.5 }}>
+                    Shown on the FAQs page (/faqs). Write each question on its own line with its answer on the lines
+                    under it, and leave an empty line before the next question.
+                  </span>
+                )}
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
