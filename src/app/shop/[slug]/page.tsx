@@ -899,19 +899,10 @@ export default function ProductDetailsPage() {
                 )}
                 
                 {reviewsList.length === 0 ? (
-                  <div className="review-card" style={{ border: "1px solid #EBE5DB", borderRadius: "12px", padding: "16px", backgroundColor: "#FAF6F0" }}>
-                    <span className="font-serif" style={{ fontSize: "16px", color: "#D98A9C", fontWeight: 500, display: "block", marginBottom: "4px" }}>
-                      Ayush Sharma
-                    </span>
-                    <p className="font-sans" style={{ fontSize: "14px", lineHeight: "22px", color: "#8FB9A8", margin: "0 0 8px 0" }}>
-                      {productData.title} come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts.
-                    </p>
-                    <div style={{ display: "flex", gap: "6px" }}>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Heart key={i} size={18} fill={i < 4 ? "#D98A9C" : "none"} color="#3F3B38" />
-                      ))}
-                    </div>
-                  </div>
+                  // No made-up review: just say there are none yet
+                  <p className="font-sans" style={{ fontSize: "15px", lineHeight: "24px", color: "#8B7E74", margin: 0 }}>
+                    No reviews yet. Be the first to share what you think of this piece.
+                  </p>
                 ) : (
                   reviewsList.map((item) => (
                     <div
