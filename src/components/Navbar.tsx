@@ -115,18 +115,8 @@ export default function Navbar() {
           }}
         >
           {/* Brand/Logo */}
-          <Link
-            href="/"
-            className="font-serif site-logo"
-            style={{
-              fontSize: "24px",
-              fontWeight: 400,
-              color: "#3F3B38",
-              textDecoration: "none",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Aartcafe
+          <Link href="/" className="site-logo" style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+            <img src="/images/logo.webp" alt="Aartcafe" width={279} height={240} className="site-logo-img" />
           </Link>
 
           {/* Navigation Links - Desktop Only */}
@@ -349,13 +339,8 @@ export default function Navbar() {
               padding: "0 24px",
             }}
           >
-            <Link
-              href="/"
-              className="font-serif"
-              onClick={() => setMobileMenuOpen(false)}
-              style={{ fontSize: "24px", fontWeight: 400, color: "#3F3B38", textDecoration: "none", whiteSpace: "nowrap" }}
-            >
-              Aartcafe
+            <Link href="/" onClick={() => setMobileMenuOpen(false)} style={{ display: "flex", alignItems: "center" }}>
+              <img src="/images/logo.webp" alt="Aartcafe" width={279} height={240} className="menu-logo-img" />
             </Link>
             <button
               onClick={() => setMobileMenuOpen(false)}
@@ -593,6 +578,18 @@ export default function Navbar() {
 
       {/* Global CSS for media queries */}
       <style jsx>{`
+        /* Logo: fills most of the 100px bar (70px on phones, see below) */
+        .site-logo-img {
+          display: block;
+          height: 72px;
+          width: auto;
+        }
+        .menu-logo-img {
+          display: block;
+          height: 48px;
+          width: auto;
+        }
+
         @supports (height: 100dvh) {
           .mobile-menu,
           .search-overlay {
@@ -625,6 +622,9 @@ export default function Navbar() {
         @media (max-width: 768px) {
           .site-header {
             height: 70px !important;
+          }
+          .site-logo-img {
+            height: 52px;
           }
           .site-header-inner {
             padding: 0 16px !important;
@@ -681,8 +681,8 @@ export default function Navbar() {
         }
 
         @media (max-width: 360px) {
-          .site-header-inner > :global(.site-logo) {
-            font-size: 22px !important;
+          .site-logo-img {
+            height: 46px;
           }
           .nav-icons {
             gap: 0 !important;

@@ -68,12 +68,8 @@ export default function Footer() {
       >
         {/* Brand Column */}
         <div className="footer-col footer-col--wide" style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-          <Link
-            href="/"
-            className="font-serif"
-            style={{ fontSize: "1.8rem", fontWeight: 500, color: "#2A2A2A" }}
-          >
-            Aartcafe
+          <Link href="/" style={{ alignSelf: "flex-start" }}>
+            <img src="/images/logo.webp" alt="Aartcafe" width={279} height={240} style={{ display: "block", height: "96px", width: "auto" }} />
           </Link>
           <p style={{ color: "#6E6E6E", fontSize: "0.9rem", lineHeight: "1.6" }}>
             Personalized handmade frames and keepsakes that tell your story. Handcrafted with love, meant for the heart.

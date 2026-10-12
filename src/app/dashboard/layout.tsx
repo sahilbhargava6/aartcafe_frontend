@@ -98,8 +98,8 @@ export default function DashboardLayout({
           >
             {mobileNavOpen ? <X size={24} color="#3F3B38" /> : <Menu size={24} color="#3F3B38" />}
           </button>
-          <Link href="/" className="font-serif mobile-brand">
-            Aartcafe
+          <Link href="/" className="mobile-brand">
+            <img src="/images/logo.webp" alt="Aartcafe" width={279} height={240} style={{ display: "block", height: "40px", width: "auto" }} />
           </Link>
         </div>
         <span className="font-sans mobile-page-title">
@@ -121,8 +121,8 @@ export default function DashboardLayout({
       <aside className={`dashboard-sidebar ${mobileNavOpen ? "mobile-open" : ""}`}>
         {/* Brand Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Link href="/" className="font-serif brand-link">
-            Aartcafe
+          <Link href="/" className="brand-link">
+            <img src="/images/logo.webp" alt="Aartcafe" width={279} height={240} style={{ display: "block", height: "64px", width: "auto" }} />
           </Link>
           <button
             onClick={() => setMobileNavOpen(false)}
