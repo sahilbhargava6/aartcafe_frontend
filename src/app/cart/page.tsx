@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { useCart, CartItem, formatCartTotal } from "@/context/CartContext";
 import { salePrice, originalPrice, formatRupees } from "@/lib/price";
-import { shrinkImage } from "@/lib/shrinkImage";
-import { Trash2, Plus, Minus } from "lucide-react";
+import { Trash2, Plus, Minus, Check, Image as ImageIcon } from "lucide-react";
 
 export default function CartPage() {
   const { cart, cartTotal, addToBag, removeFromBag, updateQuantity, clearCart } = useCart();
@@ -17,9 +16,12 @@ export default function CartPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [attachedImage, setAttachedImage] = useState<File | null>(null);
+  const [selectedReferenceImage, setSelectedReferenceImage] = useState<string | null>(null);
+  const [customRequest, setCustomRequest] = useState("");
+  const [productsMap, setProductsMap] = useState<Record<number, any>>({});
   const [relatedItems, setRelatedItems] = useState<any[]>([]);
 
+  // Load related items
   useEffect(() => {
     fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
       .then((res) => (res.ok ? res.json() : []))
@@ -37,6 +39,86 @@ export default function CartPage() {
       })
       .catch((err) => console.error("Error loading related products:", err));
   }, []);
+
+  // Fetch product data for all cart items to obtain their complete galleries
+  useEffect(() => {
+    const productIds = Array.from(
+      new Set(
+        cart
+          .map((item) => {
+            if (item.productId) return item.productId;
+            const match = String(item.id).match(/^\d+/);
+            return match ? Number(match[0]) : null;
+          })
+          .filter((id): id is number => typeof id === "number" && !isNaN(id))
+      )
+    );
+
+    const neededIds = productIds.filter((id) => !productsMap[id]);
+    if (neededIds.length === 0) return;
+
+    neededIds.forEach((id) => {
+      fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/${id}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((product) => {
+          if (product && product.id) {
+            setProductsMap((prev) => ({ ...prev, [product.id]: product }));
+          }
+        })
+        .catch((err) => console.error(`Error fetching gallery for product ${id}:`, err));
+    });
+  }, [cart, productsMap]);
+
+  // Aggregate all gallery photos from products currently in the cart
+  const availableGalleryPhotos = useMemo(() => {
+    const photos: string[] = [];
+    const seen = new Set<string>();
+
+    const addPhoto = (url: unknown) => {
+      if (typeof url !== "string") return;
+      const clean = url.trim();
+      if (!clean || clean.startsWith("data:") || clean.startsWith("[") || seen.has(clean)) return;
+      seen.add(clean);
+      photos.push(clean);
+    };
+
+    // First collect all images from detailed products
+    cart.forEach((item) => {
+      const match = String(item.id).match(/^\d+/);
+      const prodId = item.productId || (match ? Number(match[0]) : null);
+      const prod = prodId ? productsMap[prodId] : null;
+
+      if (prod) {
+        addPhoto(prod.image);
+        let extra = prod.images;
+        if (typeof extra === "string") {
+          try {
+            extra = JSON.parse(extra);
+          } catch {
+            if (extra.includes(",")) extra = extra.split(",").map((s: string) => s.trim());
+            else if (extra && !extra.startsWith("[")) extra = [extra];
+          }
+        }
+        if (Array.isArray(extra)) {
+          extra.forEach(addPhoto);
+        }
+      }
+
+      // Also ensure item.image itself is available
+      if (item.image) {
+        addPhoto(item.image);
+      }
+    });
+
+    return photos;
+  }, [cart, productsMap]);
+
+  // If selected reference image is no longer in available gallery photos, auto-clear or keep
+  useEffect(() => {
+    if (selectedReferenceImage && !availableGalleryPhotos.includes(selectedReferenceImage)) {
+      setSelectedReferenceImage(null);
+    }
+  }, [availableGalleryPhotos, selectedReferenceImage]);
 
   const handleSendOrder = async () => {
     if (cart.length === 0) {
@@ -57,24 +139,8 @@ export default function CartPage() {
     if (submitting) return;
     setSubmitting(true);
 
-    // Upload the reference photo first, so the order and the WhatsApp message can link to it.
-    // If that fails the order still goes through and the customer sends the photo in WhatsApp.
-    let referenceImage: string | null = null;
-    if (attachedImage) {
-      try {
-        const form = new FormData();
-        form.append("image", await shrinkImage(attachedImage), "reference.jpg");
-        const res = await fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/order-images", {
-          method: "POST",
-          headers: { Accept: "application/json" },
-          body: form,
-        });
-        const data = await res.json().catch(() => null);
-        if (res.ok && data?.url) referenceImage = data.url;
-      } catch (err) {
-        console.error("Failed to upload the reference image:", err);
-      }
-    }
+    // Reference photo chosen from the gallery of products in the cart
+    const referenceImage: string | null = selectedReferenceImage || null;
 
     // Save the order first. The server prices every item itself, so the
     // WhatsApp message below uses the saved order, not the cart's prices.
@@ -146,6 +212,7 @@ export default function CartPage() {
       `📧 *Email:* ${email.trim() || "N/A"}`,
       `📞 *Phone:* ${phone.trim() || "N/A"}`,
       ...(order.reference_image ? [`📎 *Reference Image:* ${order.reference_image}`] : []),
+      ...(customRequest.trim() ? [`📝 *Custom Requests:* ${customRequest.trim()}`] : []),
       "━━━━━━━━━━━━━━━━━━",
       "*Order Items:*",
       itemDetails,
@@ -158,10 +225,6 @@ export default function CartPage() {
     const message = messageLines.join("\n");
     const encoded = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encoded}`;
-
-    if (attachedImage && !order.reference_image) {
-      alert("We couldn't upload your reference image. Please attach it in the WhatsApp chat that opens next.");
-    }
 
     clearCart();
     window.location.href = whatsappUrl;
@@ -365,9 +428,18 @@ export default function CartPage() {
                 <span className="input-chunk">
                   <input
                     type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     placeholder="Phone (Required)"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => {
+                      // Allow only digits (and optional leading '+' for country code)
+                      const val = e.target.value;
+                      const sanitized = val.startsWith("+")
+                        ? "+" + val.slice(1).replace(/\D/g, "")
+                        : val.replace(/\D/g, "");
+                      setPhone(sanitized);
+                    }}
                     required
                     style={{
                       border: !phone.trim() ? "1.5px solid #D98A9C" : "1.5px solid #8FB9A8",
@@ -384,37 +456,172 @@ export default function CartPage() {
                 </span>
               </p>
 
-              {/* Attach Image Option */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "10px" }}>
-                <span className="font-sans" style={{ fontSize: "16px", color: "#6E6E6E", fontWeight: 500 }}>
-                  Attach Reference Image (Optional)
-                </span>
-                <label
-                  className="attach-label"
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                    padding: "10px", borderRadius: "10px", border: "1.5px dashed #D9A85C",
-                    backgroundColor: "#FFFDF9", cursor: "pointer", color: "#D9A85C", fontSize: "14px", fontWeight: 500
-                  }}
-                >
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: "none" }}
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files.length > 0) {
-                        setAttachedImage(e.target.files[0]);
-                      }
+              {/* Choose Reference Image from Product Gallery */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <span className="font-sans" style={{ fontSize: "16px", color: "#6E6E6E", fontWeight: 500 }}>
+                    Select Reference Image (Optional)
+                  </span>
+                  {selectedReferenceImage && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedReferenceImage(null)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#E05A47",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        padding: 0,
+                        textDecoration: "underline",
+                      }}
+                    >
+                      Clear Selection
+                    </button>
+                  )}
+                </div>
+
+                {availableGalleryPhotos.length > 0 ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(68px, 1fr))",
+                      gap: "10px",
+                      maxHeight: "180px",
+                      overflowY: "auto",
+                      padding: "8px",
+                      backgroundColor: "#FFFDF9",
+                      borderRadius: "12px",
+                      border: "1.5px solid #F0E6D8",
                     }}
-                  />
-                  <Plus size={16} />
-                  {attachedImage ? attachedImage.name : "Choose an Image"}
-                </label>
-                {attachedImage && (
-                  <span style={{ fontSize: "12px", color: "#8FB9A8" }}>
-                    * This photo is sent with your order.
+                  >
+                    {availableGalleryPhotos.map((imgUrl, idx) => {
+                      const isSelected = selectedReferenceImage === imgUrl;
+                      return (
+                        <button
+                          key={`${imgUrl}-${idx}`}
+                          type="button"
+                          onClick={() => setSelectedReferenceImage(isSelected ? null : imgUrl)}
+                          style={{
+                            position: "relative",
+                            aspectRatio: "1/1",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                            border: isSelected ? "2.5px solid #D9A85C" : "1.5px solid transparent",
+                            boxShadow: isSelected ? "0 0 0 2px rgba(217, 168, 92, 0.3)" : "none",
+                            cursor: "pointer",
+                            padding: 0,
+                            backgroundColor: "#F5EDE8",
+                            transition: "all 0.15s ease",
+                            transform: isSelected ? "scale(0.96)" : "none",
+                          }}
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`Gallery photo ${idx + 1}`}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                          {isSelected && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: 4,
+                                right: 4,
+                                backgroundColor: "#D9A85C",
+                                color: "#fff",
+                                borderRadius: "50%",
+                                width: "18px",
+                                height: "18px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                              }}
+                            >
+                              <Check size={12} strokeWidth={3} />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      padding: "16px",
+                      borderRadius: "10px",
+                      border: "1.5px dashed #D9A85C",
+                      backgroundColor: "#FFFDF9",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      color: "#A89F91",
+                      fontSize: "14px",
+                    }}
+                  >
+                    <ImageIcon size={16} />
+                    <span>Photos from your added products will appear here</span>
+                  </div>
+                )}
+
+                {selectedReferenceImage ? (
+                  <span style={{ fontSize: "12px", color: "#8FB9A8", fontWeight: 500 }}>
+                    ✓ Selected photo will be linked with your WhatsApp order as a reference.
+                  </span>
+                ) : (
+                  <span style={{ fontSize: "12px", color: "#A89F91" }}>
+                    Tap any photo above to mark it as the reference design for your order.
                   </span>
                 )}
+              </div>
+
+              {/* Custom Requests (Optional) */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px" }}>
+                <label
+                  htmlFor="custom-requests"
+                  className="font-sans"
+                  style={{
+                    fontSize: "16px",
+                    color: "#6E6E6E",
+                    fontWeight: 500,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  Custom Requests (Optional)
+                </label>
+                <textarea
+                  id="custom-requests"
+                  rows={3}
+                  value={customRequest}
+                  onChange={(e) => setCustomRequest(e.target.value)}
+                  placeholder="Have any special customizations, names, dates, colors, or notes? Let us know here..."
+                  style={{
+                    width: "100%",
+                    borderRadius: "12px",
+                    border: "1.5px solid #EBE5DB",
+                    backgroundColor: "#FFFDF9",
+                    padding: "12px 16px",
+                    fontSize: "15px",
+                    color: "#3F3B38",
+                    fontFamily: "inherit",
+                    resize: "vertical",
+                    outline: "none",
+                    transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#D9A85C";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(217, 168, 92, 0.15)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#EBE5DB";
+                    e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.03)";
+                  }}
+                />
               </div>
 
               {/* Order spec list */}

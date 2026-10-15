@@ -1,12 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Printer, RefreshCw, Eye, X, Phone, Mail, Calendar, CheckCircle2 } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Printer, RefreshCw, Eye, X, Phone, Mail, Calendar, CheckCircle2, ArrowUpDown, Filter, Search } from "lucide-react";
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+
+  // Sorting & Filtering State
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "amount_high" | "amount_low" | "name_asc" | "status">("newest");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const fetchOrders = () => {
     setLoading(true);
@@ -47,6 +52,62 @@ export default function OrdersPage() {
     window.print();
   };
 
+  // Status priority order for custom status sorting
+  const statusOrderWeight: Record<string, number> = {
+    pending: 1,
+    flowers_received: 2,
+    payment_received: 3,
+    processing: 4,
+    on_hold: 5,
+    shipped: 6,
+    completed: 7,
+    cancelled: 8,
+  };
+
+  // Filtered & Sorted orders list
+  const filteredAndSortedOrders = useMemo(() => {
+    return [...orders]
+      .filter((order) => {
+        // Status filter
+        if (statusFilter !== "all" && (order.status || "pending") !== statusFilter) {
+          return false;
+        }
+        // Search filter (name, phone, email, order ID, items)
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim();
+          const matchId = String(order.id).toLowerCase().includes(q) || `aart-${order.id}`.toLowerCase().includes(q);
+          const matchName = (order.customer_name || "").toLowerCase().includes(q);
+          const matchPhone = (order.customer_phone || "").toLowerCase().includes(q);
+          const matchEmail = (order.customer_email || "").toLowerCase().includes(q);
+          const matchItems = Array.isArray(order.items) && order.items.some((it: any) => (it.title || "").toLowerCase().includes(q));
+          if (!matchId && !matchName && !matchPhone && !matchEmail && !matchItems) {
+            return false;
+          }
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case "oldest":
+            return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+          case "amount_high":
+            return Number(b.total_amount || 0) - Number(a.total_amount || 0);
+          case "amount_low":
+            return Number(a.total_amount || 0) - Number(b.total_amount || 0);
+          case "name_asc":
+            return (a.customer_name || "").localeCompare(b.customer_name || "");
+          case "status": {
+            const weightA = statusOrderWeight[a.status || "pending"] ?? 99;
+            const weightB = statusOrderWeight[b.status || "pending"] ?? 99;
+            return weightA - weightB;
+          }
+          case "newest":
+          default:
+            return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+        }
+      });
+  }, [orders, sortBy, statusFilter, searchQuery]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Top Action Header */}
@@ -56,7 +117,7 @@ export default function OrdersPage() {
             Customer Orders & Logistics
           </h1>
           <p style={{ color: "#6E6E6E", fontSize: "14px", margin: "4px 0 0" }}>
-            Manage order statuses and print official customer invoices.
+            Manage order statuses, filter & sort customer logs, and print official invoices.
           </p>
         </div>
         <button
@@ -80,15 +141,135 @@ export default function OrdersPage() {
         </button>
       </div>
 
+      {/* Filter and Sort Toolbar */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "14px",
+          backgroundColor: "#FFF",
+          border: "1px solid #EBE5DB",
+          borderRadius: "16px",
+          padding: "16px 20px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+        }}
+      >
+        {/* Search Input */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: "220px", position: "relative" }}>
+          <Search size={17} color="#A89F91" style={{ position: "absolute", left: "14px", pointerEvents: "none" }} />
+          <input
+            type="text"
+            placeholder="Search by customer name, phone, email, or order ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px 14px 10px 38px",
+              borderRadius: "20px",
+              border: "1.5px solid #EBE5DB",
+              fontSize: "13px",
+              color: "#3F3B38",
+              outline: "none",
+              backgroundColor: "#FFFDF9",
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{
+                position: "absolute",
+                right: "12px",
+                background: "none",
+                border: "none",
+                color: "#999",
+                cursor: "pointer",
+                padding: "2px",
+                display: "flex",
+              }}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Status Filter and Sort Controls */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          {/* Status Filter */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: "#6E6E6E", display: "flex", alignItems: "center", gap: "4px" }}>
+              <Filter size={14} color="#D9A85C" /> Status:
+            </span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: "8px 14px",
+                borderRadius: "20px",
+                border: "1.5px solid #EBE5DB",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#3F3B38",
+                backgroundColor: "#FFFDF9",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <option value="all">All Statuses ({orders.length})</option>
+              <option value="pending">Pending (Order Received)</option>
+              <option value="flowers_received">Flowers Received</option>
+              <option value="payment_received">Payment Received</option>
+              <option value="processing">Processing</option>
+              <option value="on_hold">On Hold</option>
+              <option value="shipped">Shipped (Dispatched)</option>
+              <option value="completed">Completed (Delivered)</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          {/* Sort Filter */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: "#6E6E6E", display: "flex", alignItems: "center", gap: "4px" }}>
+              <ArrowUpDown size={14} color="#D9A85C" /> Sort:
+            </span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              style={{
+                padding: "8px 14px",
+                borderRadius: "20px",
+                border: "1.5px solid #EBE5DB",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#3F3B38",
+                backgroundColor: "#FFFDF9",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <option value="newest">Date: Newest First</option>
+              <option value="oldest">Date: Oldest First</option>
+              <option value="amount_high">Amount: High to Low</option>
+              <option value="amount_low">Amount: Low to High</option>
+              <option value="status">Status (Workflow Step)</option>
+              <option value="name_asc">Customer Name (A-Z)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {loading ? (
         <div style={{ color: "#8FB9A8", textAlign: "center", padding: "60px 0", fontSize: "16px" }}>Loading orders...</div>
-      ) : orders.length === 0 ? (
+      ) : filteredAndSortedOrders.length === 0 ? (
         <div style={{ padding: "60px", textAlign: "center", backgroundColor: "#FFF", borderRadius: "16px", color: "#BCAEA2", border: "1px solid #EBE5DB" }}>
-          No customer orders recorded yet. Orders submitted via WhatsApp will appear here automatically.
+          {orders.length === 0
+            ? "No customer orders recorded yet. Orders submitted via WhatsApp will appear here automatically."
+            : "No orders match the selected filters or search keyword."}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          {orders.map((order) => {
+          {filteredAndSortedOrders.map((order) => {
             const items = Array.isArray(order.items) ? order.items : [];
 
             return (
@@ -120,7 +301,13 @@ export default function OrdersPage() {
                               ? "#E8F5E9"
                               : order.status === "shipped"
                               ? "#FFF3E0"
-                              : order.status === "preserving"
+                              : order.status === "on_hold"
+                              ? "#FFFDE7"
+                              : order.status === "processing"
+                              ? "#E0F2F1"
+                              : order.status === "payment_received"
+                              ? "#EDE7F6"
+                              : order.status === "flowers_received"
                               ? "#E1F5FE"
                               : order.status === "cancelled"
                               ? "#FFEBEE"
@@ -130,15 +317,27 @@ export default function OrdersPage() {
                               ? "#2E7D32"
                               : order.status === "shipped"
                               ? "#E65100"
-                              : order.status === "preserving"
+                              : order.status === "on_hold"
+                              ? "#F57F17"
+                              : order.status === "processing"
+                              ? "#00796B"
+                              : order.status === "payment_received"
+                              ? "#512DA8"
+                              : order.status === "flowers_received"
                               ? "#0277BD"
                               : order.status === "cancelled"
                               ? "#C62828"
-                              : "#F57F17",
+                              : "#B88330",
                           textTransform: "uppercase",
                         }}
                       >
-                        {order.status || "pending"}
+                        {order.status === "on_hold"
+                          ? "On Hold"
+                          : order.status === "flowers_received"
+                          ? "Flowers Received"
+                          : order.status === "payment_received"
+                          ? "Payment Received"
+                          : order.status || "pending"}
                       </span>
                     </div>
 
@@ -200,8 +399,10 @@ export default function OrdersPage() {
                       }}
                     >
                       <option value="pending">Pending (Order Received)</option>
-                      <option value="processing">Processing (Flowers Received)</option>
-                      <option value="preserving">Preserving (Resin Casting)</option>
+                      <option value="flowers_received">Flowers Received</option>
+                      <option value="payment_received">Payment Received</option>
+                      <option value="processing">Processing</option>
+                      <option value="on_hold">On Hold</option>
                       <option value="shipped">Shipped (Dispatched)</option>
                       <option value="completed">Completed (Delivered)</option>
                       <option value="cancelled">Cancelled</option>
@@ -321,25 +522,29 @@ export default function OrdersPage() {
 
             {/* Printable Invoice Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "30px" }}>
-              <div>
-                <h1 className="font-serif" style={{ fontSize: "32px", color: "#3F3B38", margin: 0, fontWeight: 400 }}>
-                  AARTCAFE
-                </h1>
-                <p style={{ fontSize: "13px", color: "#6E6E6E", margin: "4px 0 0", lineHeight: "18px" }}>
-                  Handcrafted Floral Preservation & Keepsakes<br />
-                  WhatsApp: +91 9267943830 | support@aartcafe.com<br />
-                  www.aartcafe.com
-                </p>
+              <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                <img
+                  src="/images/logo.webp"
+                  alt="Aartcafe Logo"
+                  style={{ width: "70px", height: "70px", objectFit: "contain", borderRadius: "8px" }}
+                />
+                <div>
+                  <h1 className="font-serif" style={{ fontSize: "28px", color: "#3F3B38", margin: 0, fontWeight: 500 }}>
+                    AARTCAFE
+                  </h1>
+                  <p style={{ fontSize: "13px", color: "#6E6E6E", margin: "4px 0 0", lineHeight: "18px" }}>
+                    Handcrafted Floral Preservation & Keepsakes<br />
+                    WhatsApp: +91 9267943830 | support@aartcafe.com<br />
+                    www.aartcafe.com
+                  </p>
+                </div>
               </div>
 
               <div style={{ textAlign: "right" }}>
-                <h2 style={{ fontSize: "20px", color: "#D9A85C", margin: 0, textTransform: "uppercase", letterSpacing: "1px" }}>
-                  TAX INVOICE / RECEIPT
-                </h2>
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#3F3B38", marginTop: "6px" }}>
+                <div style={{ fontSize: "16px", fontWeight: 700, color: "#3F3B38" }}>
                   Invoice #: AART-{selectedInvoice.id}
                 </div>
-                <div style={{ fontSize: "13px", color: "#6E6E6E", marginTop: "2px" }}>
+                <div style={{ fontSize: "13px", color: "#6E6E6E", marginTop: "4px" }}>
                   Date: {new Date(selectedInvoice.created_at || Date.now()).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
                 </div>
               </div>
@@ -390,10 +595,6 @@ export default function OrdersPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: "14px", color: "#6E6E6E" }}>
                   <span>Subtotal</span>
                   <span>₹{Number(selectedInvoice.total_amount).toLocaleString("en-IN")}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: "14px", color: "#6E6E6E" }}>
-                  <span>Shipping & Delivery</span>
-                  <span style={{ color: "#4E8E76", fontWeight: 600 }}>FREE</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderTop: "2px solid #3F3B38", fontSize: "18px", fontWeight: 700, color: "#3F3B38", marginTop: "6px" }}>
                   <span>Grand Total</span>

@@ -53,6 +53,7 @@ export default function Navbar() {
     { name: "Home", path: "/" },
     { name: "Shop", path: "/shop" },
     { name: "Festive Specials", path: "/festive-specials" },
+    { name: "Wedding Celebration", path: "/wedding-celebration" },
     { name: "Special offers", path: "/special-offers" },
   ];
 

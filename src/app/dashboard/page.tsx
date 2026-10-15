@@ -285,29 +285,96 @@ export default function WebsiteAnalytics() {
             </div>
           )}
 
-          <div style={{ width: "100%", height: "220px", position: "relative" }}>
-            <svg width="100%" height="100%" viewBox="0 0 600 200" preserveAspectRatio="none">
-              {[20, 70, 120].map((y) => (
-                <line key={y} x1="50" y1={y} x2="580" y2={y} stroke="#F5EDE8" strokeWidth="1" strokeDasharray="3,3" />
-              ))}
-              <line x1="50" y1="170" x2="580" y2="170" stroke="#EBE5DB" strokeWidth="1.5" />
-              <line x1="50" y1="20" x2="50" y2="170" stroke="#EBE5DB" strokeWidth="1.5" />
-              <text x="44" y="24" textAnchor="end" fontSize="10" fill="#BCAEA2">{activeMetric.format(maxVal)}</text>
-              <text x="44" y="173" textAnchor="end" fontSize="10" fill="#BCAEA2">0</text>
-              {series.map((p, i) =>
-                i % labelEvery === 0 ? (
-                  <text key={p.label} x={points[i].x} y="188" textAnchor="middle" fontSize="10" fill="#BCAEA2">{p.label}</text>
-                ) : null
-              )}
-              {points.length > 0 && (
-                <path d={path} fill="none" stroke="#3F3B38" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              )}
-              {points.map((pt, i) => (
-                <circle key={i} cx={pt.x} cy={pt.y} r="3.5" fill="#3F3B38" stroke="#fff" strokeWidth="1.5">
-                  <title>{`${series[i].label}: ${activeMetric.format(values[i])}`}</title>
-                </circle>
-              ))}
-            </svg>
+          <div style={{ width: "100%", height: "240px", position: "relative" }}>
+            {/* Y-Axis Value Labels (HTML overlay to prevent text stretching) */}
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                bottom: "32px",
+                width: "44px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                alignItems: "flex-end",
+                paddingRight: "6px",
+                fontSize: "12px",
+                fontFamily: "var(--font-sans), sans-serif",
+                color: "#BCAEA2",
+                pointerEvents: "none",
+                userSelect: "none",
+              }}
+            >
+              <span>{activeMetric.format(maxVal)}</span>
+              <span>0</span>
+            </div>
+
+            {/* Chart SVG */}
+            <div style={{ position: "absolute", left: "48px", right: 0, top: 0, bottom: "32px" }}>
+              <svg width="100%" height="100%" viewBox="0 0 540 160" preserveAspectRatio="none" style={{ overflow: "visible" }}>
+                {[0, 50, 100].map((y) => (
+                  <line key={y} x1="0" y1={y} x2="540" y2={y} stroke="#F5EDE8" strokeWidth="1" strokeDasharray="3,3" />
+                ))}
+                <line x1="0" y1="150" x2="540" y2="150" stroke="#EBE5DB" strokeWidth="1.5" />
+                <line x1="0" y1="0" x2="0" y2="150" stroke="#EBE5DB" strokeWidth="1.5" />
+
+                {points.length > 0 && (
+                  <path
+                    d={points.map((p, i) => `${i === 0 ? "M" : "L"} ${((p.x - 50) * 540) / 530} ${(p.y * 150) / 170}`).join(" ")}
+                    fill="none"
+                    stroke="#3F3B38"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )}
+                {points.map((pt, i) => {
+                  const cx = ((pt.x - 50) * 540) / 530;
+                  const cy = (pt.y * 150) / 170;
+                  return (
+                    <circle key={i} cx={cx} cy={cy} r="4" fill="#3F3B38" stroke="#fff" strokeWidth="1.5">
+                      <title>{`${series[i].label}: ${activeMetric.format(values[i])}`}</title>
+                    </circle>
+                  );
+                })}
+              </svg>
+            </div>
+
+            {/* X-Axis Date/Time Labels (HTML overlay to prevent text stretching) */}
+            <div
+              style={{
+                position: "absolute",
+                left: "48px",
+                right: 0,
+                bottom: 0,
+                height: "28px",
+                display: "flex",
+                justifyContent: series.length > 1 ? "space-between" : "center",
+                alignItems: "center",
+                pointerEvents: "none",
+                userSelect: "none",
+              }}
+            >
+              {series.map((p, i) => {
+                if (i % labelEvery !== 0 && i !== series.length - 1) return null;
+                return (
+                  <span
+                    key={p.label || i}
+                    style={{
+                      fontSize: "12px",
+                      fontFamily: "var(--font-sans), sans-serif",
+                      color: "#BCAEA2",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {p.label}
+                  </span>
+                );
+              })}
+            </div>
+
             {!loading && report && !hasData && (
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#BCAEA2", fontSize: "15px" }}>
                 No visits recorded in this period yet.

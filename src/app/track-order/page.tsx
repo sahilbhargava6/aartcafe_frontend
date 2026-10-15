@@ -7,9 +7,10 @@ import { Search, Package, CheckCircle2, Clock, Truck, ShieldCheck, MessageCircle
 
 const STAGES = [
   { key: "pending", label: "Order Received", desc: "Order details received in system", icon: Clock },
-  { key: "processing", label: "Flowers Received", desc: "Flowers inspected & drying prepared", icon: ShieldCheck },
-  { key: "preserving", label: "Preserving & Resin Casting", desc: "Handcrafted deep cast in progress", icon: Package },
-  { key: "shipped", label: "Quality Check & Shipped", desc: "Packed safely with care guide", icon: Truck },
+  { key: "flowers_received", label: "Flowers Received", desc: "Flowers inspected & drying prepared", icon: ShieldCheck },
+  { key: "payment_received", label: "Payment Received", desc: "Payment verified & order queued", icon: CheckCircle2 },
+  { key: "processing", label: "Processing & Crafting", desc: "Handcrafted design in progress", icon: Package },
+  { key: "shipped", label: "Shipped (Dispatched)", desc: "Packed safely with care guide", icon: Truck },
   { key: "completed", label: "Delivered", desc: "Handed over to customer", icon: CheckCircle2 },
 ];
 
@@ -57,10 +58,11 @@ export default function TrackOrderPage() {
 
   const getStageIndex = (status: string) => {
     const s = status ? status.toLowerCase() : "pending";
-    if (s === "completed" || s === "delivered") return 4;
-    if (s === "shipped" || s === "dispatched") return 3;
-    if (s === "preserving" || s === "casting") return 2;
-    if (s === "processing" || s === "flowers_received") return 1;
+    if (s === "completed" || s === "delivered") return 5;
+    if (s === "shipped" || s === "dispatched") return 4;
+    if (s === "processing" || s === "preserving" || s === "casting") return 3;
+    if (s === "payment_received") return 2;
+    if (s === "flowers_received") return 1;
     return 0; // pending
   };
 
@@ -270,12 +272,32 @@ export default function TrackOrderPage() {
                             ? "rgba(143, 185, 168, 0.2)"
                             : ord.status === "shipped"
                             ? "rgba(217, 168, 92, 0.2)"
+                            : ord.status === "on_hold"
+                            ? "rgba(245, 127, 23, 0.15)"
+                            : ord.status === "processing"
+                            ? "rgba(0, 121, 107, 0.15)"
+                            : ord.status === "payment_received"
+                            ? "rgba(81, 45, 168, 0.15)"
+                            : ord.status === "flowers_received"
+                            ? "rgba(2, 119, 189, 0.15)"
+                            : ord.status === "cancelled"
+                            ? "rgba(224, 90, 71, 0.2)"
                             : "rgba(217, 138, 156, 0.2)",
                         color:
                           ord.status === "completed"
                             ? "#4E8E76"
                             : ord.status === "shipped"
                             ? "#B88330"
+                            : ord.status === "on_hold"
+                            ? "#F57F17"
+                            : ord.status === "processing"
+                            ? "#00796B"
+                            : ord.status === "payment_received"
+                            ? "#512DA8"
+                            : ord.status === "flowers_received"
+                            ? "#0277BD"
+                            : ord.status === "cancelled"
+                            ? "#C62828"
                             : "#D98A9C",
                         padding: "8px 18px",
                         borderRadius: "20px",
@@ -284,9 +306,39 @@ export default function TrackOrderPage() {
                         textTransform: "uppercase",
                       }}
                     >
-                      {ord.status || "Pending"}
+                      {ord.status === "on_hold"
+                        ? "On Hold"
+                        : ord.status === "flowers_received"
+                        ? "Flowers Received"
+                        : ord.status === "payment_received"
+                        ? "Payment Received"
+                        : ord.status || "Pending"}
                     </div>
                   </div>
+
+                  {/* On Hold Notice if paused */}
+                  {ord.status === "on_hold" && (
+                    <div
+                      style={{
+                        backgroundColor: "#FFFDE7",
+                        border: "1.5px solid #FFF59D",
+                        borderRadius: "14px",
+                        padding: "16px 20px",
+                        marginBottom: "28px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        color: "#F57F17",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      <AlertCircle size={20} color="#F57F17" />
+                      <span>
+                        Your order is temporarily on hold while we verify design details or pause processing. Our team will reach out to you directly if any action is needed.
+                      </span>
+                    </div>
+                  )}
 
                   {/* Stepper Timeline */}
                   <div className="track-progress" style={{ marginBottom: "40px" }}>

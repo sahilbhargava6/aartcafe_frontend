@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, Edit2, Trash2, X, Heart, Search, Filter, RotateCcw } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Heart, Search, Filter, RotateCcw, Check } from "lucide-react";
 
 export default function ReviewsDashboard() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -18,8 +18,8 @@ export default function ReviewsDashboard() {
   const [selectedProductFilter, setSelectedProductFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest"); // "newest", "oldest", "rating_high", "rating_low", "reviewer_asc"
 
-  // Form Fields
-  const [productId, setProductId] = useState("");
+  // Form Fields: Supports single product edit or multi-product selection on create
+  const [productIds, setProductIds] = useState<number[]>([]);
   const [productQuery, setProductQuery] = useState("");
   const [productListOpen, setProductListOpen] = useState(false);
   const [reviewerName, setReviewerName] = useState("");
@@ -105,7 +105,7 @@ export default function ReviewsDashboard() {
 
   const openAddModal = () => {
     setEditingReview(null);
-    setProductId("");
+    setProductIds([]);
     setProductQuery("");
     setProductListOpen(false);
     setReviewerName("");
@@ -116,7 +116,7 @@ export default function ReviewsDashboard() {
 
   const openEditModal = (rev: any) => {
     setEditingReview(rev);
-    setProductId(rev.product_id ? String(rev.product_id) : "");
+    setProductIds(rev.product_id ? [Number(rev.product_id)] : []);
     setProductQuery("");
     setProductListOpen(false);
     setReviewerName(rev.reviewer_name);
@@ -125,61 +125,126 @@ export default function ReviewsDashboard() {
     setIsModalOpen(true);
   };
 
-  // Product picker: type to narrow the list instead of scrolling through every product
-  const selectedProduct = products.find((p) => String(p.id) === String(productId));
-  const productMatches = products
-    .filter((p) => String(p.title || "").toLowerCase().includes(productQuery.trim().toLowerCase()))
-    .sort((a, b) => String(a.title).localeCompare(String(b.title)));
-  const pickProduct = (prod: any) => {
-    setProductId(String(prod.id));
-    setProductQuery("");
-    setProductListOpen(false);
+  // Product multi-selection toggle
+  const toggleProduct = (prodId: number) => {
+    if (editingReview) {
+      // Editing an existing review only attaches to one product
+      setProductIds([prodId]);
+      setProductQuery("");
+      setProductListOpen(false);
+      return;
+    }
+
+    setProductIds((prev) =>
+      prev.includes(prodId) ? prev.filter((id) => id !== prodId) : [...prev, prodId]
+    );
   };
+
+  const removeProduct = (prodId: number) => {
+    setProductIds((prev) => prev.filter((id) => id !== prodId));
+  };
+
+  const selectedProducts = useMemo(() => {
+    return products.filter((p) => productIds.includes(p.id));
+  }, [products, productIds]);
+
+  const productMatches = useMemo(() => {
+    return products
+      .filter((p) => String(p.title || "").toLowerCase().includes(productQuery.trim().toLowerCase()))
+      .sort((a, b) => String(a.title).localeCompare(String(b.title)));
+  }, [products, productQuery]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productId) {
-      alert("Choose the product this review is for.");
+    if (productIds.length === 0) {
+      alert("Please select at least one product for this review.");
       return;
     }
     if (!reviewerName.trim() || !reviewText.trim()) return;
 
-    const url = editingReview
-      ? `https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews/${editingReview.id}`
-      : "https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews";
-
-    const method = editingReview ? "PUT" : "POST";
     const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
-    fetch(url, {
-      method: method,
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({
-        product_id: parseInt(productId),
+    if (editingReview) {
+      // Edit single review
+      fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews/${editingReview.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          product_id: productIds[0],
+          reviewer_name: reviewerName,
+          rating: parseInt(rating.toString()),
+          review_text: reviewText,
+        }),
+      })
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.message || "Failed to save review.");
+          return data;
+        })
+        .then(() => {
+          setIsModalOpen(false);
+          fetchReviews();
+        })
+        .catch((err) => alert(err.message));
+    } else {
+      // Create new review published to one or multiple products
+      // Send product_ids array, with fallback to individual requests if older backend is deployed
+      const payload = {
+        product_ids: productIds,
+        product_id: productIds[0],
         reviewer_name: reviewerName,
         rating: parseInt(rating.toString()),
         review_text: reviewText,
-      }),
-    })
-      .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          const errMsg = data.message || "Failed to save review.";
-          throw new Error(errMsg);
-        }
-        return data;
+      };
+
+      fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
       })
-      .then(() => {
-        setIsModalOpen(false);
-        fetchReviews();
-      })
-      .catch((err) => {
-        alert(err.message);
-      });
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            // If backend only handled the first product because of older API, publish remaining
+            if (productIds.length > 1 && !Array.isArray(data) && data?.product_id === productIds[0]) {
+              const remaining = productIds.slice(1);
+              await Promise.all(
+                remaining.map((pId) =>
+                  fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/reviews", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "Accept": "application/json",
+                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
+                    body: JSON.stringify({
+                      product_id: pId,
+                      reviewer_name: reviewerName,
+                      rating: parseInt(rating.toString()),
+                      review_text: reviewText,
+                    }),
+                  })
+                )
+              );
+            }
+            return data;
+          }
+          throw new Error(data.message || "Failed to save review.");
+        })
+        .then(() => {
+          setIsModalOpen(false);
+          fetchReviews();
+        })
+        .catch((err) => alert(err.message));
+    }
   };
 
   const handleDelete = (id: number) => {
@@ -402,7 +467,74 @@ export default function ReviewsDashboard() {
 
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label htmlFor="review-product" style={{ fontSize: "14px", color: "#6E6E6E" }}>Product</label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <label htmlFor="review-product" style={{ fontSize: "14px", color: "#6E6E6E" }}>
+                    {editingReview ? "Product" : `Products (${selectedProducts.length} selected)`}
+                  </label>
+                  {!editingReview && selectedProducts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setProductIds([])}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#E05A47",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        padding: 0,
+                        textDecoration: "underline",
+                      }}
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
+
+                {/* Selected Product Badges / Tags */}
+                {selectedProducts.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "4px" }}>
+                    {selectedProducts.map((p) => (
+                      <span
+                        key={p.id}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          backgroundColor: "#FFEAEF",
+                          border: "1px solid #D98A9C",
+                          borderRadius: "16px",
+                          padding: "3px 10px",
+                          fontSize: "13px",
+                          color: "#3F3B38",
+                        }}
+                      >
+                        <span style={{ maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {p.title}
+                        </span>
+                        {!editingReview && (
+                          <button
+                            type="button"
+                            onClick={() => removeProduct(p.id)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#D98A9C",
+                              cursor: "pointer",
+                              padding: 0,
+                              display: "flex",
+                              alignItems: "center",
+                            }}
+                            title="Remove product"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <div style={{ position: "relative" }}>
                   <Search size={16} color="#B5A89C" style={{ position: "absolute", left: "12px", top: "20px", transform: "translateY(-50%)", pointerEvents: "none" }} />
                   <input
@@ -412,23 +544,21 @@ export default function ReviewsDashboard() {
                     aria-expanded={productListOpen}
                     aria-controls="review-product-list"
                     autoComplete="off"
-                    placeholder="Search products…"
-                    value={productListOpen ? productQuery : selectedProduct?.title || ""}
+                    placeholder={editingReview ? (selectedProducts[0]?.title || "Search product…") : "Search and select products…"}
+                    value={productQuery}
                     onFocus={() => {
-                      setProductQuery("");
                       setProductListOpen(true);
                     }}
                     onChange={(e) => {
                       setProductQuery(e.target.value);
                       setProductListOpen(true);
                     }}
-                    onBlur={() => setTimeout(() => setProductListOpen(false), 150)}
+                    onBlur={() => setTimeout(() => setProductListOpen(false), 200)}
                     onKeyDown={(e) => {
                       if (e.key === "Escape") e.currentTarget.blur();
                       if (e.key === "Enter") {
                         e.preventDefault();
-                        if (productMatches[0]) pickProduct(productMatches[0]);
-                        e.currentTarget.blur();
+                        if (productMatches[0]) toggleProduct(productMatches[0].id);
                       }
                     }}
                     style={{
@@ -450,19 +580,21 @@ export default function ReviewsDashboard() {
                         <li style={{ padding: "10px 12px", fontSize: "14px", color: "#8B7E74" }}>No product matches “{productQuery.trim()}”</li>
                       ) : (
                         productMatches.map((prod) => {
-                          const isSelected = String(prod.id) === String(productId);
+                          const isSelected = productIds.includes(prod.id);
                           return (
                             <li key={prod.id} role="option" aria-selected={isSelected}>
                               <button
                                 type="button"
                                 onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => pickProduct(prod)}
+                                onClick={() => toggleProduct(prod.id)}
                                 style={{
                                   width: "100%", minHeight: "40px", padding: "8px 12px", border: "none", borderRadius: "6px", textAlign: "left",
                                   backgroundColor: isSelected ? "#FFEAEF" : "transparent", color: "#3F3B38", fontSize: "15px", cursor: "pointer",
+                                  display: "flex", justifyContent: "space-between", alignItems: "center",
                                 }}
                               >
-                                {prod.title}
+                                <span>{prod.title}</span>
+                                {isSelected && <Check size={16} color="#D98A9C" strokeWidth={2.5} />}
                               </button>
                             </li>
                           );
