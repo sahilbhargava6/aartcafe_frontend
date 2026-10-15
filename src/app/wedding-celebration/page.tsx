@@ -1155,29 +1155,35 @@ export default function WeddingCelebration() {
           overflow: hidden;
           overflow: clip !important;
         }
+        /* Uploaded banner: full width container, prominent size with rich styling */
         .rakhi-banner--image {
           display: block;
-          width: fit-content;
+          width: 100%;
           max-width: 100%;
           margin-left: auto;
           margin-right: auto;
           aspect-ratio: auto;
           padding: 0 !important;
-          background-color: #F7F2EE;
+          background-color: transparent;
+          border-radius: 15px;
+          overflow: hidden;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
         }
         .rakhi-banner--image > img {
           display: block;
-          width: auto;
+          width: 100%;
           max-width: 100%;
           height: auto;
-          max-height: 420px;
+          max-height: 720px;
+          object-fit: cover;
+          border-radius: 15px;
         }
         .rakhi-banner--image .banner-content {
           position: absolute;
           inset: 0;
           justify-content: center;
           padding: 40px 72px;
-          background: rgba(0, 0, 0, 0.4);
+          background: rgba(0, 0, 0, 0.35);
         }
         .banner-svg-medallion {
           position: absolute;
