@@ -11,7 +11,7 @@ import { useCart } from "@/context/CartContext";
 import { type CategoryNode, normalizeCategories, descendantIdsOf, flattenTree, pathTo, childrenOf } from "@/lib/categories";
 import { buildSearchIndex, searchProducts } from "@/lib/search";
 import { useWishlist } from "@/context/WishlistContext";
-import { Heart } from "lucide-react";
+import { Heart, ArrowUpDown, ChevronDown } from "lucide-react";
 
 const CARD_LAYOUTS = [
   { width: 364, height: 455 }, // Aspect ratio 364/455
@@ -27,12 +27,12 @@ const CARD_LAYOUTS = [
 // Categories can go several levels deep, and a category can sit under several parents
 type ShopCategory = CategoryNode;
 
-// Keeps the filters in step with the address bar (?category=…&collection=…&search=…), including
+// Keeps the filters in step with the address bar (?category=…&collection=…&search=…&sort=…), including
 // footer links and searches made while the shop is already open
-function UrlFilters({ onChange }: { onChange: (category: string | null, collection: string | null, search: string | null) => void }) {
+function UrlFilters({ onChange }: { onChange: (category: string | null, collection: string | null, search: string | null, sort: string | null) => void }) {
   const params = useSearchParams();
   useEffect(() => {
-    onChange(params.get("category"), params.get("collection"), params.get("search"));
+    onChange(params.get("category"), params.get("collection"), params.get("search"), params.get("sort"));
   }, [params, onChange]);
   return null;
 }
@@ -47,11 +47,30 @@ export default function Shop() {
   // Words searched for in the site search ("See all results"), ranked like the search box
   const [searchTerm, setSearchTerm] = useState<string | null>(null);
 
-  const applyUrlFilters = useCallback((category: string | null, collection: string | null, search: string | null) => {
+  // Sorting state: default, price-asc, price-desc, newest, bestsellers, title-asc, title-desc
+  const [sortBy, setSortBy] = useState<string>("default");
+
+  const applyUrlFilters = useCallback((category: string | null, collection: string | null, search: string | null, sort: string | null) => {
     setSelectedCategory(category);
     setSearchTerm(search?.trim() || null);
     setSelectedCollection(collection === "bestsellers" ? collection : null);
+    if (sort) {
+      setSortBy(sort);
+    }
   }, []);
+
+  const handleSortChange = (newSort: string) => {
+    setSortBy(newSort);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (newSort && newSort !== "default") {
+        url.searchParams.set("sort", newSort);
+      } else {
+        url.searchParams.delete("sort");
+      }
+      window.history.pushState({}, "", url.toString());
+    }
+  };
 
   // The branch the shopper went down to reach the selected category (a category with several
   // parents can be reached more than one way); empty = work it out from the category
@@ -199,8 +218,36 @@ export default function Shop() {
     // Apply price filter
     result = result.filter((p) => p.price >= minPrice && p.price <= maxPrice);
 
+    // Apply sorting
+    if (sortBy !== "default" || !searchTerm) {
+      result = [...result].sort((a, b) => {
+        const priceA = typeof a.price === "number" ? a.price : parseFloat(a.price) || 0;
+        const priceB = typeof b.price === "number" ? b.price : parseFloat(b.price) || 0;
+
+        switch (sortBy) {
+          case "price-asc":
+            return priceA - priceB;
+          case "price-desc":
+            return priceB - priceA;
+          case "newest":
+            return (Number(b.id) || 0) - (Number(a.id) || 0);
+          case "bestsellers":
+            if (Boolean(a.isBestseller) !== Boolean(b.isBestseller)) {
+              return a.isBestseller ? -1 : 1;
+            }
+            return (Number(b.id) || 0) - (Number(a.id) || 0);
+          case "title-asc":
+            return (a.title || "").localeCompare(b.title || "", undefined, { numeric: true, sensitivity: "base" });
+          case "title-desc":
+            return (b.title || "").localeCompare(a.title || "", undefined, { numeric: true, sensitivity: "base" });
+          default:
+            return 0;
+        }
+      });
+    }
+
     setFilteredProducts(result);
-  }, [selectedCollection, selectedCategory, searchTerm, minPrice, maxPrice, allProducts, categories]);
+  }, [selectedCollection, selectedCategory, searchTerm, minPrice, maxPrice, sortBy, allProducts, categories]);
 
   const clearFilters = () => {
     setSelectedCollection(null);
@@ -208,11 +255,13 @@ export default function Shop() {
     setSearchTerm(null);
     setMinPrice(0);
     setMaxPrice(10000);
+    setSortBy("default");
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.delete("category");
       url.searchParams.delete("collection");
       url.searchParams.delete("search");
+      url.searchParams.delete("sort");
       window.history.pushState({}, "", url.toString());
     }
   };
@@ -350,6 +399,63 @@ export default function Shop() {
                 </div>
               </div>
 
+              {/* Sort By Box */}
+              <div className="filter-box filter-box--sort">
+                <h3 className="font-serif filter-box-title">
+                  Sort By
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px" }}>
+                  {[
+                    { id: "default", label: searchTerm ? "Relevance" : "Featured" },
+                    { id: "price-asc", label: "Price: Low to High" },
+                    { id: "price-desc", label: "Price: High to Low" },
+                    { id: "newest", label: "Newest Arrivals" },
+                    { id: "bestsellers", label: "Bestsellers" },
+                    { id: "title-asc", label: "Name: A to Z" },
+                    { id: "title-desc", label: "Name: Z to A" },
+                  ].map((opt) => {
+                    const isSelected = sortBy === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => handleSortChange(opt.id)}
+                        className={`font-sans sort-option-btn${isSelected ? " is-active" : ""}`}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          fontSize: "17px",
+                          lineHeight: "26px",
+                          color: isSelected ? "#D9A85C" : "#3F3B38",
+                          fontWeight: isSelected ? 600 : 400,
+                          textAlign: "left",
+                          padding: "3px 0",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          transition: "color 0.2s ease",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: "16px",
+                            height: "16px",
+                            borderRadius: "50%",
+                            border: isSelected ? "5px solid #D9A85C" : "1.5px solid #C4B5A5",
+                            backgroundColor: "#fff",
+                            display: "inline-block",
+                            flexShrink: 0,
+                            transition: "all 0.2s ease",
+                          }}
+                        />
+                        <span>{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
             </aside>
 
             {/* ═══════════════════════════════════════════════════════
@@ -359,42 +465,86 @@ export default function Shop() {
 
               {/* Header Title & Active Filter Summary */}
               <div className="shop-header-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
-                <h1
-                  className="font-serif shop-title"
-                  style={{
-                    fontSize: "36px",
-                    lineHeight: "48px",
-                    fontWeight: 400,
-                    color: "#3F3B38",
-                    margin: 0,
-                  }}
-                >
-                  {searchTerm
-                    ? `RESULTS FOR “${searchTerm.toUpperCase()}”`
-                    : selectedCategory && selectedCategory !== "All"
-                    ? selectedCategory.toUpperCase()
-                    : selectedCollection === "bestsellers"
-                    ? "BESTSELLERS"
-                    : "SHOP"}
-                </h1>
-
-                {(selectedCollection || selectedCategory || searchTerm || minPrice > 0 || maxPrice < 10000) && (
-                  <button
-                    onClick={clearFilters}
-                    className="font-sans shop-clear-btn"
+                <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
+                  <h1
+                    className="font-serif shop-title"
                     style={{
-                      background: "none",
-                      border: "none",
-                      color: "#D98A9C",
-                      fontSize: "18px",
-                      cursor: "pointer",
+                      fontSize: "36px",
+                      lineHeight: "48px",
                       fontWeight: 400,
-                      textDecoration: "underline",
+                      color: "#3F3B38",
+                      margin: 0,
                     }}
                   >
-                    Clear Filters
-                  </button>
-                )}
+                    {searchTerm
+                      ? `RESULTS FOR “${searchTerm.toUpperCase()}”`
+                      : selectedCategory && selectedCategory !== "All"
+                      ? selectedCategory.toUpperCase()
+                      : selectedCollection === "bestsellers"
+                      ? "BESTSELLERS"
+                      : "SHOP"}
+                  </h1>
+                  {!loading && (
+                    <span
+                      className="font-sans shop-count-badge"
+                      style={{
+                        fontSize: "15px",
+                        lineHeight: "22px",
+                        color: "#8E8882",
+                        fontWeight: 400,
+                      }}
+                    >
+                      ({filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"})
+                    </span>
+                  )}
+                </div>
+
+                <div className="shop-header-actions" style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                  {(selectedCollection || selectedCategory || searchTerm || minPrice > 0 || maxPrice < 10000 || (sortBy && sortBy !== "default")) && (
+                    <button
+                      onClick={clearFilters}
+                      className="font-sans shop-clear-btn"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#D98A9C",
+                        fontSize: "16px",
+                        cursor: "pointer",
+                        fontWeight: 500,
+                        textDecoration: "underline",
+                        padding: "4px 0",
+                      }}
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+
+                  {/* Sort By Dropdown */}
+                  <div className="shop-sort-container">
+                    <label htmlFor="shop-sort-select" className="shop-sort-label font-sans">
+                      <ArrowUpDown size={14} color="#8E8882" />
+                      <span>Sort:</span>
+                    </label>
+                    <div className="shop-sort-select-wrapper">
+                      <select
+                        id="shop-sort-select"
+                        value={sortBy}
+                        onChange={(e) => handleSortChange(e.target.value)}
+                        className="font-sans shop-sort-select"
+                        aria-label="Sort products"
+                      >
+                        <option value="default">{searchTerm ? "Relevance" : "Featured"}</option>
+                        <option value="price-asc">Price: Low to High</option>
+                        <option value="price-desc">Price: High to Low</option>
+                        <option value="newest">Newest Arrivals</option>
+                        <option value="bestsellers">Bestsellers</option>
+                        <option value="title-asc">Name: A to Z</option>
+                        <option value="title-desc">Name: Z to A</option>
+                      </select>
+                      <ChevronDown size={14} className="shop-sort-chevron" color="#6E6E6E" />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Sub-categories of the category being browsed, to narrow it down */}
@@ -718,6 +868,69 @@ export default function Shop() {
           color: #3F3B38;
           margin: 0 0 12px 0;
         }
+        .filter-box--sort {
+          min-height: auto;
+        }
+        .sort-option-btn:hover {
+          color: #D9A85C !important;
+        }
+        .sort-option-btn:hover span:first-child {
+          border-color: #D9A85C !important;
+        }
+        .shop-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+        .shop-sort-container {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .shop-sort-label {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 13px;
+          font-weight: 500;
+          color: #8E8882;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .shop-sort-select-wrapper {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+        }
+        .shop-sort-select {
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          background-color: #fff;
+          border: 1.5px solid #E5D5C5;
+          border-radius: 999px;
+          padding: 7px 32px 7px 14px;
+          font-size: 14px;
+          line-height: 20px;
+          color: #3F3B38;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          outline: none;
+        }
+        .shop-sort-select:hover {
+          border-color: #D9A85C;
+        }
+        .shop-sort-select:focus {
+          border-color: #D9A85C;
+          box-shadow: 0 0 0 3px rgba(217, 168, 92, 0.15);
+        }
+        .shop-sort-chevron {
+          position: absolute;
+          right: 12px;
+          pointer-events: none;
+        }
         .shop-products-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -812,6 +1025,9 @@ export default function Shop() {
           }
           .filter-box {
             min-height: 0;
+          }
+          .filter-box--sort {
+            display: none;
           }
           .filter-box--categories {
             border: none;
@@ -931,6 +1147,17 @@ export default function Shop() {
           .shop-title {
             font-size: 26px !important;
             line-height: 34px !important;
+          }
+          .shop-header-actions {
+            width: 100%;
+            justify-content: space-between;
+          }
+          .shop-sort-container {
+            margin-left: auto;
+          }
+          .shop-sort-select {
+            padding: 6px 28px 6px 12px;
+            font-size: 13px;
           }
           .shop-clear-btn {
             font-size: 15px !important;
