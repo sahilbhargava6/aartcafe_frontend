@@ -32,6 +32,19 @@ async function compressImageToWebp(file: File): Promise<string> {
     }
   }
 
+  // Preserve animated GIFs without converting to static WebP
+  if (
+    fileToProcess.type === "image/gif" ||
+    fileToProcess.name.toLowerCase().endsWith(".gif")
+  ) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(fileToProcess);
+    });
+  }
+
   try {
     const options = {
       maxSizeMB: 1,
@@ -366,11 +379,13 @@ export default function BannersDashboard() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>Banner Image</label>
+                <label style={{ fontSize: "14px", color: "#6E6E6E" }}>
+                  Banner Image / Animated GIF <span style={{ fontSize: "12px", color: "#D9A85C" }}>(GIFs supported)</span>
+                </label>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <input
                     type="file"
-                    accept="image/*,.heic,.heif"
+                    accept="image/*,.heic,.heif,.gif"
                     ref={fileInputRef}
                     onChange={handleFileUpload}
                     style={{ display: "none" }}
@@ -387,9 +402,12 @@ export default function BannersDashboard() {
                     }}
                   >
                     {uploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
-                    {uploading ? "Compressing..." : "Upload Image"}
+                    {uploading ? "Processing..." : "Upload Image or GIF"}
                   </button>
                 </div>
+                <span style={{ fontSize: "12px", color: "#8B7E74" }}>
+                  Upload banner in JPG, PNG, WebP, or animated GIF for motion banners.
+                </span>
                 {imageUrl && (
                   <div style={{ marginTop: "10px", position: "relative", width: "100%", height: "120px", borderRadius: "8px", overflow: "hidden" }}>
                     <img src={imageUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
