@@ -203,80 +203,44 @@ export default function WeddingCelebration() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#fff" }}>
-      <Navbar />
+      <Navbar overlay={Boolean(activeBanner?.image_url)} />
       <CartDrawer />
 
-      <main style={{ flex: 1, backgroundColor: "#fff", padding: "40px 0 80px 0" }}>
-        <div className="fest-container">
-          {/* HERO BANNER CAROUSEL SECTION */}
-          <div
-            className={`rakhi-banner${activeBanner?.image_url ? " rakhi-banner--image" : ""}${
-              banners.length > 1 ? " has-nav" : ""
-            }`}
-            style={{ position: "relative", overflow: "hidden" }}
-          >
-            {activeBanner?.image_url ? (
-              <img
-                key={activeBanner.id}
-                src={activeBanner.image_url}
-                alt={activeBanner.title || "Wedding celebration"}
-                style={{ animation: "fadeIn 0.4s ease" }}
+      {activeBanner?.image_url ? (
+        /* FULL-BLEED HERO BANNER: FROM BEHIND THE HEADER TILL FULL SIZE IMAGE */
+        <section className="wedding-full-hero" aria-label="Wedding Celebration Hero">
+          <div className="wedding-hero-inner">
+            <img
+              key={activeBanner.id}
+              src={activeBanner.image_url}
+              alt={activeBanner.title || "Wedding celebration"}
+              className="wedding-hero-img"
+            />
+
+            {/* Clickable link over the banner if provided and no separate button */}
+            {(activeBanner.button_url || activeBanner.link_url) && !activeBannerTitle && !activeBannerSubtitle && !activeBanner.button_text && (
+              <Link
+                href={activeBanner.button_url || activeBanner.link_url}
+                className="wedding-hero-overlay-link"
+                aria-label={activeBanner.title || "Wedding celebration"}
               />
-            ) : (
-              /* Wedding Rings & Floral Medallion SVG */
-              <svg className="banner-svg-medallion" width="300" height="300" viewBox="0 0 200 200">
-                <circle cx="100" cy="100" r="85" fill="#EFD3C7" opacity="0.1" />
-                {/* Interlocking wedding rings */}
-                <circle cx="85" cy="100" r="38" stroke="#D9A85C" strokeWidth="5" fill="none" opacity="0.9" />
-                <circle cx="115" cy="100" r="38" stroke="#D98A9C" strokeWidth="5" fill="none" opacity="0.85" />
-                {/* Diamond highlight on the gold ring */}
-                <polygon points="85,55 91,62 85,69 79,62" fill="#FFFFFF" stroke="#D9A85C" strokeWidth="1" />
-                {/* Delicate floral decorative beads */}
-                {Array.from({ length: 16 }).map((_, i) => {
-                  const angle = (i * 360) / 16;
-                  return (
-                    <circle
-                      key={i}
-                      cx={100 + 78 * Math.cos((angle * Math.PI) / 180)}
-                      cy={100 + 78 * Math.sin((angle * Math.PI) / 180)}
-                      r="3.5"
-                      fill="#FFF"
-                      opacity="0.75"
-                    />
-                  );
-                })}
-              </svg>
             )}
 
-            {(!activeBanner?.image_url ||
-              activeBannerTitle ||
+            {/* Optional text content if title/subtitle is configured */}
+            {(activeBannerTitle ||
               activeBannerSubtitle ||
-              activeBanner?.button_url ||
-              activeBanner?.link_url) && (
+              (activeBanner.button_text && (activeBanner.button_url || activeBanner.link_url))) && (
               <div
-                className="banner-content"
+                className="wedding-hero-content"
                 key={activeBanner?.id || currentBannerIdx}
-                style={{ animation: "fadeIn 0.4s ease" }}
               >
-                {!activeBanner?.image_url && (
-                  <span className="font-serif banner-sub">WEDDING CELEBRATION</span>
-                )}
                 {activeBannerTitle && <h1 className="font-serif banner-title">{activeBannerTitle}</h1>}
                 {activeBannerSubtitle && (
-                  <p
-                    className="font-sans banner-desc"
-                    style={{
-                      fontSize: "24px",
-                      lineHeight: "34px",
-                      fontWeight: 400,
-                      color: "#BCAEA2",
-                      margin: 0,
-                    }}
-                  >
+                  <p className="font-sans banner-desc">
                     {activeBannerSubtitle}
                   </p>
                 )}
-                {(activeBanner?.button_url || activeBanner?.link_url) && (
+                {activeBanner.button_text && (activeBanner?.button_url || activeBanner?.link_url) && (
                   <div style={{ marginTop: "20px" }}>
                     <Link
                       href={activeBanner.button_url || activeBanner.link_url}
@@ -291,7 +255,7 @@ export default function WeddingCelebration() {
                         fontWeight: 500,
                       }}
                     >
-                      {activeBanner.button_text || "Explore Collection"}
+                      {activeBanner.button_text}
                     </Link>
                   </div>
                 )}
@@ -305,85 +269,69 @@ export default function WeddingCelebration() {
                   onClick={() =>
                     setCurrentBannerIdx((prev) => (prev - 1 + banners.length) % banners.length)
                   }
-                  className="banner-arrow"
-                  style={{
-                    position: "absolute",
-                    left: "16px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "rgba(0,0,0,0.3)",
-                    border: "none",
-                    color: "#fff",
-                    borderRadius: "50%",
-                    width: "40px",
-                    height: "40px",
-                    cursor: "pointer",
-                    fontSize: "20px",
-                    zIndex: 10,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+                  className="banner-arrow banner-arrow--left"
+                  aria-label="Previous banner"
                 >
                   ‹
                 </button>
                 <button
                   onClick={() => setCurrentBannerIdx((prev) => (prev + 1) % banners.length)}
-                  className="banner-arrow"
-                  style={{
-                    position: "absolute",
-                    right: "16px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "rgba(0,0,0,0.3)",
-                    border: "none",
-                    color: "#fff",
-                    borderRadius: "50%",
-                    width: "40px",
-                    height: "40px",
-                    cursor: "pointer",
-                    fontSize: "20px",
-                    zIndex: 10,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+                  className="banner-arrow banner-arrow--right"
+                  aria-label="Next banner"
                 >
                   ›
                 </button>
-                <div
-                  className="banner-dots"
-                  style={{
-                    position: "absolute",
-                    bottom: "16px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    display: "flex",
-                    gap: "8px",
-                    zIndex: 10,
-                  }}
-                >
+                <div className="banner-dots">
                   {banners.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentBannerIdx(idx)}
-                      className="banner-dot"
-                      style={{
-                        width: idx === currentBannerIdx ? "24px" : "10px",
-                        height: "10px",
-                        borderRadius: "5px",
-                        backgroundColor:
-                          idx === currentBannerIdx ? "#D98A9C" : "rgba(255,255,255,0.5)",
-                        border: "none",
-                        cursor: "pointer",
-                        transition: "all 0.3s ease",
-                      }}
+                      className={`banner-dot${idx === currentBannerIdx ? " is-active" : ""}`}
+                      aria-label={`Go to banner ${idx + 1}`}
                     />
                   ))}
                 </div>
               </>
             )}
           </div>
+        </section>
+      ) : null}
+
+      <main style={{ flex: 1, backgroundColor: "#fff", padding: activeBanner?.image_url ? "60px 0 80px 0" : "40px 0 80px 0" }}>
+        <div className="fest-container">
+          {!activeBanner?.image_url && (
+            /* Fallback SVG Medallion Banner if no image is uploaded */
+            <div className="rakhi-banner" style={{ position: "relative", overflow: "hidden" }}>
+              <svg className="banner-svg-medallion" width="300" height="300" viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="85" fill="#EFD3C7" opacity="0.1" />
+                <circle cx="85" cy="100" r="38" stroke="#D9A85C" strokeWidth="5" fill="none" opacity="0.9" />
+                <circle cx="115" cy="100" r="38" stroke="#D98A9C" strokeWidth="5" fill="none" opacity="0.85" />
+                <polygon points="85,55 91,62 85,69 79,62" fill="#FFFFFF" stroke="#D9A85C" strokeWidth="1" />
+                {Array.from({ length: 16 }).map((_, i) => {
+                  const angle = (i * 360) / 16;
+                  return (
+                    <circle
+                      key={i}
+                      cx={100 + 78 * Math.cos((angle * Math.PI) / 180)}
+                      cy={100 + 78 * Math.sin((angle * Math.PI) / 180)}
+                      r="3.5"
+                      fill="#FFF"
+                      opacity="0.75"
+                    />
+                  );
+                })}
+              </svg>
+              <div className="banner-content">
+                <span className="font-serif banner-sub">WEDDING CELEBRATION</span>
+                <h1 className="font-serif banner-title">{activeBannerTitle || "WEDDING CELEBRATION"}</h1>
+                {activeBannerSubtitle && (
+                  <p className="font-sans banner-desc" style={{ fontSize: "24px", lineHeight: "34px", color: "#BCAEA2", margin: 0 }}>
+                    {activeBannerSubtitle}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* PRODUCTS LIST (Alternating Left/Right) */}
           {products.map((prod, index) => {
@@ -1151,6 +1099,137 @@ export default function WeddingCelebration() {
           margin: 0 auto;
           padding: 0 120px;
         }
+        /* ═══════════════════════════════════════════════════════
+           FULL-BLEED HERO BANNER (starts behind header, full size image)
+           ═══════════════════════════════════════════════════════ */
+        .wedding-full-hero {
+          position: relative;
+          width: 100%;
+          margin-top: -100px; /* Pulls banner behind the sticky/overlay header */
+          padding: 0;
+          overflow: hidden;
+          background-color: #FAF7F5;
+        }
+        .wedding-hero-inner {
+          position: relative;
+          width: 100%;
+          line-height: 0;
+        }
+        .wedding-hero-img {
+          display: block;
+          width: 100%;
+          height: auto;
+          max-height: none; /* Never cut off or truncate the banner */
+          object-fit: contain; /* Preserves entire full size image from top to bottom */
+          border-radius: 0; /* Full edge-to-edge bleed */
+          margin: 0;
+          padding: 0;
+          animation: fadeIn 0.4s ease;
+        }
+        .wedding-hero-overlay-link {
+          position: absolute;
+          inset: 0;
+          z-index: 5;
+        }
+        .wedding-hero-content {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          text-align: center;
+          padding: 120px 40px 40px;
+          background: rgba(0, 0, 0, 0.25);
+          z-index: 6;
+          animation: fadeIn 0.4s ease;
+        }
+        .banner-arrow--left {
+          position: absolute;
+          left: 24px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: rgba(0, 0, 0, 0.35);
+          border: none;
+          color: #fff;
+          border-radius: 50%;
+          width: 44px;
+          height: 44px;
+          cursor: pointer;
+          font-size: 24px;
+          z-index: 10;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s;
+        }
+        .banner-arrow--right {
+          position: absolute;
+          right: 24px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: rgba(0, 0, 0, 0.35);
+          border: none;
+          color: #fff;
+          border-radius: 50%;
+          width: 44px;
+          height: 44px;
+          cursor: pointer;
+          font-size: 24px;
+          z-index: 10;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s;
+        }
+        .banner-arrow:hover {
+          background: rgba(0, 0, 0, 0.6);
+        }
+        .banner-dots {
+          position: absolute;
+          bottom: 24px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 8px;
+          z-index: 10;
+        }
+        .banner-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 5px;
+          background-color: rgba(255, 255, 255, 0.5);
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        .banner-dot.is-active {
+          width: 28px;
+          background-color: #D98A9C;
+        }
+
+        @media (max-width: 768px) {
+          .wedding-full-hero {
+            margin-top: -70px; /* Header is 70px on mobile */
+          }
+          .banner-arrow--left {
+            left: 10px;
+            width: 36px;
+            height: 36px;
+            font-size: 20px;
+          }
+          .banner-arrow--right {
+            right: 10px;
+            width: 36px;
+            height: 36px;
+            font-size: 20px;
+          }
+          .banner-dots {
+            bottom: 12px;
+          }
+        }
+
+        /* Fallback Medallion Banner (when no image is uploaded) */
         .rakhi-banner {
           position: relative;
           width: 100%;
@@ -1164,36 +1243,6 @@ export default function WeddingCelebration() {
           margin-bottom: 80px;
           overflow: hidden;
           overflow: clip !important;
-        }
-        /* Uploaded banner: full width container, prominent size with rich styling */
-        .rakhi-banner--image {
-          display: block;
-          width: 100%;
-          max-width: 100%;
-          margin-left: auto;
-          margin-right: auto;
-          aspect-ratio: auto;
-          padding: 0 !important;
-          background-color: transparent;
-          border-radius: 15px;
-          overflow: hidden;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-        }
-        .rakhi-banner--image > img {
-          display: block;
-          width: 100%;
-          max-width: 100%;
-          height: auto;
-          max-height: 720px;
-          object-fit: cover;
-          border-radius: 15px;
-        }
-        .rakhi-banner--image .banner-content {
-          position: absolute;
-          inset: 0;
-          justify-content: center;
-          padding: 40px 72px;
-          background: rgba(0, 0, 0, 0.35);
         }
         .banner-svg-medallion {
           position: absolute;

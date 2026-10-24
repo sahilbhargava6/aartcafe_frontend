@@ -34,11 +34,26 @@ type SearchOption =
 const optionKey = (o: SearchOption) =>
   o.kind + ":" + (o.kind === "category" ? o.category.id : o.kind === "product" ? o.product.id : o.kind === "all" ? "" : o.text);
 
-export default function Navbar() {
+interface NavbarProps {
+  overlay?: boolean;
+}
+
+export default function Navbar({ overlay = false }: NavbarProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    if (!overlay) return;
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 40);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [overlay]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -326,14 +341,20 @@ export default function Navbar() {
   return (
     <>
       <header
-        className="site-header"
+        className={`site-header${overlay ? " site-header--overlay" : ""}${scrolled ? " is-scrolled" : ""}`}
         style={{
           position: "sticky",
           top: 0,
           left: 0,
           width: "100%",
-          backgroundColor: "rgba(255, 255, 255, 0.95)",
-          backdropFilter: "blur(10px)",
+          backgroundColor: overlay
+            ? (scrolled ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.55)")
+            : "rgba(255, 255, 255, 0.95)",
+          backdropFilter: overlay ? (scrolled ? "blur(10px)" : "blur(8px)") : "blur(10px)",
+          WebkitBackdropFilter: overlay ? (scrolled ? "blur(10px)" : "blur(8px)") : "blur(10px)",
+          borderBottom: overlay && !scrolled ? "none" : "1px solid rgba(235, 229, 219, 0.6)",
+          boxShadow: overlay && !scrolled ? "none" : "0 2px 10px rgba(0, 0, 0, 0.04)",
+          transition: "background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease",
           zIndex: 99,
           height: "100px",
           display: "flex",
