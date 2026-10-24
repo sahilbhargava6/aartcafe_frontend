@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { openWhatsApp, getDirectWhatsAppUrl } from "@/lib/whatsapp";
 
 const API = "https://aartcafe-backend-production-rjudvs.laravel.cloud/api";
 const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919267943830";
@@ -158,10 +159,12 @@ export default function Footer() {
             </li>
             <li>
               <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hello Aartcafe! I have a question.")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ transition: "color 0.2s" }}
+                href={getDirectWhatsAppUrl(WHATSAPP_NUMBER, "Hello Aartcafe! I have a question.")}
+                onClick={(e) => {
+                  e.preventDefault();
+                  openWhatsApp(WHATSAPP_NUMBER, "Hello Aartcafe! I have a question.");
+                }}
+                style={{ transition: "color 0.2s", cursor: "pointer" }}
                 {...linkHover}
               >
                 Contact Us

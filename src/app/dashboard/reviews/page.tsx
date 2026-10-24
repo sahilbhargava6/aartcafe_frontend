@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Plus, Edit2, Trash2, X, Heart, Search, Filter, RotateCcw, Check } from "lucide-react";
 
 export default function ReviewsDashboard() {
@@ -22,9 +22,31 @@ export default function ReviewsDashboard() {
   const [productIds, setProductIds] = useState<number[]>([]);
   const [productQuery, setProductQuery] = useState("");
   const [productListOpen, setProductListOpen] = useState(false);
+  const productDropdownRef = useRef<HTMLDivElement>(null);
   const [reviewerName, setReviewerName] = useState("");
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
+
+  // Reliable click / touch outside listener for iPad and mobile touch devices
+  useEffect(() => {
+    const handleOutsideInteraction = (e: MouseEvent | TouchEvent) => {
+      if (
+        productDropdownRef.current &&
+        !productDropdownRef.current.contains(e.target as Node)
+      ) {
+        setProductListOpen(false);
+      }
+    };
+
+    if (productListOpen) {
+      document.addEventListener("mousedown", handleOutsideInteraction);
+      document.addEventListener("touchstart", handleOutsideInteraction, { passive: true });
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideInteraction);
+      document.removeEventListener("touchstart", handleOutsideInteraction);
+    };
+  }, [productListOpen]);
 
   const fetchReviews = () => {
     setLoading(true);
@@ -535,7 +557,7 @@ export default function ReviewsDashboard() {
                   </div>
                 )}
 
-                <div style={{ position: "relative" }}>
+                <div ref={productDropdownRef} style={{ position: "relative" }}>
                   <Search size={16} color="#B5A89C" style={{ position: "absolute", left: "12px", top: "20px", transform: "translateY(-50%)", pointerEvents: "none" }} />
                   <input
                     id="review-product"
@@ -549,13 +571,15 @@ export default function ReviewsDashboard() {
                     onFocus={() => {
                       setProductListOpen(true);
                     }}
+                    onClick={() => {
+                      setProductListOpen(true);
+                    }}
                     onChange={(e) => {
                       setProductQuery(e.target.value);
                       setProductListOpen(true);
                     }}
-                    onBlur={() => setTimeout(() => setProductListOpen(false), 200)}
                     onKeyDown={(e) => {
-                      if (e.key === "Escape") e.currentTarget.blur();
+                      if (e.key === "Escape") setProductListOpen(false);
                       if (e.key === "Enter") {
                         e.preventDefault();
                         if (productMatches[0]) toggleProduct(productMatches[0].id);
@@ -571,13 +595,13 @@ export default function ReviewsDashboard() {
                       id="review-product-list"
                       role="listbox"
                       style={{
-                        position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 20, maxHeight: "240px", overflowY: "auto",
+                        position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, maxHeight: "250px", overflowY: "auto",
                         margin: 0, padding: "4px", listStyle: "none", backgroundColor: "#fff", border: "1px solid #D9A85C",
-                        borderRadius: "8px", boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
+                        borderRadius: "8px", boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
                       }}
                     >
                       {productMatches.length === 0 ? (
-                        <li style={{ padding: "10px 12px", fontSize: "14px", color: "#8B7E74" }}>No product matches “{productQuery.trim()}”</li>
+                        <li style={{ padding: "12px 14px", fontSize: "14px", color: "#8B7E74" }}>No product matches “{productQuery.trim()}”</li>
                       ) : (
                         productMatches.map((prod) => {
                           const isSelected = productIds.includes(prod.id);
@@ -585,12 +609,19 @@ export default function ReviewsDashboard() {
                             <li key={prod.id} role="option" aria-selected={isSelected}>
                               <button
                                 type="button"
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => toggleProduct(prod.id)}
+                                onPointerDown={(e) => {
+                                  // Prevent input blur and keyboard dismissal on iPad / touchscreens
+                                  e.preventDefault();
+                                }}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  toggleProduct(prod.id);
+                                }}
                                 style={{
-                                  width: "100%", minHeight: "40px", padding: "8px 12px", border: "none", borderRadius: "6px", textAlign: "left",
+                                  width: "100%", minHeight: "44px", padding: "8px 12px", border: "none", borderRadius: "6px", textAlign: "left",
                                   backgroundColor: isSelected ? "#FFEAEF" : "transparent", color: "#3F3B38", fontSize: "15px", cursor: "pointer",
                                   display: "flex", justifyContent: "space-between", alignItems: "center",
+                                  WebkitTapHighlightColor: "transparent",
                                 }}
                               >
                                 <span>{prod.title}</span>
@@ -599,6 +630,47 @@ export default function ReviewsDashboard() {
                             </li>
                           );
                         })
+                      )}
+                      {!editingReview && (
+                        <li
+                          style={{
+                            position: "sticky",
+                            bottom: 0,
+                            backgroundColor: "#FAF7F5",
+                            borderTop: "1px solid #EBE5DB",
+                            padding: "8px 12px",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            zIndex: 2,
+                            borderRadius: "0 0 6px 6px",
+                            marginTop: "4px",
+                          }}
+                        >
+                          <span style={{ fontSize: "13px", color: "#6E6E6E", fontWeight: 500 }}>
+                            {productIds.length} product{productIds.length !== 1 ? "s" : ""} selected
+                          </span>
+                          <button
+                            type="button"
+                            onPointerDown={(e) => e.preventDefault()}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setProductListOpen(false);
+                            }}
+                            style={{
+                              backgroundColor: "#D98A9C",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "6px",
+                              padding: "4px 14px",
+                              fontSize: "13px",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Done
+                          </button>
+                        </li>
                       )}
                     </ul>
                   )}

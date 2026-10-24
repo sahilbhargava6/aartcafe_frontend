@@ -330,16 +330,26 @@ export default function ProductDetailsPage() {
       });
     });
 
-    // The photo selected in the gallery goes to the bag and into the WhatsApp order message
+    const selectedOptionsList: { name: string; value: string }[] = [];
+    (productData.attributes || []).forEach((attr: any) => {
+      const val = selectedAttributes[attr.name]?.value;
+      if (val) {
+        selectedOptionsList.push({ name: attr.name, value: val });
+      }
+    });
+
     const photos = galleryOf(productData);
 
     addToBag({
       id: `${productData.id}-${Date.now()}`,
       title: `${productData.title}${attrSummary ? ` (${attrSummary})` : ""}`,
+      productTitle: productData.title,
       price: finalPrice,
       image: photos[selectedImageIndex] || photos[0] || "",
       productId: productData.id,
       optionIds,
+      selectedOptions: selectedOptionsList,
+      isFreeDelivery: Boolean(productData.is_free_delivery),
     });
   };
 
@@ -537,7 +547,7 @@ export default function ProductDetailsPage() {
                     whiteSpace: "pre-wrap",
                   }}
                 >
-                  {productData.description || "Handcrafted custom keepsake crafted especially with premium flowers and preservation craftsmanship."}
+                  {productData.description || "No description filled."}
                 </p>
                 <div
                   className="font-serif product-price"

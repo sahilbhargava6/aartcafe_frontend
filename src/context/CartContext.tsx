@@ -14,6 +14,9 @@ export interface CartItem {
   productId?: number;
   optionIds?: number[];
   priceOnRequest?: boolean;
+  productTitle?: string;
+  selectedOptions?: { name: string; value: string }[];
+  isFreeDelivery?: boolean;
 }
 
 interface CartContextType {

@@ -200,7 +200,7 @@ export default function SpecialOffers() {
                       </h3>
                     </Link>
                     <p className="font-sans so-prod-desc" style={{ fontSize: "14px", color: "#8FB9A8", lineHeight: "20px", margin: 0 }}>
-                      {prod.description || "Handcrafted with love, designed to celebrate the timeless bond."}
+                      {prod.description || "No description filled."}
                     </p>
                     <span className="font-serif so-prod-price" style={{ fontSize: "28px", color: "#3F3B38" }}>
                       {formatRupees(salePrice(prod))}
@@ -336,7 +336,7 @@ export default function SpecialOffers() {
               <p className="font-sans so-wedding-desc" style={{ fontSize: "16px", color: "#8FB9A8", lineHeight: "26px", margin: 0 }}>
                 {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIdx]?.description
                   ? weddingSpecials[activeWeddingIdx].description
-                  : "Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts. Top-rated options include customized text frames, elegant tabletop glass and pearl designs, and sterling silver anniversary frames that track a couple's journey over time."}
+                  : "No description filled."}
               </p>
 
               <span className="font-serif so-wedding-price" style={{ fontSize: "36px", color: "#3F3B38" }}>

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Search, Package, CheckCircle2, Clock, Truck, ShieldCheck, MessageCircle, AlertCircle } from "lucide-react";
+import { openWhatsApp, getDirectWhatsAppUrl } from "@/lib/whatsapp";
 
 const STAGES = [
   { key: "pending", label: "Order Received", desc: "Order details received in system", icon: Clock },
@@ -453,26 +454,35 @@ export default function TrackOrderPage() {
 
                   {/* WhatsApp Support Action */}
                   <div className="track-actions" style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <a
-                      className="track-whatsapp"
-                      href={`https://wa.me/919267943830?text=${encodeURIComponent(`Hi Aartcafe! I would like to inquire about my Order #AART-${ord.id}`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        backgroundColor: "#25D366",
-                        color: "#FFF",
-                        padding: "10px 20px",
-                        borderRadius: "20px",
-                        fontWeight: 600,
-                        fontSize: "14px",
-                        textDecoration: "none",
-                      }}
-                    >
-                      <MessageCircle size={18} /> Inquire via WhatsApp
-                    </a>
+                    {(() => {
+                      const msg = `Hi Aartcafe! I would like to inquire about my Order #AART-${ord.id}`;
+                      const directUrl = getDirectWhatsAppUrl("919267943830", msg);
+                      return (
+                        <a
+                          className="track-whatsapp"
+                          href={directUrl}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            openWhatsApp("919267943830", msg);
+                          }}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            backgroundColor: "#25D366",
+                            color: "#FFF",
+                            padding: "10px 20px",
+                            borderRadius: "20px",
+                            fontWeight: 600,
+                            fontSize: "14px",
+                            textDecoration: "none",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <MessageCircle size={18} /> Inquire via WhatsApp
+                        </a>
+                      );
+                    })()}
                   </div>
                 </div>
               );

@@ -253,7 +253,7 @@ export default function ProductsDashboard() {
           title: title,
           category: "General",
           price: price,
-          description: "Handcrafted catalog product",
+          description: "No description filled.",
           image: "",
           is_bestseller: "false",
           is_new_discovery: "false",

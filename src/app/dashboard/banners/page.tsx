@@ -261,6 +261,7 @@ export default function BannersDashboard() {
                        banner.position === "special_offers_top_right" ? "Special Offers - Top Right Card" :
                        banner.position === "special_offers_bottom_right" ? "Special Offers - Bottom Right Card" :
                        banner.position === "festival_specials" ? "Festival Specials Banner" :
+                       banner.position === "wedding_celebration" || banner.position === "wedding-celebration" || banner.position === "wedding_specials" || banner.position === "wedding-specials" ? "Wedding Celebration Banner" :
                        banner.position === "home_top" ? "Home Page Top Banner" :
                        banner.position || "All Pages"}
                     </span>
@@ -416,7 +417,7 @@ export default function BannersDashboard() {
                     height: "40px", borderRadius: "8px", border: "1px solid #8FB9A8",
                     padding: "0 12px", fontSize: "16px", outline: "none", color: "#3F3B38",
                   }}
-                  placeholder="e.g. /shop or /special-offers"
+                  placeholder="e.g. /shop, /special-offers, or /wedding-celebration"
                 />
               </div>
 
@@ -434,6 +435,7 @@ export default function BannersDashboard() {
                   <option value="special_offers_top_right">🏆 Special Offers - Top Right Card (Gold 50% OFF)</option>
                   <option value="special_offers_bottom_right">✨ Special Offers - Bottom Right Card (Green Special Offer)</option>
                   <option value="festival_specials">🎉 Festival Specials Banner</option>
+                  <option value="wedding_celebration">💍 Wedding Celebration Banner (/wedding-celebration)</option>
                   <option value="home_top">🏠 Home Page Top Banner</option>
                   <option value="all">🌐 All Pages / General</option>
                 </select>

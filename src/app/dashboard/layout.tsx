@@ -69,7 +69,7 @@ export default function DashboardLayout({
     { name: "Pages", path: "/dashboard/pages" },
     { name: "Reviews", path: "/dashboard/reviews" },
     { name: "New Discoveries", path: "/dashboard/new-discovers" },
-    { name: "Wedding Specials", path: "/dashboard/wedding-specials" },
+    { name: "WEDDING CELEBRATION", path: "/dashboard/wedding-celebration" },
     { name: "Hero Banner", path: "/dashboard/hero-featured" },
     { name: "Bestsellers", path: "/dashboard/best-sellers" },
     { name: "Special Offers", path: "/dashboard/special-offers" },

@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     if (!product?.id || !product.title) return {};
 
     const summary = String(product.description || "").replace(/\s+/g, " ").trim();
-    const description = `${formatRupees(salePrice(product))} · ${summary ? summary.slice(0, 150) + (summary.length > 150 ? "…" : "") : "Handcrafted keepsake by Aartcafe."}`;
+    const description = `${formatRupees(salePrice(product))} · ${summary ? summary.slice(0, 150) + (summary.length > 150 ? "…" : "") : "No description filled."}`;
     const title = `${product.title} | Aartcafe`;
     // A product without a photo shares the site card instead
     const hasPhoto = Boolean(product.image || (Array.isArray(product.images) && product.images.length));

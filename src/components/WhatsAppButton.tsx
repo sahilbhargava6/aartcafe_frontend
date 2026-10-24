@@ -3,18 +3,22 @@
 import React from "react";
 import { usePathname } from "next/navigation";
 import { MessageCircle } from "lucide-react";
+import { openWhatsApp, getDirectWhatsAppUrl } from "@/lib/whatsapp";
 
 export default function WhatsAppButton() {
   const pathname = usePathname();
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919267943830"; // Business WhatsApp Number (+91 9267943830)
-  const message = encodeURIComponent("Hello Aartcafe! I have an inquiry about custom handmade frames.");
+  const messageText = "Hello Aartcafe! I have an inquiry about custom handmade frames.";
+  const directUrl = getDirectWhatsAppUrl(whatsappNumber, messageText);
 
   return (
     <>
       <a
-        href={`https://wa.me/${whatsappNumber}?text=${message}`}
-        target="_blank"
-        rel="noopener noreferrer"
+        href={directUrl}
+        onClick={(e) => {
+          e.preventDefault();
+          openWhatsApp(whatsappNumber, messageText);
+        }}
         title="Chat on WhatsApp Business"
         className={`whatsapp-fab${pathname === "/cart" ? " whatsapp-fab--bag" : ""}`}
         style={{

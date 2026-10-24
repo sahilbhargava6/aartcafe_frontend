@@ -67,29 +67,41 @@ export default function WeddingCelebration() {
                 b.position === "wedding-specials" ||
                 b.position === "wedding_specials")
           );
-          setBanners(active);
+          const specific = active.filter(
+            (b: any) =>
+              b.position === "wedding-celebration" ||
+              b.position === "wedding_celebration" ||
+              b.position === "wedding-specials" ||
+              b.position === "wedding_specials"
+          );
+          setBanners(specific.length > 0 ? specific : active);
         }
       })
       .catch((err) => console.error("Error loading banners:", err));
 
-    // 2. Fetch Wedding Celebration Products
-    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/wedding-specials")
+    // 2. Fetch Wedding Celebration Products (Selected)
+    fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/wedding-celebration")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setProducts(data);
         } else {
-          // Fallback if backend returned empty
+          // Fallback if backend endpoint not yet deployed: fetch all products and check is_wedding_selected
           fetch("https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products")
             .then((res) => (res.ok ? res.json() : []))
             .then((all) => {
               if (Array.isArray(all)) {
-                const weddingItems = all.filter(
-                  (p: any) =>
-                    p.is_wedding_special ||
-                    /wedding|varmala|garland|preservation/i.test(p.title)
-                );
-                setProducts(weddingItems.length > 0 ? weddingItems : []);
+                const selected = all.filter((p: any) => p.is_wedding_selected);
+                if (selected.length > 0) {
+                  setProducts(selected);
+                } else {
+                  const fallbackItems = all.filter(
+                    (p: any) =>
+                      p.is_wedding_special ||
+                      /wedding|varmala|garland|preservation/i.test(p.title)
+                  );
+                  setProducts(fallbackItems);
+                }
               }
             });
         }
@@ -408,8 +420,7 @@ export default function WeddingCelebration() {
                     </div>
 
                     <p className="font-sans detail-desc">
-                      {prod.description ||
-                        "Handcrafted bespoke wedding keepsakes to capture and cherish the sacred beauty of your union forever."}
+                      {prod.description || "No description filled."}
                     </p>
 
                     <div
@@ -586,8 +597,7 @@ export default function WeddingCelebration() {
                     </div>
 
                     <p className="font-sans detail-desc">
-                      {prod.description ||
-                        "Handcrafted bespoke wedding keepsakes to capture and cherish the sacred beauty of your union forever."}
+                      {prod.description || "No description filled."}
                     </p>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>

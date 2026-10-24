@@ -297,7 +297,7 @@ export default function FestivalSpecials() {
                     </div>
 
                     <p className="font-sans detail-desc">
-                      {prod.description || "Handcrafted with love, designed to celebrate the timeless bond."}
+                      {prod.description || "No description filled."}
                     </p>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", justifyContent: "flex-end" }}>
@@ -380,7 +380,7 @@ export default function FestivalSpecials() {
                     </div>
 
                     <p className="font-sans detail-desc">
-                      {prod.description || "Handcrafted with love, designed to celebrate the timeless bond."}
+                      {prod.description || "No description filled."}
                     </p>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>

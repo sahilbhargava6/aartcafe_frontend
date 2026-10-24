@@ -6,11 +6,25 @@ import Footer from "@/components/Footer";
 import Link from "next/link";
 import { useCart, CartItem, formatCartTotal } from "@/context/CartContext";
 import { salePrice, originalPrice, formatRupees } from "@/lib/price";
-import { Trash2, Plus, Minus, Check, Image as ImageIcon } from "lucide-react";
+import { Trash2, Plus, Minus, Check, Image as ImageIcon, MessageCircle, Copy, CheckCircle2 } from "lucide-react";
+import { openWhatsApp, getWhatsAppUrls } from "@/lib/whatsapp";
 
 export default function CartPage() {
   const { cart, cartTotal, addToBag, removeFromBag, updateQuantity, clearCart } = useCart();
   const [submitting, setSubmitting] = useState(false);
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919267943830";
+  const [confirmedOrder, setConfirmedOrder] = useState<{
+    orderId: number;
+    message: string;
+    total: number;
+    urls: {
+      web: string;
+      intent: string;
+      native: string;
+      direct: string;
+    };
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Contact form state
   const [name, setName] = useState("");
@@ -187,47 +201,199 @@ export default function CartPage() {
 
     const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919267943830"; // Business WhatsApp Number (+91 9267943830)
 
-    const itemDetails = (order.items as { title: string; price: number; quantity: number; price_on_request?: boolean; image?: string }[])
-      .map((item, idx) => {
-        const titleClean = item.title
-          .replace(/\b(NA|N\/A|none|null|-)\b,?\s*/gi, "")
-          .replace(/,\s*,/g, ", ")
-          .replace(/\(\s*,/g, "(")
-          .replace(/,\s*\)/g, ")")
-          .replace(/\(\s*\)/g, "")
-          .trim();
+    // Ensure all products are loaded in productsMap so we have full attributes and free delivery flags
+    const currentProductsMap: Record<number, any> = { ...productsMap };
+    const missingProductIds = cart
+      .map((item) => {
+        if (item.productId) return item.productId;
+        const match = String(item.id).match(/^\d+/);
+        return match ? Number(match[0]) : null;
+      })
+      .filter((id): id is number => typeof id === "number" && !isNaN(id) && !currentProductsMap[id]);
 
-        // The photo the customer selected for this item, as a link the shop can open
-        const photo = item.image?.startsWith("http") ? `\n   ▫️ Photo: ${item.image}` : "";
-        return `*${idx + 1}. ${titleClean}*\n   ▫️ Quantity: ${item.quantity}\n   ▫️ Price: ${item.price_on_request ? "On request" : `₹${item.price * item.quantity}`}${photo}`;
+    if (missingProductIds.length > 0) {
+      await Promise.all(
+        missingProductIds.map(async (id) => {
+          try {
+            const res = await fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/products/${id}`);
+            if (res.ok) {
+              const prod = await res.json();
+              if (prod && prod.id) {
+                currentProductsMap[prod.id] = prod;
+              }
+            }
+          } catch {}
+        })
+      );
+    }
+
+    const itemDetails = (order.items as any[])
+      .map((orderItem, idx) => {
+        const cartItem = cart[idx] || cart.find((c) => c.productId === orderItem.product_id);
+        const prodId =
+          orderItem.product_id ||
+          cartItem?.productId ||
+          (String(cartItem?.id || "").match(/^\d+/) ? Number(String(cartItem?.id || "").match(/^\d+/)![0]) : null);
+        const productData = prodId ? currentProductsMap[prodId] : null;
+
+        // 1. Clean Title (no parentheses with attributes in the main title)
+        let productTitle = "";
+        if (orderItem.product_title && typeof orderItem.product_title === "string") {
+          productTitle = orderItem.product_title.trim();
+        } else if (cartItem?.productTitle) {
+          productTitle = cartItem.productTitle.trim();
+        } else if (productData?.title) {
+          productTitle = productData.title.trim();
+        } else if (orderItem.title) {
+          productTitle = orderItem.title.replace(/\s*\([^)]*\)\s*$/, "").trim();
+        } else if (cartItem?.title) {
+          productTitle = cartItem.title.replace(/\s*\([^)]*\)\s*$/, "").trim();
+        } else {
+          productTitle = "Product";
+        }
+
+        // 2. Attributes breakdown
+        const attributeLines: string[] = [];
+        if (Array.isArray(orderItem.attributes) && orderItem.attributes.length > 0) {
+          orderItem.attributes.forEach((attr: { name: string; value: string }) => {
+            if (attr?.name && attr?.value) {
+              attributeLines.push(`- ${attr.name}: ${attr.value}`);
+            }
+          });
+        } else if (Array.isArray(cartItem?.selectedOptions) && cartItem.selectedOptions.length > 0) {
+          cartItem.selectedOptions.forEach((attr: { name: string; value: string }) => {
+            if (attr?.name && attr?.value) {
+              attributeLines.push(`- ${attr.name}: ${attr.value}`);
+            }
+          });
+        } else if (productData && Array.isArray(productData.attributes)) {
+          const optionIds: number[] = Array.isArray(orderItem.option_ids)
+            ? orderItem.option_ids
+            : Array.isArray(cartItem?.optionIds)
+            ? cartItem.optionIds
+            : [];
+
+          productData.attributes.forEach((attr: any) => {
+            const matchedValues = (attr.values || []).filter((v: any) => optionIds.includes(v.id));
+            if (matchedValues.length > 0) {
+              const valStr = matchedValues.map((v: any) => v.value).join(", ");
+              attributeLines.push(`- ${attr.name}: ${valStr}`);
+            }
+          });
+        }
+
+        // Fallback: If no attributes were extracted yet, check if title had (attr1, attr2)
+        if (attributeLines.length === 0) {
+          const rawTitle = orderItem.title || cartItem?.title || "";
+          const parenMatch = rawTitle.match(/\(([^)]+)\)/);
+          if (parenMatch && parenMatch[1]) {
+            const parts = parenMatch[1].split(",").map((s: string) => s.trim()).filter(Boolean);
+            parts.forEach((part: string) => {
+              let matchedAttr: string | null = null;
+              if (productData?.attributes) {
+                for (const attr of productData.attributes) {
+                  if ((attr.values || []).some((v: any) => v.value?.toLowerCase() === part.toLowerCase())) {
+                    matchedAttr = attr.name;
+                    break;
+                  }
+                }
+              }
+              if (matchedAttr) {
+                attributeLines.push(`- ${matchedAttr}: ${part}`);
+              } else {
+                attributeLines.push(`- Option: ${part}`);
+              }
+            });
+          }
+        }
+
+        // 3. Quantity
+        const quantityLine = `- Quantity: ${orderItem.quantity}`;
+
+        // 4. Price
+        const priceLine = `- Price: ${orderItem.price_on_request ? "On request" : `₹${orderItem.price * orderItem.quantity}`}`;
+
+        // 5. Photo URL (normalize to absolute URL if relative)
+        let rawPhoto: string = orderItem.image || cartItem?.image || productData?.image || "";
+        if (rawPhoto.startsWith("data:")) {
+          rawPhoto = productData?.image || "";
+        }
+        let photoUrl = "";
+        if (rawPhoto) {
+          if (rawPhoto.startsWith("http://") || rawPhoto.startsWith("https://")) {
+            photoUrl = rawPhoto;
+          } else if (rawPhoto.startsWith("/media/")) {
+            photoUrl = `https://aartcafe-backend-production-rjudvs.laravel.cloud${rawPhoto}`;
+          } else if (rawPhoto.startsWith("media/")) {
+            photoUrl = `https://aartcafe-backend-production-rjudvs.laravel.cloud/${rawPhoto}`;
+          } else if (rawPhoto.startsWith("/")) {
+            photoUrl = `https://aartcafe-backend-production-rjudvs.laravel.cloud${rawPhoto}`;
+          } else {
+            photoUrl = `https://aartcafe-backend-production-rjudvs.laravel.cloud/media/${rawPhoto}`;
+          }
+        }
+        const photoLine = photoUrl ? `- Photo: ${photoUrl}` : "";
+
+        // 6. Free Delivery
+        const isFreeDelivery = Boolean(
+          orderItem.is_free_delivery ?? cartItem?.isFreeDelivery ?? productData?.is_free_delivery
+        );
+
+        const itemLines = [
+          `*${idx + 1}. ${productTitle}*`,
+          ...attributeLines,
+          quantityLine,
+          priceLine,
+          ...(photoLine ? [photoLine] : []),
+        ];
+
+        let itemBlock = itemLines.join("\n");
+        if (isFreeDelivery) {
+          itemBlock += "\n\n🚛 *Free Delivery*";
+        }
+        return itemBlock;
       })
       .join("\n\n");
 
     const messageLines = [
-      "✨ *NEW ORDER - AARTCAFE* ✨",
-      "━━━━━━━━━━━━━━━━━━",
-      `🧾 *Order Reference:* #AART-${order.id}`,
-      "*Customer Details:*",
-      `👤 *Name:* ${name.trim() || "Customer"}`,
-      `📧 *Email:* ${email.trim() || "N/A"}`,
-      `📞 *Phone:* ${phone.trim() || "N/A"}`,
-      ...(order.reference_image ? [`📎 *Reference Image:* ${order.reference_image}`] : []),
-      ...(customRequest.trim() ? [`📝 *Custom Requests:* ${customRequest.trim()}`] : []),
-      "━━━━━━━━━━━━━━━━━━",
-      "*Order Items:*",
+      "🔔*NEW ORDER - AARTCAFE*🔔",
+      "",
+      "━━━━━━━━━━━━━━━━",
+      "",
+      `🔸*Order Reference:* #AART-${order.id}`,
+      "",
+      "🔹*Customer Details:*",
+      `* *Name:* ${name.trim() || ""}`,
+      `* *Email:* ${email.trim() || ""}`,
+      `* *Phone:* ${phone.trim() || ""}`,
+      `* *Reference Image:* ${order.reference_image ? order.reference_image : ""}`,
+      `* *Custom Request:* ${customRequest.trim() ? customRequest.trim() : ""}`,
+      "",
+      "━━━━━━━━━━━━━━━━",
+      "",
+      "🔹*Order Items:*",
       itemDetails,
-      "━━━━━━━━━━━━━━━━━━",
-      `💳 *TOTAL AMOUNT:* ₹${orderTotal}${order.items.some((i: { price_on_request?: boolean }) => i.price_on_request) ? " + items priced on request" : ""}`,
-      "━━━━━━━━━━━━━━━━━━",
-      "Hello Aartcafe! I would like to confirm my order. Please share availability & payment details. Thank you! 💕"
+      "",
+      "━━━━━━━━━━━━━━━━",
+      `🔹*TOTAL AMOUNT:* ₹${orderTotal}${order.items.some((i: { price_on_request?: boolean }) => i.price_on_request) ? " + items priced on request" : ""}`,
+      "━━━━━━━━━━━━━━━━",
+      "Hello Aartcafe! I would like to confirm my order. Please share availability & payment details. Thank you! 💐"
     ];
 
     const message = messageLines.join("\n");
-    const encoded = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encoded}`;
+    const urls = getWhatsAppUrls(whatsappNumber, message);
 
+    setConfirmedOrder({
+      orderId: order.id,
+      message,
+      total: orderTotal,
+      urls,
+    });
+    setSubmitting(false);
     clearCart();
-    window.location.href = whatsappUrl;
+
+    // Trigger WhatsApp launch immediately
+    openWhatsApp(whatsappNumber, message);
   };
 
   return (
@@ -237,11 +403,186 @@ export default function CartPage() {
       <main className="cart-main" style={{ flex: 1, backgroundColor: "#fff", padding: "40px 0 80px 0" }}>
         <div className="cart-container">
 
-          <h1 className="font-serif page-title">
-            MY BAG
-          </h1>
+          {confirmedOrder ? (
+            <div
+              className="order-success-card"
+              style={{
+                backgroundColor: "#fff",
+                border: "1px solid #EBE5DB",
+                borderRadius: "24px",
+                padding: "48px 24px",
+                maxWidth: "680px",
+                margin: "0 auto 60px",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.06)",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: "72px",
+                  height: "72px",
+                  borderRadius: "50%",
+                  backgroundColor: "#E8F5E9",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 20px",
+                }}
+              >
+                <CheckCircle2 size={44} color="#25D366" />
+              </div>
 
-          <div className="cart-grid">
+              <span
+                className="font-sans"
+                style={{
+                  display: "inline-block",
+                  backgroundColor: "#FAF7F5",
+                  border: "1px solid #D9A85C",
+                  color: "#3F3B38",
+                  padding: "6px 18px",
+                  borderRadius: "20px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  marginBottom: "16px",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                ORDER #{confirmedOrder.orderId}
+              </span>
+
+              <h2
+                className="font-serif"
+                style={{
+                  fontSize: "32px",
+                  color: "#3F3B38",
+                  margin: "0 0 12px",
+                  fontWeight: 500,
+                }}
+              >
+                Order Placed Successfully!
+              </h2>
+
+              <p
+                className="font-sans"
+                style={{
+                  fontSize: "16px",
+                  color: "#6E6E6E",
+                  lineHeight: "1.6",
+                  maxWidth: "520px",
+                  margin: "0 auto 28px",
+                }}
+              >
+                Your order of <strong>₹{confirmedOrder.total}</strong> has been created in our system. Send your confirmation message directly to our team on WhatsApp:
+              </p>
+
+              {/* Main Actions */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px", maxWidth: "440px", margin: "0 auto" }}>
+                <a
+                  href={confirmedOrder.urls.direct}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openWhatsApp(whatsappNumber, confirmedOrder.message);
+                  }}
+                  className="whatsapp-launch-btn font-sans"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "10px",
+                    backgroundColor: "#25D366",
+                    color: "#fff",
+                    padding: "16px 28px",
+                    borderRadius: "14px",
+                    fontSize: "17px",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    boxShadow: "0 8px 24px rgba(37, 211, 102, 0.35)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <MessageCircle size={22} fill="#fff" color="#25D366" />
+                  <span>Tap to Open WhatsApp</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof navigator !== "undefined" && navigator.clipboard) {
+                      navigator.clipboard.writeText(confirmedOrder.message);
+                    }
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2500);
+                  }}
+                  className="font-sans"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    backgroundColor: copied ? "#E8F5E9" : "#FAF7F5",
+                    border: `1px solid ${copied ? "#2E7D32" : "#D9A85C"}`,
+                    color: copied ? "#2E7D32" : "#3F3B38",
+                    padding: "12px 20px",
+                    borderRadius: "12px",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {copied ? <Check size={16} /> : <Copy size={16} />}
+                  <span>{copied ? "Order Details Copied!" : "Copy Order Message"}</span>
+                </button>
+              </div>
+
+              {/* In-app Browser / Instagram Tip Box */}
+              <div
+                style={{
+                  backgroundColor: "#FFF8E7",
+                  border: "1px solid #F3E0B5",
+                  borderRadius: "12px",
+                  padding: "16px 20px",
+                  textAlign: "left",
+                  maxWidth: "480px",
+                  margin: "24px auto 0",
+                  fontSize: "13px",
+                  color: "#6E5B3B",
+                  lineHeight: "1.6",
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: "4px" }}>
+                  📱 Note for Instagram Users:
+                </div>
+                If WhatsApp doesn’t launch, tap the <strong>three dots (•••)</strong> at the top-right corner of your screen and select <strong>"Open in Chrome"</strong> or <strong>"Open in Safari"</strong>.
+              </div>
+
+              {/* Secondary links */}
+              <div style={{ marginTop: "24px", display: "flex", justifyContent: "center", gap: "20px", flexWrap: "wrap", fontSize: "14px" }}>
+                <a
+                  href={confirmedOrder.urls.web}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "#D9A85C", textDecoration: "underline" }}
+                >
+                  Open in WhatsApp Web
+                </a>
+                <span style={{ color: "#BCAEA2" }}>•</span>
+                <button
+                  type="button"
+                  onClick={() => setConfirmedOrder(null)}
+                  style={{ background: "none", border: "none", color: "#6E6E6E", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                >
+                  Start New Order
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h1 className="font-serif page-title">
+                MY BAG
+              </h1>
+
+              <div className="cart-grid">
 
             {/* ═══════════════════════════════════════════════════════
                 LEFT COLUMN: CART ITEMS LIST & TOTAL
@@ -648,6 +989,8 @@ export default function CartPage() {
             </div>
 
           </div>
+          </>
+          )}
 
           {/* ═══════════════════════════════════════════════════════
               "You may also like:" SECTION

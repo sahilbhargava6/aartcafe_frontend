@@ -125,7 +125,7 @@ export default function Home() {
           return {
             id: String(p.id),
             title: p.title,
-            description: p.description || "Beautifully handcrafted festive special collection item, created with premium materials.",
+            description: p.description || "No description filled.",
             price,
             image: p.image || "",
             href: `/shop/${p.slug || p.id}`,
@@ -597,7 +597,7 @@ export default function Home() {
                       >
                         {rightProduct?.description
                           ? rightProduct.description
-                          : "Preserve your most cherished moments with a handcrafted pressed flower frame, beautifully designed to last a lifetime"}
+                          : "No description filled."}
                       </p>
                       <button
                         className="font-sans"
@@ -662,7 +662,7 @@ export default function Home() {
                         className="font-sans"
                         style={{ fontSize: "14px", lineHeight: "20px", color: "#6E6E6E", margin: "0 0 8px 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
                       >
-                        {p.description || "Handcrafted keepsake item."}
+                        {p.description || "No description filled."}
                       </p>
                       <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "center", gap: "14px" }}>
                         <span className="font-sans" style={{ fontSize: "16px", fontWeight: 500, color: "#3F3B38" }}>₹{price}</span>
@@ -843,7 +843,7 @@ export default function Home() {
                           overflow: "hidden"
                         }}
                       >
-                        {currentProduct.description || "Beautifully handcrafted festive special collection item, created with premium materials."}
+                        {currentProduct.description || "No description filled."}
                       </p>
                       <span
                         className="font-sans"
@@ -1373,7 +1373,7 @@ export default function Home() {
                 >
                   {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIndex]?.description
                     ? weddingSpecials[activeWeddingIndex].description
-                    : "Wedding frames come in a wide variety of styles to beautifully preserve marriage milestones or serve as perfect premium gifts. Top-rated options include customized text frames, elegant tabletop glass and pearl designs, and sterling silver anniversary frames that track a couple's journey over time."}
+                    : "No description filled."}
                 </p>
 
                 <div

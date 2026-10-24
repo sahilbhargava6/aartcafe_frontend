@@ -196,7 +196,7 @@ export default function ProductDetails() {
                     flex: 1,
                   }}
                 >
-                  {productData?.description || "Wedding memory frames come in a wide variety of styles to preserve your flowers and keep your stories alive."}
+                  {productData?.description || "No description filled."}
                 </p>
                 <div
                   className="font-serif product-price"
