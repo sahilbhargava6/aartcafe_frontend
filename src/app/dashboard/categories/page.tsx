@@ -581,7 +581,7 @@ export default function CategoriesDashboard() {
                 </div>
 
                 <span className="font-sans" style={{ fontSize: "12px", color: "#8B7E74", lineHeight: 1.4 }}>
-                  Featured in the circular story icons on the mobile shop. If left empty, the first product photo in this category is used automatically.
+                  Featured in the circular story badges on the mobile shop. <b>Recommended:</b> <b>1:1 square</b> (e.g. 500×500px) or <b>4:3</b> with the subject centered. Any photo will be automatically centered and cropped to fit the circle cleanly.
                 </span>
               </div>
 
