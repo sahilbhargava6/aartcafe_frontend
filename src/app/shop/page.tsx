@@ -286,9 +286,26 @@ export default function Shop() {
   const chipBack = chipLevel > 0 ? byId(selectedPath[chipLevel - 1]) : undefined;
 
   const [showMobilePriceFilter, setShowMobilePriceFilter] = useState(false);
+  const [showDesktopPriceFilter, setShowDesktopPriceFilter] = useState(false);
+  const desktopPriceRef = useRef<HTMLDivElement>(null);
   const [mobileCatOpen, setMobileCatOpen] = useState(true);
   const [customizingProduct, setCustomizingProduct] = useState<any | null>(null);
   const activeStoryRef = useRef<HTMLButtonElement>(null);
+
+  // Close desktop price popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (desktopPriceRef.current && !desktopPriceRef.current.contains(event.target as Node)) {
+        setShowDesktopPriceFilter(false);
+      }
+    };
+    if (showDesktopPriceFilter) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showDesktopPriceFilter]);
 
   // Smooth scroll down to products section when a category is picked or show all is tapped
   const scrollToProducts = () => {
@@ -578,7 +595,7 @@ export default function Shop() {
                   </h1>
                 </div>
 
-                <div className="shop-header-actions" style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                <div className="shop-header-actions desktop-only-header-actions" style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
                   {(selectedCollection || selectedCategory || searchTerm || minPrice > 0 || maxPrice < 10000 || (sortBy && sortBy !== "default")) && (
                     <button
                       onClick={clearFilters}
@@ -597,6 +614,158 @@ export default function Shop() {
                       Clear Filters
                     </button>
                   )}
+
+                  {/* Desktop Price Filter */}
+                  <div className="shop-price-container" ref={desktopPriceRef} style={{ position: "relative" }}>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                      <span className="shop-sort-label font-sans">
+                        <SlidersHorizontal size={13} color="#8E8882" />
+                        <span>Price:</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowDesktopPriceFilter((prev) => !prev)}
+                        className={`font-sans desktop-price-toggle-btn ${minPrice > 0 || maxPrice < 10000 ? "is-active" : ""}`}
+                        aria-expanded={showDesktopPriceFilter}
+                        aria-label="Filter products by price"
+                      >
+                        <span>
+                          {minPrice > 0 || maxPrice < 10000
+                            ? `₹${minPrice} - ₹${maxPrice}${maxPrice === 10000 ? "+" : ""}`
+                            : "All Prices"}
+                        </span>
+                        <ChevronDown
+                          size={14}
+                          color={minPrice > 0 || maxPrice < 10000 ? "#8C5E1B" : "#6E6E6E"}
+                          style={{
+                            transform: showDesktopPriceFilter ? "rotate(180deg)" : "none",
+                            transition: "transform 0.2s ease",
+                          }}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Desktop Price Dropdown Popover */}
+                    {showDesktopPriceFilter && (
+                      <div
+                        className="desktop-price-popover"
+                        style={{
+                          position: "absolute",
+                          top: "calc(100% + 10px)",
+                          right: 0,
+                          width: "320px",
+                          backgroundColor: "#fff",
+                          border: "1.5px solid #E8DFD8",
+                          borderRadius: "16px",
+                          boxShadow: "0 12px 32px rgba(63, 59, 56, 0.16)",
+                          padding: "18px 20px",
+                          zIndex: 100,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "14px",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span className="font-serif" style={{ fontSize: "17px", fontWeight: 700, color: "#3F3B38" }}>
+                            Filter by Price
+                          </span>
+                          {(minPrice > 0 || maxPrice < 10000) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMinPrice(0);
+                                setMaxPrice(10000);
+                              }}
+                              className="font-sans"
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: "#D98A9C",
+                                fontSize: "13px",
+                                fontWeight: 500,
+                                cursor: "pointer",
+                                textDecoration: "underline",
+                                padding: 0,
+                              }}
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Quick Presets */}
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          {[
+                            { label: "All", min: 0, max: 10000 },
+                            { label: "Under ₹1K", min: 0, max: 1000 },
+                            { label: "₹1K - ₹3K", min: 1000, max: 3000 },
+                            { label: "₹3K - ₹5K", min: 3000, max: 5000 },
+                            { label: "₹5K+", min: 5000, max: 10000 },
+                          ].map((preset) => {
+                            const isPresetActive = minPrice === preset.min && maxPrice === preset.max;
+                            return (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => {
+                                  setMinPrice(preset.min);
+                                  setMaxPrice(preset.max);
+                                }}
+                                className="font-sans"
+                                style={{
+                                  padding: "4px 10px",
+                                  borderRadius: "999px",
+                                  fontSize: "12px",
+                                  fontWeight: 500,
+                                  cursor: "pointer",
+                                  transition: "all 0.15s ease",
+                                  backgroundColor: isPresetActive ? "#D9A85C" : "#F8F5F2",
+                                  color: isPresetActive ? "#fff" : "#6E6E6E",
+                                  border: isPresetActive ? "1px solid #D9A85C" : "1px solid #EADBCC",
+                                }}
+                              >
+                                {preset.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Price Range Slider */}
+                        <div style={{ paddingRight: "4px", marginTop: "2px" }}>
+                          <PriceSlider
+                            min={0}
+                            max={10000}
+                            currentMin={minPrice}
+                            currentMax={maxPrice}
+                            onChange={(min: number, max: number) => {
+                              setMinPrice(min);
+                              setMaxPrice(max);
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "8px", borderTop: "1px solid #F3EDE7" }}>
+                          <button
+                            type="button"
+                            onClick={() => setShowDesktopPriceFilter(false)}
+                            className="font-sans"
+                            style={{
+                              backgroundColor: "#3F3B38",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "8px",
+                              padding: "6px 16px",
+                              fontSize: "13px",
+                              fontWeight: 500,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Sort By Dropdown */}
                   <div className="shop-sort-container">
@@ -838,45 +1007,96 @@ export default function Shop() {
               )}
 
               {/* ═══════════════════════════════════════════════════════
-                  MOBILE COLLAPSIBLE PRICE FILTER (Visible only on phone/tablet ≤992px)
+                  MOBILE COLLAPSIBLE PRICE FILTER & SORT TOOLBAR (Below Categories)
                   ═══════════════════════════════════════════════════════ */}
               <div className="mobile-price-section">
                 <div className="mobile-price-bar">
-                  <button
-                    type="button"
-                    onClick={() => setShowMobilePriceFilter((prev) => !prev)}
-                    className={`mobile-price-toggle-btn font-sans ${minPrice > 0 || maxPrice < 10000 ? "is-filtered" : ""}`}
-                    aria-expanded={showMobilePriceFilter}
-                  >
-                    <SlidersHorizontal size={13} color={minPrice > 0 || maxPrice < 10000 ? "#D9A85C" : "#6E6E6E"} />
-                    <span>
-                      {minPrice > 0 || maxPrice < 10000
-                        ? `Price: ₹${minPrice} - ₹${maxPrice}${maxPrice === 10000 ? "+" : ""}`
-                        : "Filter by Price"}
-                    </span>
-                    <ChevronDown
-                      size={13}
-                      color={minPrice > 0 || maxPrice < 10000 ? "#D9A85C" : "#6E6E6E"}
-                      style={{
-                        transform: showMobilePriceFilter ? "rotate(180deg)" : "none",
-                        transition: "transform 0.2s ease",
-                      }}
-                    />
-                  </button>
-
-                  {(minPrice > 0 || maxPrice < 10000) && (
+                  <div className="mobile-price-bar-left">
                     <button
                       type="button"
-                      onClick={() => {
-                        setMinPrice(0);
-                        setMaxPrice(10000);
-                      }}
-                      className="mobile-price-reset font-sans"
+                      onClick={() => setShowMobilePriceFilter((prev) => !prev)}
+                      className={`mobile-price-toggle-btn font-sans ${minPrice > 0 || maxPrice < 10000 ? "is-filtered" : ""}`}
+                      aria-expanded={showMobilePriceFilter}
                     >
-                      <RotateCcw size={11} />
-                      <span>Reset</span>
+                      <SlidersHorizontal size={13} color={minPrice > 0 || maxPrice < 10000 ? "#D9A85C" : "#6E6E6E"} />
+                      <span>
+                        {minPrice > 0 || maxPrice < 10000
+                          ? `Price: ₹${minPrice} - ₹${maxPrice}${maxPrice === 10000 ? "+" : ""}`
+                          : "Filter by Price"}
+                      </span>
+                      <ChevronDown
+                        size={13}
+                        color={minPrice > 0 || maxPrice < 10000 ? "#D9A85C" : "#6E6E6E"}
+                        style={{
+                          transform: showMobilePriceFilter ? "rotate(180deg)" : "none",
+                          transition: "transform 0.2s ease",
+                        }}
+                      />
                     </button>
-                  )}
+
+                    {(minPrice > 0 || maxPrice < 10000) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMinPrice(0);
+                          setMaxPrice(10000);
+                        }}
+                        className="mobile-price-reset font-sans"
+                        title="Reset price filter"
+                      >
+                        <RotateCcw size={11} />
+                        <span>Reset</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mobile-price-bar-right">
+                    {(selectedCollection || selectedCategory || searchTerm || minPrice > 0 || maxPrice < 10000 || (sortBy && sortBy !== "default")) && (
+                      <button
+                        onClick={clearFilters}
+                        className="font-sans shop-clear-btn"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#D98A9C",
+                          fontSize: "14px",
+                          cursor: "pointer",
+                          fontWeight: 500,
+                          textDecoration: "underline",
+                          padding: "4px 0",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Clear Filters
+                      </button>
+                    )}
+
+                    {/* Sort By Dropdown */}
+                    <div className="shop-sort-container">
+                      <label htmlFor="shop-sort-select-mobile" className="shop-sort-label font-sans">
+                        <ArrowUpDown size={13} color="#8E8882" />
+                        <span>Sort:</span>
+                      </label>
+                      <div className="shop-sort-select-wrapper">
+                        <select
+                          id="shop-sort-select-mobile"
+                          value={sortBy}
+                          onChange={(e) => handleSortChange(e.target.value)}
+                          className="font-sans shop-sort-select"
+                          aria-label="Sort products"
+                        >
+                          <option value="default">{searchTerm ? "Relevance" : "Featured"}</option>
+                          <option value="price-asc">Price: Low to High</option>
+                          <option value="price-desc">Price: High to Low</option>
+                          <option value="newest">Newest Arrivals</option>
+                          <option value="bestsellers">Bestsellers</option>
+                          <option value="title-asc">Name: A to Z</option>
+                          <option value="title-desc">Name: Z to A</option>
+                        </select>
+                        <ChevronDown size={13} className="shop-sort-chevron" color="#6E6E6E" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {showMobilePriceFilter && (
@@ -1268,6 +1488,37 @@ export default function Shop() {
           right: 12px;
           pointer-events: none;
         }
+        .desktop-price-toggle-btn {
+          appearance: none;
+          -webkit-appearance: none;
+          background-color: #fff;
+          border: 1.5px solid #E5D5C5;
+          border-radius: 999px;
+          padding: 7px 14px;
+          font-size: 14px;
+          line-height: 20px;
+          color: #3F3B38;
+          font-weight: 500;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.2s ease;
+          outline: none;
+        }
+        .desktop-price-toggle-btn:hover {
+          border-color: #D9A85C;
+        }
+        .desktop-price-toggle-btn:focus {
+          border-color: #D9A85C;
+          box-shadow: 0 0 0 3px rgba(217, 168, 92, 0.15);
+        }
+        .desktop-price-toggle-btn.is-active {
+          background-color: #FFF9F2;
+          border-color: #D9A85C;
+          color: #8C5E1B;
+          font-weight: 600;
+        }
         .shop-products-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1330,6 +1581,9 @@ export default function Shop() {
 
         /* ═════ Tablets & phones: single column, all categories in one view box & collapsible price ═════ */
         @media (max-width: 992px) {
+          .desktop-only-header-actions {
+            display: none !important;
+          }
           .shop-container {
             --gutter: 20px;
           }
@@ -1660,13 +1914,27 @@ export default function Shop() {
           /* Mobile Collapsible Price Section */
           .mobile-price-section {
             display: block !important;
-            margin: 0;
+            margin: 6px 0 0 0;
           }
           .mobile-price-bar {
             display: flex;
             align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+          }
+          .mobile-price-bar-left {
+            display: flex;
+            align-items: center;
             gap: 8px;
             flex-wrap: wrap;
+          }
+          .mobile-price-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-left: auto;
           }
           .mobile-price-toggle-btn {
             display: inline-flex;
