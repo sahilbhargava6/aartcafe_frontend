@@ -547,7 +547,7 @@ export default function ProductDetailsPage() {
                     whiteSpace: "pre-wrap",
                   }}
                 >
-                  {productData.description || "No description filled."}
+                  {productData.description && productData.description.trim() && productData.description.trim() !== "No description filled." ? productData.description : "❤️"}
                 </p>
                 <div
                   className="font-serif product-price"
@@ -931,7 +931,7 @@ export default function ProductDetailsPage() {
                         {item.reviewer_name}
                       </span>
                       <p className="font-sans" style={{ fontSize: "15px", lineHeight: "24px", color: "#8FB9A8", margin: 0 }}>
-                        {item.review_text}
+                        {item.review_text?.trim() ? item.review_text : "❤️"}
                       </p>
                       <div style={{ display: "flex", gap: "6px" }}>
                         {Array.from({ length: 5 }).map((_, i) => (

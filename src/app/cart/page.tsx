@@ -624,11 +624,9 @@ export default function CartPage() {
                           </button>
                         </div>
 
-                        {item.description && (
-                          <p className="font-sans" style={{ fontSize: "14px", color: "#8FB9A8", margin: 0 }}>
-                            {item.description}
-                          </p>
-                        )}
+                        <p className="font-sans" style={{ fontSize: "14px", color: "#8FB9A8", margin: 0 }}>
+                          {item.description && item.description.trim() && item.description.trim() !== "No description filled." ? item.description : "❤️"}
+                        </p>
 
                         <div className="cart-item-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "12px" }}>
                           {/* Quantity selector */}

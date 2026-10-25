@@ -5,11 +5,13 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
+import QuickCustomizeModal from "@/components/QuickCustomizeModal";
 import { useCart } from "@/context/CartContext";
 import { salePrice, originalPrice, formatRupees } from "@/lib/price";
 
 export default function SpecialOffers() {
   const { addToBag } = useCart();
+  const [customizingProduct, setCustomizingProduct] = React.useState<any | null>(null);
   const [banners, setBanners] = React.useState<any[]>([]);
   const [products, setProducts] = React.useState<any[]>([]);
   const [weddingSpecials, setWeddingSpecials] = React.useState<any[]>([]);
@@ -200,7 +202,7 @@ export default function SpecialOffers() {
                       </h3>
                     </Link>
                     <p className="font-sans so-prod-desc" style={{ fontSize: "14px", color: "#8FB9A8", lineHeight: "20px", margin: 0 }}>
-                      {prod.description || "No description filled."}
+                      {prod.description && prod.description.trim() && prod.description.trim() !== "No description filled." ? prod.description : "❤️"}
                     </p>
                     <span className="font-serif so-prod-price" style={{ fontSize: "28px", color: "#3F3B38" }}>
                       {formatRupees(salePrice(prod))}
@@ -214,7 +216,7 @@ export default function SpecialOffers() {
                     {/* Add to Cart Button */}
                     <div>
                       <button
-                        onClick={() => addToBag({ id: prod.id, title: prod.title, price: salePrice(prod), image: prod.image || "" })}
+                        onClick={() => setCustomizingProduct(prod)}
                         className="so-cart-btn"
                         style={{
                           width: "100%",
@@ -334,9 +336,9 @@ export default function SpecialOffers() {
               </div>
 
               <p className="font-sans so-wedding-desc" style={{ fontSize: "16px", color: "#8FB9A8", lineHeight: "26px", margin: 0 }}>
-                {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIdx]?.description
+                {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIdx]?.description && weddingSpecials[activeWeddingIdx].description.trim() && weddingSpecials[activeWeddingIdx].description.trim() !== "No description filled."
                   ? weddingSpecials[activeWeddingIdx].description
-                  : "No description filled."}
+                  : "❤️"}
               </p>
 
               <span className="font-serif so-wedding-price" style={{ fontSize: "36px", color: "#3F3B38" }}>
@@ -352,8 +354,7 @@ export default function SpecialOffers() {
                 <button
                   onClick={() => {
                     if (weddingSpecials.length > 0) {
-                      const wObj = weddingSpecials[activeWeddingIdx];
-                      addToBag({ id: wObj.id, title: wObj.title, price: salePrice(wObj), image: wObj.image || "" });
+                      setCustomizingProduct(weddingSpecials[activeWeddingIdx]);
                     }
                   }}
                   style={{
@@ -440,7 +441,7 @@ export default function SpecialOffers() {
                           )}
                         </span>
                         <button
-                          onClick={() => addToBag({ id: prod.id, title: prod.title, price: salePrice(prod), image: prod.image || "" })}
+                          onClick={() => setCustomizingProduct(prod)}
                           className="font-sans so-related-action"
                           style={{
                             background: "none",
@@ -465,6 +466,11 @@ export default function SpecialOffers() {
       </main>
 
       <Footer />
+      <QuickCustomizeModal
+        product={customizingProduct}
+        isOpen={!!customizingProduct}
+        onClose={() => setCustomizingProduct(null)}
+      />
 
       <style dangerouslySetInnerHTML={{ __html: `
         .offers-container {

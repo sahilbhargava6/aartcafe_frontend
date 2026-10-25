@@ -125,7 +125,7 @@ export default function Home() {
           return {
             id: String(p.id),
             title: p.title,
-            description: p.description || "No description filled.",
+            description: (p.description && p.description.trim() && p.description.trim() !== "No description filled.") ? p.description : "❤️",
             price,
             image: p.image || "",
             href: `/shop/${p.slug || p.id}`,
@@ -595,9 +595,9 @@ export default function Home() {
                           transition: "all 0.5s ease-in-out"
                         }}
                       >
-                        {rightProduct?.description
+                        {rightProduct?.description && rightProduct.description.trim() && rightProduct.description.trim() !== "No description filled."
                           ? rightProduct.description
-                          : "No description filled."}
+                          : "❤️"}
                       </p>
                       <button
                         className="font-sans"
@@ -662,7 +662,7 @@ export default function Home() {
                         className="font-sans"
                         style={{ fontSize: "14px", lineHeight: "20px", color: "#6E6E6E", margin: "0 0 8px 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
                       >
-                        {p.description || "No description filled."}
+                        {(p.description && p.description.trim() && p.description.trim() !== "No description filled.") ? p.description : "❤️"}
                       </p>
                       <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "center", gap: "14px" }}>
                         <span className="font-sans" style={{ fontSize: "16px", fontWeight: 500, color: "#3F3B38" }}>₹{price}</span>
@@ -843,7 +843,7 @@ export default function Home() {
                           overflow: "hidden"
                         }}
                       >
-                        {currentProduct.description || "No description filled."}
+                        {(currentProduct.description && currentProduct.description.trim() && currentProduct.description.trim() !== "No description filled.") ? currentProduct.description : "❤️"}
                       </p>
                       <span
                         className="font-sans"
@@ -1371,9 +1371,9 @@ export default function Home() {
                     overflow: "hidden",
                   }}
                 >
-                  {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIndex]?.description
+                  {weddingSpecials.length > 0 && weddingSpecials[activeWeddingIndex]?.description && weddingSpecials[activeWeddingIndex].description.trim() && weddingSpecials[activeWeddingIndex].description.trim() !== "No description filled."
                     ? weddingSpecials[activeWeddingIndex].description
-                    : "No description filled."}
+                    : "❤️"}
                 </p>
 
                 <div
@@ -1515,7 +1515,7 @@ export default function Home() {
                         </span>
                       )}
                       <p className="font-sans rev-text" style={{ fontSize: "18px", lineHeight: "28px", fontWeight: 400, color: "#555", margin: 0 }}>
-                        &ldquo;{rev.review_text}&rdquo;
+                        &ldquo;{rev.review_text?.trim() ? rev.review_text : "❤️"}&rdquo;
                       </p>
                     </div>
 

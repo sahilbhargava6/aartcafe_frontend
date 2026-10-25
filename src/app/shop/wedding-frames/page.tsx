@@ -196,7 +196,7 @@ export default function ProductDetails() {
                     flex: 1,
                   }}
                 >
-                  {productData?.description || "No description filled."}
+                  {productData?.description && productData.description.trim() && productData.description.trim() !== "No description filled." ? productData.description : "❤️"}
                 </p>
                 <div
                   className="font-serif product-price"
@@ -394,7 +394,7 @@ export default function ProductDetails() {
                         {item.reviewer_name}
                       </span>
                       <p className="font-sans" style={{ fontSize: "16px", lineHeight: "24px", color: "#8FB9A8", margin: 0 }}>
-                        {item.review_text}
+                        {item.review_text?.trim() ? item.review_text : "❤️"}
                       </p>
                       <div style={{ display: "flex", gap: "6px", color: "#D98A9C" }}>
                         {Array.from({ length: 5 }).map((_, i) => (

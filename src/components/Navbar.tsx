@@ -1057,6 +1057,13 @@ export default function Navbar({ overlay = false }: NavbarProps = {}) {
           .site-header {
             height: 70px !important;
           }
+          .site-header--overlay {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+            border-bottom: 1px solid rgba(235, 229, 219, 0.6) !important;
+          }
           .site-logo-img {
             height: 52px;
           }

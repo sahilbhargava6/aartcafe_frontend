@@ -6,22 +6,17 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
+import QuickCustomizeModal from "@/components/QuickCustomizeModal";
 import { useCart } from "@/context/CartContext";
 import { Heart, ChevronDown } from "lucide-react";
 
 export default function FestivalSpecials() {
   const { addToBag, closeCart } = useCart();
   const router = useRouter();
+  const [customizingProduct, setCustomizingProduct] = useState<any | null>(null);
 
-  // API products only have base_price/discount_price; the cart needs a numeric price
-  const addProductToBag = (prod: any) =>
-    addToBag({
-      id: prod.id,
-      title: prod.title,
-      price: parseFloat(prod.discount_price || prod.base_price || "0"),
-      image: prod.image || (Array.isArray(prod.images) && prod.images[0]) || "",
-      productId: typeof prod.id === "number" ? prod.id : undefined,
-    });
+  // Directly opening the customizer modal so customer can pick attributes & reference image
+  const addProductToBag = (prod: any) => setCustomizingProduct(prod);
   const [expandedReviews, setExpandedReviews] = useState<Record<string, boolean>>({});
   const [banners, setBanners] = useState<any[]>([]);
   const [currentBannerIdx, setCurrentBannerIdx] = useState(0);
@@ -297,7 +292,7 @@ export default function FestivalSpecials() {
                     </div>
 
                     <p className="font-sans detail-desc">
-                      {prod.description || "No description filled."}
+                      {prod.description && prod.description.trim() && prod.description.trim() !== "No description filled." ? prod.description : "❤️"}
                     </p>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", justifyContent: "flex-end" }}>
@@ -333,7 +328,7 @@ export default function FestivalSpecials() {
                         <>
                           <div className="review-box">
                             <span className="font-serif reviewer-name">{prod.reviews[0].reviewer_name}</span>
-                            <p className="font-sans review-text">{prod.reviews[0].review_text}</p>
+                            <p className="font-sans review-text">{prod.reviews[0].review_text?.trim() ? prod.reviews[0].review_text : "❤️"}</p>
                             <div className="review-hearts" style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-end" }}>
                               {Array.from({ length: 5 }).map((_, i) => (
                                 <Heart key={i} size={26} fill={i < prod.reviews[0].rating ? "#D98A9C" : "transparent"} color={i < prod.reviews[0].rating ? "#D98A9C" : "#3F3B38"} />
@@ -344,7 +339,7 @@ export default function FestivalSpecials() {
                           {expandedReviews[prod.id] && prod.reviews.slice(1).map((rev: any) => (
                             <div key={rev.id} className="review-box">
                               <span className="font-serif reviewer-name">{rev.reviewer_name}</span>
-                              <p className="font-sans review-text">{rev.review_text}</p>
+                              <p className="font-sans review-text">{rev.review_text?.trim() ? rev.review_text : "❤️"}</p>
                               <div className="review-hearts" style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-end" }}>
                                 {Array.from({ length: 5 }).map((_, i) => (
                                   <Heart key={i} size={26} fill={i < rev.rating ? "#D98A9C" : "transparent"} color={i < rev.rating ? "#D98A9C" : "#3F3B38"} />
@@ -380,7 +375,7 @@ export default function FestivalSpecials() {
                     </div>
 
                     <p className="font-sans detail-desc">
-                      {prod.description || "No description filled."}
+                      {prod.description && prod.description.trim() && prod.description.trim() !== "No description filled." ? prod.description : "❤️"}
                     </p>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -416,7 +411,7 @@ export default function FestivalSpecials() {
                         <>
                           <div className="review-box">
                             <span className="font-serif reviewer-name">{prod.reviews[0].reviewer_name}</span>
-                            <p className="font-sans review-text">{prod.reviews[0].review_text}</p>
+                            <p className="font-sans review-text">{prod.reviews[0].review_text?.trim() ? prod.reviews[0].review_text : "❤️"}</p>
                             <div className="review-hearts" style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-start" }}>
                               {Array.from({ length: 5 }).map((_, i) => (
                                 <Heart key={i} size={26} fill={i < prod.reviews[0].rating ? "#D98A9C" : "transparent"} color={i < prod.reviews[0].rating ? "#D98A9C" : "#3F3B38"} />
@@ -427,7 +422,7 @@ export default function FestivalSpecials() {
                           {expandedReviews[prod.id] && prod.reviews.slice(1).map((rev: any) => (
                             <div key={rev.id} className="review-box">
                               <span className="font-serif reviewer-name">{rev.reviewer_name}</span>
-                              <p className="font-sans review-text">{rev.review_text}</p>
+                              <p className="font-sans review-text">{rev.review_text?.trim() ? rev.review_text : "❤️"}</p>
                               <div className="review-hearts" style={{ display: "flex", gap: "6px", color: "#D98A9C", justifyContent: "flex-start" }}>
                                 {Array.from({ length: 5 }).map((_, i) => (
                                   <Heart key={i} size={26} fill={i < rev.rating ? "#D98A9C" : "transparent"} color={i < rev.rating ? "#D98A9C" : "#3F3B38"} />
@@ -610,6 +605,11 @@ export default function FestivalSpecials() {
       </main>
 
       <Footer />
+      <QuickCustomizeModal
+        product={customizingProduct}
+        isOpen={!!customizingProduct}
+        onClose={() => setCustomizingProduct(null)}
+      />
 
       {/* ADD REVIEW MODAL */}
       {reviewModalOpen && (

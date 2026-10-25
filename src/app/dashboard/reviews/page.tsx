@@ -435,7 +435,7 @@ export default function ReviewsDashboard() {
                       ))}
                     </div>
                   </td>
-                  <td style={{ padding: "16px 24px", color: "#6E6E6E", maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rev.review_text}</td>
+                  <td style={{ padding: "16px 24px", color: "#6E6E6E", maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rev.review_text?.trim() ? rev.review_text : "❤️"}</td>
                   <td style={{ padding: "16px 24px", textAlign: "right" }}>
                     <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
                       <button

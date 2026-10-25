@@ -6,22 +6,17 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
+import QuickCustomizeModal from "@/components/QuickCustomizeModal";
 import { useCart } from "@/context/CartContext";
 import { Heart, ChevronDown } from "lucide-react";
 
 export default function WeddingCelebration() {
   const { addToBag, closeCart } = useCart();
   const router = useRouter();
+  const [customizingProduct, setCustomizingProduct] = useState<any | null>(null);
 
-  // API products only have base_price/discount_price; the cart needs a numeric price
-  const addProductToBag = (prod: any) =>
-    addToBag({
-      id: prod.id,
-      title: prod.title,
-      price: parseFloat(prod.discount_price || prod.base_price || "0"),
-      image: prod.image || (Array.isArray(prod.images) && prod.images[0]) || "",
-      productId: typeof prod.id === "number" ? prod.id : undefined,
-    });
+  // Directly opening the customizer modal so customer can pick attributes & reference image
+  const addProductToBag = (prod: any) => setCustomizingProduct(prod);
 
   const [expandedReviews, setExpandedReviews] = useState<Record<string, boolean>>({});
   const [banners, setBanners] = useState<any[]>([]);
@@ -368,7 +363,7 @@ export default function WeddingCelebration() {
                     </div>
 
                     <p className="font-sans detail-desc">
-                      {prod.description || "No description filled."}
+                      {prod.description && prod.description.trim() && prod.description.trim() !== "No description filled." ? prod.description : "❤️"}
                     </p>
 
                     <div
@@ -448,7 +443,7 @@ export default function WeddingCelebration() {
                             <span className="font-serif reviewer-name">
                               {prod.reviews[0].reviewer_name}
                             </span>
-                            <p className="font-sans review-text">{prod.reviews[0].review_text}</p>
+                            <p className="font-sans review-text">{prod.reviews[0].review_text?.trim() ? prod.reviews[0].review_text : "❤️"}</p>
                             <div
                               className="review-hearts"
                               style={{
@@ -475,7 +470,7 @@ export default function WeddingCelebration() {
                                 <span className="font-serif reviewer-name">
                                   {rev.reviewer_name}
                                 </span>
-                                <p className="font-sans review-text">{rev.review_text}</p>
+                                <p className="font-sans review-text">{rev.review_text?.trim() ? rev.review_text : "❤️"}</p>
                                 <div
                                   className="review-hearts"
                                   style={{
@@ -545,7 +540,7 @@ export default function WeddingCelebration() {
                     </div>
 
                     <p className="font-sans detail-desc">
-                      {prod.description || "No description filled."}
+                      {prod.description && prod.description.trim() && prod.description.trim() !== "No description filled." ? prod.description : "❤️"}
                     </p>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -618,7 +613,7 @@ export default function WeddingCelebration() {
                             <span className="font-serif reviewer-name">
                               {prod.reviews[0].reviewer_name}
                             </span>
-                            <p className="font-sans review-text">{prod.reviews[0].review_text}</p>
+                            <p className="font-sans review-text">{prod.reviews[0].review_text?.trim() ? prod.reviews[0].review_text : "❤️"}</p>
                             <div
                               className="review-hearts"
                               style={{
@@ -645,7 +640,7 @@ export default function WeddingCelebration() {
                                 <span className="font-serif reviewer-name">
                                   {rev.reviewer_name}
                                 </span>
-                                <p className="font-sans review-text">{rev.review_text}</p>
+                                <p className="font-sans review-text">{rev.review_text?.trim() ? rev.review_text : "❤️"}</p>
                                 <div
                                   className="review-hearts"
                                   style={{
@@ -952,6 +947,11 @@ export default function WeddingCelebration() {
       </main>
 
       <Footer />
+      <QuickCustomizeModal
+        product={customizingProduct}
+        isOpen={!!customizingProduct}
+        onClose={() => setCustomizingProduct(null)}
+      />
 
       {/* ADD REVIEW MODAL */}
       {reviewModalOpen && (
@@ -1210,7 +1210,7 @@ export default function WeddingCelebration() {
 
         @media (max-width: 768px) {
           .wedding-full-hero {
-            margin-top: -70px; /* Header is 70px on mobile */
+            margin-top: 0 !important; /* On mobile/phone, display the full image below the header so heads/faces are never cut */
           }
           .banner-arrow--left {
             left: 10px;
