@@ -362,6 +362,14 @@ export default function Shop() {
   }, [mainCategories]);
 
   // Pre-calculate representative product images and item counts for each category
+  // Custom icon/photo overrides for categories (optional)
+  // To override a category icon with a custom image, simply add:
+  // "Category Name": "https://your-image-url.jpg" or "/images/icon.png"
+  const CATEGORY_CUSTOM_ICONS: Record<string, string> = {
+    // e.g. "All Varmala Preservation Collection": "https://...",
+  };
+
+  // Pre-calculate representative product images and item counts for each category
   const categoryMeta = React.useMemo(() => {
     const imageMap: Record<number, string> = {};
     const countMap: Record<number, number> = {};
@@ -372,30 +380,25 @@ export default function Shop() {
         ids.some((id) => p.categoryIds?.includes(id))
       );
       countMap[cat.id] = matchingProds.length;
-      const prodWithImg = matchingProds.find((p) => p.image);
-      if (prodWithImg) {
-        imageMap[cat.id] = prodWithImg.image;
+
+      // Check custom icon override first (by name or ID), then fallback to first product image
+      const customImg = CATEGORY_CUSTOM_ICONS[cat.name] || CATEGORY_CUSTOM_ICONS[String(cat.id)];
+      if (customImg) {
+        imageMap[cat.id] = customImg;
+      } else {
+        const prodWithImg = matchingProds.find((p) => p.image);
+        if (prodWithImg) {
+          imageMap[cat.id] = prodWithImg.image;
+        }
       }
     });
 
     return { imageMap, countMap };
   }, [categories, allProducts]);
 
-  // Clean and elegant category names for mobile badges
+  // Display full category name
   const formatCategoryTitle = (name: string): string => {
-    if (!name) return "";
-    const trimmed = name.trim();
-    if (/^all\s+varmala\s+preservation/i.test(trimmed)) return "Varmala";
-    if (/^bouquet\s+flower/i.test(trimmed)) return "Bouquets";
-    if (/^baby\s+keepsakes/i.test(trimmed)) return "Baby Keepsakes";
-    if (/^diwali\s+special/i.test(trimmed)) return "Diwali Specials";
-    if (/^personalized\s+frames/i.test(trimmed)) return "Personalized";
-    if (/^handmade\s+rakhis/i.test(trimmed)) return "Rakhis";
-    if (/^gift\s+hampers/i.test(trimmed)) return "Hampers";
-    if (/^festival\s+specials/i.test(trimmed)) return "Festive";
-    if (/^all\s+varmala\s+frames/i.test(trimmed)) return "Varmala Frames";
-    if (/^all\s+/i.test(trimmed)) return trimmed.replace(/^all\s+/i, "");
-    return trimmed;
+    return name ? name.trim() : "";
   };
 
   // Auto-scroll active category story circle into view smoothly
@@ -1604,7 +1607,7 @@ export default function Shop() {
             padding: 0;
             cursor: pointer;
             flex-shrink: 0;
-            width: 72px;
+            width: 82px;
             outline: none;
             text-align: center;
             transition: transform 0.15s ease;
@@ -1653,16 +1656,16 @@ export default function Shop() {
             display: block;
           }
           .mobile-story-label {
-            font-size: 12px;
-            line-height: 15px;
+            font-size: 11.5px;
+            line-height: 14px;
             color: #6E6E6E;
             text-align: center;
             font-weight: 500;
-            max-width: 72px;
+            max-width: 82px;
             overflow: hidden;
             text-overflow: ellipsis;
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             word-break: break-word;
             transition: color 0.2s ease, font-weight 0.2s ease;
