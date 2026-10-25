@@ -307,7 +307,7 @@ export default function Shop() {
     };
   }, [showDesktopPriceFilter]);
 
-  // Smooth scroll down to products section when a category is picked or show all is tapped
+  // Smooth scroll down to products section when a subcategory or category without children is picked
   const scrollToProducts = () => {
     if (typeof window === "undefined") return;
     setTimeout(() => {
@@ -320,6 +320,24 @@ export default function Shop() {
           top: Math.max(0, targetY),
           behavior: "smooth",
         });
+      }
+    }, 60);
+  };
+
+  // Smooth scroll to child categories pill bar when a parent category with children is clicked
+  const scrollToSubcategories = () => {
+    if (typeof window === "undefined") return;
+    setTimeout(() => {
+      const el = document.getElementById("mobile-subcat-section") || document.querySelector(".mobile-subcat-bar");
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const targetY = rect.top + scrollTop - 95;
+        window.scrollTo({
+          top: Math.max(0, targetY),
+          behavior: "smooth",
+        });
+        el.scrollTo({ left: 0, behavior: "smooth" });
       }
     }, 60);
   };
@@ -829,12 +847,18 @@ export default function Shop() {
                         ref={isCatActive ? activeStoryRef : null}
                         type="button"
                         onClick={() => {
+                          const hasChildren = childrenOf(categories, cat.id).length > 0;
                           if (isCatActive && !selectedCat?.parent_ids.length) {
                             selectCategory(null, []);
+                            scrollToProducts();
                           } else {
                             handleCategoryClick(cat.name, [cat.id]);
+                            if (hasChildren) {
+                              scrollToSubcategories();
+                            } else {
+                              scrollToProducts();
+                            }
                           }
-                          scrollToProducts();
                         }}
                         className={`mobile-story-item font-sans ${isCatActive ? "is-active" : ""}`}
                         aria-pressed={isCatActive}
@@ -862,7 +886,7 @@ export default function Shop() {
 
                 {/* Sub-categories Pills (Shown below story circles when a category with subcategories is chosen) */}
                 {chipParent && chipChildren.length > 0 && (
-                  <div className="mobile-subcat-bar" role="group" aria-label={`${chipParent.name} sub-categories`}>
+                  <div id="mobile-subcat-section" className="mobile-subcat-bar" role="group" aria-label={`${chipParent.name} sub-categories`}>
                     {chipBack && (
                       <button
                         type="button"
