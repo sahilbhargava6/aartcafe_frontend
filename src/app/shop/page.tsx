@@ -796,181 +796,112 @@ export default function Shop() {
               </div>
 
               {/* ═══════════════════════════════════════════════════════
-                  MOBILE CATEGORIES BOX (Collapsible with Arrow & Show All)
+                  MOBILE STORY CATEGORIES (Ultra-intuitive & elegant for touch users)
                   ═══════════════════════════════════════════════════════ */}
-              <div className={`mobile-categories-box ${mobileCatOpen ? "is-expanded" : "is-collapsed"}`} role="region" aria-label="Browse Categories">
-                <div className="mobile-cat-box-header">
-                  <button
-                    type="button"
-                    onClick={() => setMobileCatOpen((prev) => !prev)}
-                    className="mobile-cat-header-toggle"
-                    aria-expanded={mobileCatOpen}
-                    aria-label={mobileCatOpen ? "Collapse categories menu" : "Expand categories menu"}
-                  >
-                    <span className="font-serif mobile-cat-box-title">Categories</span>
-                    {selectedCategory && (
-                      <span className="mobile-cat-badge font-sans">
-                        {formatCategoryTitle(selectedCategory)}
-                      </span>
-                    )}
-                    <span className={`mobile-cat-arrow-wrap ${mobileCatOpen ? "is-open" : ""}`}>
-                      <ChevronDown size={18} color="#3F3B38" />
-                    </span>
-                  </button>
-
+              <div className="mobile-story-nav" role="navigation" aria-label="Browse Categories">
+                <div className="mobile-story-scroll">
+                  {/* All Items Story Circle */}
                   <button
                     type="button"
                     onClick={() => {
                       selectCategory(null, []);
                       scrollToProducts();
                     }}
-                    className={`font-sans mobile-cat-box-clear ${!selectedCategory ? "is-active" : ""}`}
-                    aria-label="Show all products"
+                    className={`mobile-story-item font-sans ${!selectedCategory && !selectedCollection ? "is-active" : ""}`}
+                    aria-pressed={!selectedCategory && !selectedCollection}
                   >
-                    Show All
+                    <div className="mobile-story-ring">
+                      <div className="mobile-story-avatar mobile-story-avatar--all">
+                        <Sparkles size={20} color={!selectedCategory && !selectedCollection ? "#D9A85C" : "#8C5E1B"} />
+                      </div>
+                    </div>
+                    <span className="mobile-story-label">All Items</span>
                   </button>
+
+                  {/* Main Categories Story Circles */}
+                  {mainCategories.map((cat) => {
+                    const isCatActive = selectedPath[0] === cat.id;
+                    const catImg = categoryMeta.imageMap[cat.id];
+                    const label = formatCategoryTitle(cat.name);
+                    return (
+                      <button
+                        key={cat.id}
+                        ref={isCatActive ? activeStoryRef : null}
+                        type="button"
+                        onClick={() => {
+                          if (isCatActive && !selectedCat?.parent_ids.length) {
+                            selectCategory(null, []);
+                          } else {
+                            handleCategoryClick(cat.name, [cat.id]);
+                          }
+                          scrollToProducts();
+                        }}
+                        className={`mobile-story-item font-sans ${isCatActive ? "is-active" : ""}`}
+                        aria-pressed={isCatActive}
+                      >
+                        <div className="mobile-story-ring">
+                          <div className="mobile-story-avatar">
+                            {catImg ? (
+                              <img
+                                src={catImg}
+                                alt={cat.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="mobile-story-img"
+                              />
+                            ) : (
+                              <Flower2 size={20} color="#C4A47C" />
+                            )}
+                          </div>
+                        </div>
+                        <span className="mobile-story-label">{label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* Collapsible Categories Grid & Subcategories Content */}
-                <div className={`mobile-cat-collapse-content ${mobileCatOpen ? "is-open" : "is-closed"}`}>
-                  {/* All Main Categories in One View Grid with Inline Subcategories below each category */}
-                  <div className="mobile-cat-grid">
-                    {mobileCatRows.map((rowItems, rowIndex) => {
-                      const activeItemInRow = rowItems.find(
-                        (item) => item.type === "cat" && item.cat.id === selectedPath[0]
-                      );
-                      const isRowActive = !!activeItemInRow && !!chipParent && chipChildren.length > 0;
-                      const isCol2 = isRowActive && rowItems[1] === activeItemInRow;
-
+                {/* Sub-categories Pills (Shown below story circles when a category with subcategories is chosen) */}
+                {chipParent && chipChildren.length > 0 && (
+                  <div className="mobile-subcat-bar" role="group" aria-label={`${chipParent.name} sub-categories`}>
+                    {chipBack && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          selectCategory(chipBack.name, chipParentPath.slice(0, -1));
+                          scrollToProducts();
+                        }}
+                        className="mobile-subcat-pill mobile-subcat-pill--back font-sans"
+                        aria-label={`Back to ${chipBack.name}`}
+                      >
+                        ‹ Back
+                      </button>
+                    )}
+                    {[chipParent, ...chipChildren].map((cat) => {
+                      const isActive = selectedCategory === cat.name;
+                      const rawLabel =
+                        cat.id === chipParent.id && !/^all\b/i.test(cat.name.trim())
+                          ? `All ${formatCategoryTitle(cat.name)}`
+                          : formatCategoryTitle(cat.name);
                       return (
-                        <React.Fragment key={rowIndex}>
-                          {rowItems.map((item) => {
-                            if (item.type === "all") {
-                              const isAllActive = !selectedCategory && !selectedCollection;
-                              return (
-                                <button
-                                  key="all"
-                                  type="button"
-                                  onClick={() => {
-                                    selectCategory(null, []);
-                                    scrollToProducts();
-                                  }}
-                                  className={`mobile-cat-tile font-sans${isAllActive ? " is-active" : ""}`}
-                                  aria-pressed={isAllActive}
-                                >
-                                  <div className="mobile-cat-tile-avatar mobile-cat-tile-avatar--all">
-                                    <Sparkles size={14} color={isAllActive ? "#D9A85C" : "#9B7E6B"} />
-                                  </div>
-                                  <span className="mobile-cat-tile-name">All Items</span>
-                                </button>
-                              );
-                            }
-
-                            const cat = item.cat;
-                            const isCatActive = selectedPath[0] === cat.id;
-                            const catImg = categoryMeta.imageMap[cat.id];
-                            const label = formatCategoryTitle(cat.name);
-                            const hasSubcategories = childrenOf(categories, cat.id).length > 0;
-
-                            return (
-                              <button
-                                key={cat.id}
-                                type="button"
-                                onClick={() => {
-                                  if (isCatActive && !selectedCat?.parent_ids.length) {
-                                    selectCategory(null, []);
-                                  } else {
-                                    handleCategoryClick(cat.name, [cat.id]);
-                                  }
-                                  scrollToProducts();
-                                }}
-                                className={`mobile-cat-tile font-sans${isCatActive ? " is-active" : ""}`}
-                                aria-pressed={isCatActive}
-                              >
-                                <div className="mobile-cat-tile-avatar">
-                                  {catImg ? (
-                                    <img
-                                      src={catImg}
-                                      alt={cat.name}
-                                      loading="lazy"
-                                      decoding="async"
-                                      className="mobile-cat-tile-img"
-                                    />
-                                  ) : (
-                                    <Flower2 size={13} color="#C4A47C" />
-                                  )}
-                                </div>
-                                <span className="mobile-cat-tile-name">{label}</span>
-                                {hasSubcategories && (
-                                  <ChevronDown
-                                    size={13}
-                                    color={isCatActive ? "#8C5E1B" : "#B5A79B"}
-                                    style={{
-                                      marginLeft: "auto",
-                                      transform: isCatActive ? "rotate(180deg)" : "rotate(0deg)",
-                                      transition: "transform 0.2s ease",
-                                      flexShrink: 0,
-                                    }}
-                                  />
-                                )}
-                              </button>
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            selectCategory(
+                              cat.name,
+                              cat.id === chipParent.id ? chipParentPath : [...chipParentPath, cat.id]
                             );
-                          })}
-
-                          {/* Sub-categories displayed directly BELOW this category row */}
-                          {isRowActive && (
-                            <div
-                              className={`mobile-cat-sub-wrap ${isCol2 ? "pointer-col-2" : "pointer-col-1"}`}
-                              style={{ gridColumn: "1 / -1" }}
-                            >
-                              <div className="mobile-cat-sub-header font-sans">
-                                <span>{formatCategoryTitle(chipParent.name)} Collections</span>
-                                {chipBack && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      selectCategory(chipBack.name, chipParentPath.slice(0, -1));
-                                      scrollToProducts();
-                                    }}
-                                    className="mobile-cat-sub-back"
-                                  >
-                                    ‹ {formatCategoryTitle(chipBack.name)}
-                                  </button>
-                                )}
-                              </div>
-                              <div className="mobile-cat-sub-chips">
-                                {[chipParent, ...chipChildren].map((cat) => {
-                                  const isActive = selectedCategory === cat.name;
-                                  const rawLabel =
-                                    cat.id === chipParent.id && !/^all\b/i.test(cat.name.trim())
-                                      ? `All ${formatCategoryTitle(cat.name)}`
-                                      : formatCategoryTitle(cat.name);
-                                  return (
-                                    <button
-                                      key={cat.id}
-                                      type="button"
-                                      onClick={() => {
-                                        selectCategory(
-                                          cat.name,
-                                          cat.id === chipParent.id ? chipParentPath : [...chipParentPath, cat.id]
-                                        );
-                                        scrollToProducts();
-                                      }}
-                                      aria-pressed={isActive}
-                                      className={`mobile-cat-sub-chip font-sans${isActive ? " is-active" : ""}`}
-                                    >
-                                      {rawLabel}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-                        </React.Fragment>
+                            scrollToProducts();
+                          }}
+                          aria-pressed={isActive}
+                          className={`mobile-subcat-pill font-sans ${isActive ? "is-active" : ""}`}
+                        >
+                          {rawLabel}
+                        </button>
                       );
                     })}
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Desktop Sub-categories Chips (hidden on mobile, visible on desktop) */}
@@ -1574,12 +1505,12 @@ export default function Shop() {
           }
         }
 
-        .mobile-categories-box,
+        .mobile-story-nav,
         .mobile-price-section {
           display: none !important;
         }
 
-        /* ═════ Tablets & phones: single column, all categories in one view box & collapsible price ═════ */
+        /* ═════ Tablets & phones: single column, visual story categories & price bar ═════ */
         @media (max-width: 992px) {
           .desktop-only-header-actions {
             display: none !important;
@@ -1614,215 +1545,123 @@ export default function Shop() {
             padding: 0 !important;
           }
 
-          /* Hide separate desktop chips on mobile since they are inside the box */
+          /* Hide separate desktop chips on mobile since they are inside the mobile story nav */
           .desktop-subcategory-chips {
             display: none !important;
           }
 
-          /* Mobile Categories Box (all in one view without scrolling) */
-          .mobile-categories-box {
-            display: block !important;
-            background: #FAF7F2;
-            border: 1.5px solid #EBE4DD;
-            border-radius: 16px;
-            padding: 14px 14px 12px;
-            margin: 0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-            transition: padding 0.25s ease;
+          /* Mobile Story Categories Nav (Instagram / Nykaa style circular avatars with product preview photos) */
+          .mobile-story-nav {
+            display: flex !important;
+            flex-direction: column;
+            gap: 12px;
+            margin: 0 -4px;
+            padding: 2px 0 4px 0;
           }
-
-          .mobile-categories-box.is-collapsed {
-            padding: 10px 14px !important;
-          }
-
-          .mobile-cat-box-header {
+          .mobile-story-scroll {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
+            gap: 14px;
+            overflow-x: auto;
+            padding: 6px 6px 8px 6px;
+            scroll-snap-type: x proximity;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
           }
-
-          .mobile-cat-header-toggle {
+          .mobile-story-scroll::-webkit-scrollbar {
+            display: none;
+          }
+          .mobile-story-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 7px;
             background: none;
             border: none;
             padding: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
             cursor: pointer;
-            text-align: left;
-            user-select: none;
-            flex: 1;
-            min-width: 0;
+            flex-shrink: 0;
+            width: 72px;
+            outline: none;
+            text-align: center;
+            transition: transform 0.15s ease;
+            scroll-snap-align: start;
           }
-
-          .mobile-cat-box-title {
-            font-size: 16px;
-            line-height: 22px;
-            font-weight: 600;
-            color: #3F3B38;
-            white-space: nowrap;
+          .mobile-story-item:active {
+            transform: scale(0.94);
           }
-
-          .mobile-cat-badge {
-            font-size: 11px;
-            font-weight: 600;
-            color: #8C5E1B;
-            background: rgba(217, 168, 92, 0.16);
-            border: 1px solid rgba(217, 168, 92, 0.35);
-            padding: 2px 7px;
-            border-radius: 10px;
-            max-width: 120px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-
-          .mobile-cat-arrow-wrap {
-            display: inline-flex;
+          .mobile-story-ring {
+            width: 66px;
+            height: 66px;
+            border-radius: 50%;
+            padding: 2.5px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            color: #3F3B38;
+            background: #EADBCC;
+            transition: all 0.25s ease;
           }
-
-          .mobile-cat-arrow-wrap.is-open {
-            transform: rotate(180deg);
+          .mobile-story-item.is-active .mobile-story-ring {
+            background: linear-gradient(135deg, #D9A85C 0%, #E8C88B 50%, #D98A9C 100%);
+            box-shadow: 0 4px 14px rgba(217, 168, 92, 0.42);
+            transform: scale(1.05);
           }
-
-          .mobile-cat-box-clear {
-            background: #FFFFFF;
-            border: 1.5px solid #D9A85C;
-            color: #8C5E1B;
-            font-size: 12.5px;
-            font-weight: 600;
-            cursor: pointer;
-            padding: 5px 14px;
-            border-radius: 16px;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-            flex-shrink: 0;
-          }
-
-          .mobile-cat-box-clear:active {
-            transform: scale(0.96);
-          }
-
-          .mobile-cat-box-clear.is-active {
-            background: #D9A85C;
-            color: #FFFFFF;
-            border-color: #D9A85C;
-            box-shadow: 0 2px 6px rgba(217, 168, 92, 0.3);
-          }
-
-          .mobile-cat-collapse-content {
-            overflow: hidden;
-            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, margin 0.25s ease;
-          }
-
-          .mobile-cat-collapse-content.is-closed {
-            max-height: 0 !important;
-            opacity: 0;
-            margin-top: 0 !important;
-            pointer-events: none;
-          }
-
-          .mobile-cat-collapse-content.is-open {
-            max-height: 1800px;
-            opacity: 1;
-            margin-top: 10px;
-          }
-
-          .mobile-cat-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 8px;
-          }
-
-          .mobile-cat-tile {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+          .mobile-story-avatar {
             width: 100%;
-            min-height: 42px;
-            padding: 7px 10px;
-            background: #FFFFFF;
-            border: 1px solid #E2D7CC;
-            border-radius: 10px;
-            cursor: pointer;
-            text-align: left;
-            transition: all 0.2s ease;
-            box-sizing: border-box;
-          }
-
-          .mobile-cat-tile:active {
-            transform: scale(0.98);
-          }
-
-          .mobile-cat-tile.is-active {
-            border: 1.5px solid #D9A85C;
-            background: rgba(217, 168, 92, 0.14);
-            box-shadow: 0 2px 6px rgba(217, 168, 92, 0.2);
-          }
-
-          .mobile-cat-tile-avatar {
-            width: 26px;
-            height: 26px;
+            height: 100%;
             border-radius: 50%;
             overflow: hidden;
-            flex-shrink: 0;
+            background: #FAF7F2;
+            border: 2px solid #fff;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #FAF6F2;
-            border: 1px solid #EBE4DD;
           }
-
-          .mobile-cat-tile-avatar--all {
-            background: linear-gradient(135deg, #FFF9F3 0%, #F5ECE3 100%);
+          .mobile-story-avatar--all {
+            background: linear-gradient(135deg, #FFF9F2 0%, #F5ECE0 100%);
           }
-
-          .mobile-cat-tile-img {
+          .mobile-story-item.is-active .mobile-story-avatar--all {
+            background: #FFF4E5;
+          }
+          .mobile-story-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
           }
-
-          .mobile-cat-tile-name {
-            font-size: 12.5px;
-            line-height: 16px;
+          .mobile-story-label {
+            font-size: 12px;
+            line-height: 15px;
+            color: #6E6E6E;
+            text-align: center;
             font-weight: 500;
-            color: #4A4540;
+            max-width: 72px;
+            overflow: hidden;
+            text-overflow: ellipsis;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
-            overflow: hidden;
             word-break: break-word;
+            transition: color 0.2s ease, font-weight 0.2s ease;
           }
-
-          .mobile-cat-tile.is-active .mobile-cat-tile-name {
+          .mobile-story-item.is-active .mobile-story-label {
             color: #8C5E1B;
-            font-weight: 600;
+            font-weight: 700;
           }
 
-          /* Subcategories displayed directly below the active category row */
-          .mobile-cat-sub-wrap {
-            grid-column: 1 / -1;
-            position: relative;
-            background: #FFFFFF;
-            border: 1.5px solid #E6DDD5;
-            border-radius: 14px;
-            padding: 12px 12px 10px;
-            margin: 4px 0 6px 0;
+          /* Subcategories pill bar */
+          .mobile-subcat-bar {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 2px 6px 6px 6px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
             animation: fadeInSub 0.22s ease-out;
-            box-sizing: border-box;
           }
-
+          .mobile-subcat-bar::-webkit-scrollbar {
+            display: none;
+          }
           @keyframes fadeInSub {
             from {
               opacity: 0;
@@ -1833,82 +1672,38 @@ export default function Shop() {
               transform: translateY(0);
             }
           }
-
-          /* Little indicator notch pointing up to the active category tile */
-          .mobile-cat-sub-wrap::before {
-            content: "";
-            position: absolute;
-            top: -7px;
-            width: 12px;
-            height: 12px;
-            background: #FFFFFF;
-            border-left: 1.5px solid #E6DDD5;
-            border-top: 1.5px solid #E6DDD5;
-            transform: rotate(45deg);
-          }
-
-          .mobile-cat-sub-wrap.pointer-col-1::before {
-            left: 25%;
-            margin-left: -6px;
-          }
-
-          .mobile-cat-sub-wrap.pointer-col-2::before {
-            left: 75%;
-            margin-left: -6px;
-          }
-
-          .mobile-cat-sub-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 11.5px;
-            font-weight: 700;
-            color: #8C5E1B;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            padding-bottom: 4px;
-            border-bottom: 1px dashed #EDE5DC;
-          }
-
-          .mobile-cat-sub-back {
-            background: none;
-            border: none;
-            color: #D98A9C;
-            font-size: 12px;
-            cursor: pointer;
-            padding: 0;
-            text-transform: none;
-            font-weight: 600;
-          }
-
-          .mobile-cat-sub-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-          }
-
-          .mobile-cat-sub-chip {
-            padding: 5px 12px;
+          .mobile-subcat-pill {
+            height: 33px;
+            padding: 0 14px;
             border-radius: 999px;
-            border: 1px solid #E2D7CC;
-            background: #FAF7F2;
-            font-size: 12px;
-            line-height: 16px;
-            color: #4A4540;
+            background-color: #FAF7F2;
+            border: 1px solid #E8DFD8;
+            color: #5C554F;
+            font-size: 13px;
+            line-height: 33px;
+            font-weight: 500;
+            white-space: nowrap;
             cursor: pointer;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
             transition: all 0.18s ease;
           }
-
-          .mobile-cat-sub-chip:active {
+          .mobile-subcat-pill:active {
             transform: scale(0.96);
           }
-
-          .mobile-cat-sub-chip.is-active {
-            background: #D9A85C;
+          .mobile-subcat-pill.is-active {
+            background-color: #D9A85C;
             border-color: #D9A85C;
             color: #FFFFFF;
             font-weight: 600;
-            box-shadow: 0 2px 6px rgba(217, 168, 92, 0.3);
+            box-shadow: 0 2px 8px rgba(217, 168, 92, 0.32);
+          }
+          .mobile-subcat-pill--back {
+            background-color: #FFF2F5;
+            border-color: #F0D0D8;
+            color: #D98A9C;
+            font-weight: 600;
           }
 
           /* Mobile Collapsible Price Section */
