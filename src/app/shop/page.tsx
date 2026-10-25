@@ -26,7 +26,7 @@ const CARD_LAYOUTS = [
 ];
 
 // Categories can go several levels deep, and a category can sit under several parents
-type ShopCategory = CategoryNode;
+type ShopCategory = CategoryNode & { image?: string | null };
 
 // Keeps the filters in step with the address bar (?category=…&collection=…&search=…&sort=…), including
 // footer links and searches made while the shop is already open
@@ -155,8 +155,8 @@ export default function Shop() {
       if (isMounted) {
         if (Array.isArray(catData) && catData.length > 0) {
           setCategories(
-            normalizeCategories((catData as { id: number | string; name: string; parent_ids?: (number | string)[]; parent_id?: number | string | null }[]).filter((c) => c.name))
-              .map((c) => ({ id: c.id, name: c.name, parent_ids: c.parent_ids }))
+            normalizeCategories((catData as { id: number | string; name: string; parent_ids?: (number | string)[]; parent_id?: number | string | null; image?: string | null }[]).filter((c) => c.name))
+              .map((c: any) => ({ id: c.id, name: c.name, parent_ids: c.parent_ids, image: c.image || null }))
           );
         }
 
@@ -374,6 +374,14 @@ export default function Shop() {
     const imageMap: Record<number, string> = {};
     const countMap: Record<number, number> = {};
 
+    let localIcons: Record<string, string> = {};
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("category_custom_icons");
+        if (stored) localIcons = JSON.parse(stored);
+      } catch (_) {}
+    }
+
     categories.forEach((cat) => {
       const ids = [cat.id, ...descendantIdsOf(categories, cat.id)];
       const matchingProds = allProducts.filter((p) =>
@@ -381,8 +389,17 @@ export default function Shop() {
       );
       countMap[cat.id] = matchingProds.length;
 
-      // Check custom icon override first (by name or ID), then fallback to first product image
-      const customImg = CATEGORY_CUSTOM_ICONS[cat.name] || CATEGORY_CUSTOM_ICONS[String(cat.id)];
+      // 1. Direct image from backend category database
+      // 2. Local storage override (configured via Admin Dashboard)
+      // 3. Static fallback CATEGORY_CUSTOM_ICONS
+      // 4. Representative first product photo
+      const customImg =
+        cat.image ||
+        localIcons[cat.id] ||
+        localIcons[cat.name] ||
+        CATEGORY_CUSTOM_ICONS[cat.name] ||
+        CATEGORY_CUSTOM_ICONS[String(cat.id)];
+
       if (customImg) {
         imageMap[cat.id] = customImg;
       } else {

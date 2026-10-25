@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, Edit2, Trash2, X, Search, Filter } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Search, Filter, Upload, Image as ImageIcon } from "lucide-react";
 import { type CategoryNode, normalizeCategories, descendantIdsOf, pathTo } from "@/lib/categories";
 
-type DashCategory = CategoryNode & { slug?: string; products_count?: number };
+type DashCategory = CategoryNode & { slug?: string; products_count?: number; image?: string | null };
 
 export default function CategoriesDashboard() {
   const [categories, setCategories] = useState<DashCategory[]>([]);
@@ -20,6 +20,7 @@ export default function CategoriesDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [categoryName, setCategoryName] = useState("");
+  const [categoryImage, setCategoryImage] = useState<string>("");
   // A category can sit under several parents, at any depth
   const [parentIds, setParentIds] = useState<number[]>([]);
 
@@ -31,7 +32,20 @@ export default function CategoriesDashboard() {
         return res.json();
       })
       .then((data) => {
-        setCategories(Array.isArray(data) ? normalizeCategories(data) : []);
+        let localIcons: Record<string, string> = {};
+        if (typeof window !== "undefined") {
+          try {
+            const stored = localStorage.getItem("category_custom_icons");
+            if (stored) localIcons = JSON.parse(stored);
+          } catch (_) {}
+        }
+        const normalized = Array.isArray(data) ? normalizeCategories(data) : [];
+        setCategories(
+          normalized.map((cat: any) => ({
+            ...cat,
+            image: cat.image || localIcons[cat.id] || localIcons[cat.name] || null,
+          }))
+        );
         setError("");
       })
       .catch((err) => {
@@ -84,6 +98,7 @@ export default function CategoriesDashboard() {
   const openAddModal = () => {
     setEditingCategory(null);
     setCategoryName("");
+    setCategoryImage("");
     setParentIds([]);
     setIsModalOpen(true);
   };
@@ -91,8 +106,35 @@ export default function CategoriesDashboard() {
   const openEditModal = (cat: any) => {
     setEditingCategory(cat);
     setCategoryName(cat.name);
+    let initialImg = cat.image || "";
+    if (!initialImg && typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("category_custom_icons");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          initialImg = parsed[cat.id] || parsed[cat.name] || "";
+        }
+      } catch (_) {}
+    }
+    setCategoryImage(initialImg);
     setParentIds(cat.parent_ids || []);
     setIsModalOpen(true);
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image file is too large. Please select an image under 5MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setCategoryImage(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Each category once, named by its place in the tree ("Frames › Wedding Frames"), A–Z by that
@@ -119,6 +161,8 @@ export default function CategoriesDashboard() {
     const method = editingCategory ? "PUT" : "POST";
     const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
+    const cleanImg = categoryImage.trim() || null;
+
     fetch(url, {
       method: method,
       headers: {
@@ -126,7 +170,7 @@ export default function CategoriesDashboard() {
         "Accept": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ name: categoryName, parent_ids: parentIds }),
+      body: JSON.stringify({ name: categoryName, parent_ids: parentIds, image: cleanImg }),
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
@@ -136,7 +180,23 @@ export default function CategoriesDashboard() {
         }
         return data;
       })
-      .then(() => {
+      .then((savedCat) => {
+        // Persist to local storage for immediate client synchronization
+        if (typeof window !== "undefined") {
+          try {
+            const stored = localStorage.getItem("category_custom_icons") || "{}";
+            const parsed = JSON.parse(stored);
+            const targetId = editingCategory ? editingCategory.id : savedCat?.id;
+            if (cleanImg) {
+              if (targetId) parsed[targetId] = cleanImg;
+              parsed[categoryName.trim()] = cleanImg;
+            } else {
+              if (targetId) delete parsed[targetId];
+              delete parsed[categoryName.trim()];
+            }
+            localStorage.setItem("category_custom_icons", JSON.stringify(parsed));
+          } catch (_) {}
+        }
         setIsModalOpen(false);
         fetchCategories();
       })
@@ -305,27 +365,54 @@ export default function CategoriesDashboard() {
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
               <tr style={{ backgroundColor: "#F9F6F0", borderBottom: "2px solid #D9A85C" }}>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>ID</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Name</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Parents</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Slug</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>Products Count</th>
-                <th style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Actions</th>
+                <th style={{ padding: "16px 20px", color: "#3F3B38", fontWeight: 500 }}>Icon</th>
+                <th style={{ padding: "16px 20px", color: "#3F3B38", fontWeight: 500 }}>ID</th>
+                <th style={{ padding: "16px 20px", color: "#3F3B38", fontWeight: 500 }}>Name</th>
+                <th style={{ padding: "16px 20px", color: "#3F3B38", fontWeight: 500 }}>Parents</th>
+                <th style={{ padding: "16px 20px", color: "#3F3B38", fontWeight: 500 }}>Slug</th>
+                <th style={{ padding: "16px 20px", color: "#3F3B38", fontWeight: 500 }}>Products Count</th>
+                <th style={{ padding: "16px 20px", color: "#3F3B38", fontWeight: 500, textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredAndSortedCategories.map((cat) => (
                 <tr key={cat.id} style={{ borderBottom: "1px solid #EBE5DB" }}>
-                  <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{cat.id}</td>
-                  <td style={{ padding: "16px 24px", color: "#3F3B38", fontWeight: 500 }}>{cat.name}</td>
-                  <td style={{ padding: "16px 24px", color: "#8B7E74" }}>
+                  <td style={{ padding: "12px 20px" }}>
+                    <div
+                      style={{
+                        width: "38px",
+                        height: "38px",
+                        borderRadius: "50%",
+                        border: "1.5px solid #D9A85C",
+                        backgroundColor: "#FAF7F2",
+                        overflow: "hidden",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxShadow: "0 2px 5px rgba(0,0,0,0.06)",
+                      }}
+                    >
+                      {cat.image ? (
+                        <img
+                          src={cat.image}
+                          alt={cat.name}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      ) : (
+                        <ImageIcon size={18} color="#C4A47C" />
+                      )}
+                    </div>
+                  </td>
+                  <td style={{ padding: "16px 20px", color: "#6E6E6E" }}>{cat.id}</td>
+                  <td style={{ padding: "16px 20px", color: "#3F3B38", fontWeight: 500 }}>{cat.name}</td>
+                  <td style={{ padding: "16px 20px", color: "#8B7E74" }}>
                     {cat.parent_ids?.length
                       ? cat.parent_ids.map((id: number) => categories.find((c) => c.id === id)).filter((p): p is DashCategory => !!p).map(categoryPath).join(", ")
                       : <span style={{ opacity: 0.5 }}>None</span>}
                   </td>
-                  <td style={{ padding: "16px 24px", color: "#D98A9C" }}>{cat.slug}</td>
-                  <td style={{ padding: "16px 24px", color: "#8FB9A8" }}>{cat.products_count ?? 0}</td>
-                  <td style={{ padding: "16px 24px", textAlign: "right" }}>
+                  <td style={{ padding: "16px 20px", color: "#D98A9C" }}>{cat.slug}</td>
+                  <td style={{ padding: "16px 20px", color: "#8FB9A8" }}>{cat.products_count ?? 0}</td>
+                  <td style={{ padding: "16px 20px", textAlign: "right" }}>
                     <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
                       <button
                         onClick={() => openEditModal(cat)}
@@ -360,7 +447,7 @@ export default function CategoriesDashboard() {
           <div
             style={{
               backgroundColor: "#fff", padding: "30px", borderRadius: "15px",
-              width: "95%", maxWidth: "450px", maxHeight: "90vh", overflowY: "auto" as const,
+              width: "95%", maxWidth: "480px", maxHeight: "90vh", overflowY: "auto" as const,
               boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
               border: "1px solid #D9A85C", display: "flex", flexDirection: "column", gap: "20px",
             }}
@@ -379,7 +466,7 @@ export default function CategoriesDashboard() {
 
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label className="font-sans" style={{ fontSize: "14px", color: "#6E6E6E" }}>Category Name</label>
+                <label className="font-sans" style={{ fontSize: "14px", color: "#6E6E6E", fontWeight: 500 }}>Category Name</label>
                 <input
                   type="text"
                   value={categoryName}
@@ -391,6 +478,111 @@ export default function CategoriesDashboard() {
                   placeholder="e.g. Handmade Rakhis"
                   required
                 />
+              </div>
+
+              {/* Custom Icon / Photo Override */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <label className="font-sans" style={{ fontSize: "14px", color: "#6E6E6E", fontWeight: 500 }}>
+                  Category Icon / Photo (Optional)
+                </label>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  {/* Circular preview */}
+                  <div
+                    style={{
+                      width: "60px",
+                      height: "60px",
+                      borderRadius: "50%",
+                      border: "2px solid #D9A85C",
+                      backgroundColor: "#FAF7F2",
+                      overflow: "hidden",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      boxShadow: "0 2px 8px rgba(217, 168, 92, 0.25)",
+                    }}
+                  >
+                    {categoryImage ? (
+                      <img
+                        src={categoryImage}
+                        alt="Category preview"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <ImageIcon size={22} color="#C4A47C" />
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <label
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          backgroundColor: "#FAF7F2",
+                          border: "1px solid #D9A85C",
+                          borderRadius: "8px",
+                          padding: "6px 12px",
+                          fontSize: "13px",
+                          color: "#8C5E1B",
+                          cursor: "pointer",
+                          fontWeight: 500,
+                        }}
+                      >
+                        <Upload size={14} />
+                        <span>Upload Photo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageFileChange}
+                          style={{ display: "none" }}
+                        />
+                      </label>
+
+                      {categoryImage && (
+                        <button
+                          type="button"
+                          onClick={() => setCategoryImage("")}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "#E05A47",
+                            fontSize: "12px",
+                            cursor: "pointer",
+                            textDecoration: "underline",
+                            padding: "4px",
+                          }}
+                        >
+                          Remove Icon
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      type="text"
+                      placeholder="Or paste image URL (https://...)"
+                      value={categoryImage.startsWith("data:") ? "(Uploaded image ready)" : categoryImage}
+                      onChange={(e) => setCategoryImage(e.target.value)}
+                      readOnly={categoryImage.startsWith("data:")}
+                      style={{
+                        height: "34px",
+                        borderRadius: "6px",
+                        border: "1px solid #E8DFD8",
+                        padding: "0 10px",
+                        fontSize: "12.5px",
+                        outline: "none",
+                        color: "#3F3B38",
+                        backgroundColor: categoryImage.startsWith("data:") ? "#F8F5F2" : "#fff",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <span className="font-sans" style={{ fontSize: "12px", color: "#8B7E74", lineHeight: 1.4 }}>
+                  Featured in the circular story icons on the mobile shop. If left empty, the first product photo in this category is used automatically.
+                </span>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
