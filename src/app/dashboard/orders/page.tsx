@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Printer, RefreshCw, Eye, X, Phone, Mail, Calendar, CheckCircle2, ArrowUpDown, Filter, Search, Copy, Users } from "lucide-react";
 
 type OrderItem = { title?: string; product_title?: string; attributes?: { name?: string; value?: string }[]; quantity?: number; price?: number | string; price_on_request?: boolean; image?: string };
-type OrderRecord = { id: number; created_at?: string; status?: string; customer_name?: string; customer_phone?: string; customer_email?: string | null; custom_request?: string | null; reference_image?: string | null; items?: OrderItem[]; total_amount?: number | string };
+type OrderRecord = { id: number; created_at?: string; status?: string; customer_name?: string; customer_phone?: string; customer_email?: string | null; custom_request?: string | null; admin_notes?: string | null; reference_image?: string | null; items?: OrderItem[]; total_amount?: number | string };
 
 // The same person may write their number in different ways: compare the last 10 digits
 const phoneKey = (phone: unknown) => String(phone || "").replace(/\D/g, "").slice(-10);
@@ -43,6 +43,7 @@ function orderAsText(order: OrderRecord): string {
     if (item.image && !String(item.image).startsWith("data:")) lines.push(`   - Photo: ${item.image}`);
   });
   lines.push("", `TOTAL: ${money(order.total_amount)}`);
+  if (order.admin_notes?.trim()) lines.push("", "MY NOTES", order.admin_notes.trim());
   return lines.join("\n");
 }
 
@@ -99,6 +100,32 @@ export default function OrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  // The shop's own notes on each order (never shown to the customer): what is being typed, and
+  // which order is saving / was just saved
+  const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({});
+  const [noteState, setNoteState] = useState<Record<number, "saving" | "saved" | "error" | undefined>>({});
+
+  const saveNote = async (order: OrderRecord) => {
+    const text = noteDrafts[order.id] ?? order.admin_notes ?? "";
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    setNoteState((prev) => ({ ...prev, [order.id]: "saving" }));
+    try {
+      const res = await fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/orders/${order.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ admin_notes: text.trim() || null }),
+      });
+      if (!res.ok) throw new Error();
+      // Keep the saved text on the order; the box then shows it with nothing left to save
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, admin_notes: text.trim() || null } : o)));
+      setNoteDrafts((prev) => { const next = { ...prev }; delete next[order.id]; return next; });
+      setNoteState((prev) => ({ ...prev, [order.id]: "saved" }));
+      setTimeout(() => setNoteState((prev) => (prev[order.id] === "saved" ? { ...prev, [order.id]: undefined } : prev)), 2500);
+    } catch {
+      setNoteState((prev) => ({ ...prev, [order.id]: "error" }));
+    }
+  };
 
   const updateStatus = async (id: number, status: string) => {
     const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
@@ -549,6 +576,48 @@ export default function OrdersPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* My notes: private to the shop, saved with the order */}
+                {(() => {
+                  const saved = order.admin_notes || "";
+                  const draft = noteDrafts[order.id] ?? saved;
+                  const changed = draft.trim() !== saved.trim();
+                  const state = noteState[order.id];
+                  return (
+                    <div style={{ marginBottom: "16px" }}>
+                      <label htmlFor={`order-note-${order.id}`} className="font-sans" style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#8B7E74", marginBottom: "6px" }}>
+                        🗒️ My notes <span style={{ fontWeight: 400 }}>(only you can see these)</span>
+                      </label>
+                      <textarea
+                        id={`order-note-${order.id}`}
+                        value={draft}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setNoteDrafts((prev) => ({ ...prev, [order.id]: value }));
+                          setNoteState((prev) => ({ ...prev, [order.id]: undefined }));
+                        }}
+                        rows={draft.split("\n").length > 2 ? 4 : 2}
+                        maxLength={5000}
+                        placeholder="e.g. Flowers received 5 Nov · Paid ₹1,000 advance on GPay · Names to print: Riya & Arjun · Deliver by 20 Nov"
+                        className="font-sans"
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: `1px solid ${changed ? "#D9A85C" : "#EBE5DB"}`, backgroundColor: "#FFFDF9", fontSize: "14px", lineHeight: "21px", color: "#3F3B38", resize: "vertical", outline: "none" }}
+                      />
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "6px" }}>
+                        <button
+                          type="button"
+                          onClick={() => saveNote(order)}
+                          disabled={!changed || state === "saving"}
+                          style={{ padding: "6px 16px", borderRadius: "16px", border: "none", backgroundColor: changed ? "#D98A9C" : "#EBE5DB", color: changed ? "#fff" : "#8B7E74", fontSize: "13px", fontWeight: 600, cursor: changed ? "pointer" : "default" }}
+                        >
+                          {state === "saving" ? "Saving…" : "Save note"}
+                        </button>
+                        {state === "saved" && <span className="font-sans" style={{ fontSize: "13px", color: "#4E8E76" }}>✓ Saved</span>}
+                        {state === "error" && <span className="font-sans" style={{ fontSize: "13px", color: "#E05A47" }}>Could not save. Please try again.</span>}
+                        {changed && state !== "saving" && <span className="font-sans" style={{ fontSize: "12px", color: "#C88E56" }}>Not saved yet</span>}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Footer Bar */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #FAF6F0", paddingTop: "14px" }}>
