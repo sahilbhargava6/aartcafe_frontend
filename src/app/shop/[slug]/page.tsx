@@ -8,6 +8,7 @@ import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import { useCart } from "@/context/CartContext";
 import { salePrice, originalPrice, formatRupees } from "@/lib/price";
+import { metaTrack, metaProduct } from "@/lib/metaPixel";
 import { Heart, ChevronDown, Truck, ArrowLeft } from "lucide-react";
 
 // An attribute value as the API sends it; `links` are the options of other attributes it is
@@ -219,6 +220,7 @@ export default function ProductDetailsPage() {
       })
       .then((data) => {
         setProductData(data);
+        if (data?.id) metaTrack("ViewContent", metaProduct(data.id, salePrice(data), data.title));
         if (data.reviews) {
           setReviewsList(data.reviews);
         }

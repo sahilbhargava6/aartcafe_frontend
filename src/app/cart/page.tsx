@@ -8,6 +8,7 @@ import { useCart, CartItem, formatCartTotal } from "@/context/CartContext";
 import { salePrice, originalPrice, formatRupees } from "@/lib/price";
 import { Trash2, Plus, Minus, Check, Image as ImageIcon, MessageCircle, Copy, CheckCircle2 } from "lucide-react";
 import { openWhatsApp, getWhatsAppUrls } from "@/lib/whatsapp";
+import { metaTrack } from "@/lib/metaPixel";
 
 export default function CartPage() {
   const { cart, cartTotal, addToBag, removeFromBag, updateQuantity, clearCart } = useCart();
@@ -175,8 +176,11 @@ export default function CartPage() {
             price_on_request: item.priceOnRequest || undefined,
             // Photos stored as data: URLs are too big to send and can't go in the WhatsApp message anyway
             image: item.image && !item.image.startsWith("data:") ? item.image : undefined,
+            // What the customer typed (names, dates, a note), so the order holds everything
+            details: (item.selectedOptions || []).filter((o) => o?.name && o?.value?.trim()),
           })),
           reference_image: referenceImage,
+          custom_request: customRequest.trim() || null,
         }),
       });
       const data = await res.json().catch(() => null);
@@ -388,6 +392,14 @@ export default function CartPage() {
       message,
       total: orderTotal,
       urls,
+    });
+    // An order placed on the site counts as a purchase for Meta ads
+    metaTrack("Purchase", {
+      value: orderTotal,
+      currency: "INR",
+      content_type: "product",
+      content_ids: (order.items || []).map((i: { product_id?: number }) => String(i.product_id)).filter((id: string) => id !== "undefined"),
+      num_items: (order.items || []).reduce((n: number, i: { quantity?: number }) => n + (Number(i.quantity) || 1), 0),
     });
     setSubmitting(false);
     clearCart();

@@ -285,6 +285,43 @@ export default function Shop() {
   const chipChildren = chipParent ? childrenOf(categories, chipParent.id) : [];
   const chipBack = chipLevel > 0 ? byId(selectedPath[chipLevel - 1]) : undefined;
 
+  // Laptop sidebar: sub-categories start closed, and the arrow beside a category opens or closes
+  // them. The branch of the category being shown opens by itself (unless closed with its arrow).
+  const [openedBranches, setOpenedBranches] = useState<Set<string>>(() => new Set());
+  const [closedBranches, setClosedBranches] = useState<Set<string>>(() => new Set());
+  const branchKey = (path: number[]) => path.join("-");
+  const leadsToSelection = (path: number[]) => selectedPath.length >= path.length && path.every((id, i) => selectedPath[i] === id);
+  const isBranchOpen = (path: number[]) =>
+    openedBranches.has(branchKey(path)) || (leadsToSelection(path) && !closedBranches.has(branchKey(path)));
+  const toggleBranch = (path: number[]) => {
+    const key = branchKey(path);
+    const open = isBranchOpen(path);
+    setOpenedBranches((prev) => { const next = new Set(prev); if (open) next.delete(key); else next.add(key); return next; });
+    setClosedBranches((prev) => { const next = new Set(prev); if (open) next.add(key); else next.delete(key); return next; });
+  };
+  const hasSubCategories = (id: number, path: number[]) => childrenOf(categories, id).some((c) => !path.includes(c.id));
+  // A row shows when every category above it in its branch is open
+  const sidebarRows = categoryRows.filter(({ path }) => path.slice(0, -1).every((_, i) => isBranchOpen(path.slice(0, i + 1))));
+  // Choosing a category from the sidebar also opens its sub-categories
+  const chooseFromSidebar = (name: string, path: number[]) => {
+    setClosedBranches((prev) => { if (!prev.has(branchKey(path))) return prev; const next = new Set(prev); next.delete(branchKey(path)); return next; });
+    handleCategoryClick(name, path);
+  };
+  const branchToggle = (name: string, path: number[], size: number) => {
+    const open = isBranchOpen(path);
+    return (
+      <button
+        type="button"
+        className="category-toggle"
+        onClick={() => toggleBranch(path)}
+        aria-expanded={open}
+        aria-label={`${open ? "Hide" : "Show"} ${name} sub-categories`}
+      >
+        <ChevronDown size={size} style={{ transform: open ? "none" : "rotate(-90deg)", transition: "transform 0.2s ease" }} />
+      </button>
+    );
+  };
+
   const [showMobilePriceFilter, setShowMobilePriceFilter] = useState(false);
   const [showDesktopPriceFilter, setShowDesktopPriceFilter] = useState(false);
   const desktopPriceRef = useRef<HTMLDivElement>(null);
@@ -470,14 +507,15 @@ export default function Shop() {
                 </h3>
                 <div className="category-list-wrap" style={{ flex: 1 }}>
                   <ul ref={categoryListRef} className="category-list" style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "8px", padding: 0, margin: 0 }}>
-                    {categoryRows.map(({ category: cat, depth, path }) => {
+                    {sidebarRows.map(({ category: cat, depth, path }) => {
                       // A main category stays highlighted while anything under it is shown; a sub-category
                       // listed under several parents only lights up on the branch being browsed
                       const isActive = depth === 0 ? selectedPath[0] === cat.id : path.join("-") === selectedPath.join("-");
+                      const hasSubs = hasSubCategories(cat.id, path);
                       return depth === 0 ? (
-                        <li key={path.join("-")} className="category-item">
+                        <li key={path.join("-")} className="category-item category-row">
                           <button
-                            onClick={() => handleCategoryClick(cat.name, path)}
+                            onClick={() => chooseFromSidebar(cat.name, path)}
                             className={`font-sans category-btn${isActive ? " is-active" : ""}`}
                             aria-pressed={isActive}
                             style={{
@@ -489,19 +527,21 @@ export default function Shop() {
                               color: isActive ? "#D9A85C" : "#3F3B38",
                               fontWeight: 400,
                               textAlign: "left",
-                              width: "100%",
+                              flex: 1,
+                              minWidth: 0,
                               padding: 0,
                               transition: "color 0.2s ease",
                             }}
                           >
                             {cat.name}
                           </button>
+                          {hasSubs && branchToggle(cat.name, path, 20)}
                         </li>
                       ) : (
                         /* Sub-categories, indented one step per level (phones show them as chips above the products instead) */
-                        <li key={path.join("-")} className="category-item category-item--sub">
+                        <li key={path.join("-")} className="category-item category-item--sub category-row">
                           <button
-                            onClick={() => handleCategoryClick(cat.name, path)}
+                            onClick={() => chooseFromSidebar(cat.name, path)}
                             className="font-sans category-btn category-btn--sub"
                             aria-pressed={isActive}
                             style={{
@@ -513,13 +553,15 @@ export default function Shop() {
                               color: isActive ? "#D9A85C" : "#6E6E6E",
                               fontWeight: 400,
                               textAlign: "left",
-                              width: "100%",
+                              flex: 1,
+                              minWidth: 0,
                               padding: `0 0 0 ${18 * depth}px`,
                               transition: "color 0.2s ease",
                             }}
                           >
                             {cat.name}
                           </button>
+                          {hasSubs && branchToggle(cat.name, path, 17)}
                         </li>
                       );
                     })}
@@ -1547,6 +1589,32 @@ export default function Shop() {
           .category-btn {
             min-height: 40px;
           }
+        }
+
+        /* Sidebar rows: the name, and an arrow for categories that have sub-categories */
+        .category-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .category-list :global(.category-toggle) {
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 30px;
+          height: 30px;
+          padding: 0;
+          border: none;
+          border-radius: 50%;
+          background: none;
+          color: #8B7E74;
+          cursor: pointer;
+          transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .category-list :global(.category-toggle:hover) {
+          background-color: #FAF6F0;
+          color: #D9A85C;
         }
 
         .mobile-story-nav,

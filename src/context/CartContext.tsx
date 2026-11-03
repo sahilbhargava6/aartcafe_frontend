@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { metaTrack, metaProduct } from "@/lib/metaPixel";
 
 export interface CartItem {
   id: string;
@@ -71,7 +72,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     // Cart ids are e.g. 12, "12" or "12-1728000000000"; placeholders like "fav-1" have no product
     const leadingId = String(newItem.id).match(/^\d+/);
     const productId = newItem.productId ?? (leadingId ? Number(leadingId[0]) : undefined);
-    if (productId) trackEvent("add_to_bag", window.location.pathname, productId);
+    if (productId) {
+      trackEvent("add_to_bag", window.location.pathname, productId);
+      metaTrack("AddToCart", metaProduct(productId, newItem.price, newItem.title));
+    }
 
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.id === newItem.id);

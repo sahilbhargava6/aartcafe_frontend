@@ -1,12 +1,83 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Printer, RefreshCw, Eye, X, Phone, Mail, Calendar, CheckCircle2, ArrowUpDown, Filter, Search } from "lucide-react";
+import { Printer, RefreshCw, Eye, X, Phone, Mail, Calendar, CheckCircle2, ArrowUpDown, Filter, Search, Copy, Users } from "lucide-react";
+
+type OrderItem = { title?: string; product_title?: string; attributes?: { name?: string; value?: string }[]; quantity?: number; price?: number | string; price_on_request?: boolean; image?: string };
+type OrderRecord = { id: number; created_at?: string; status?: string; customer_name?: string; customer_phone?: string; customer_email?: string | null; custom_request?: string | null; reference_image?: string | null; items?: OrderItem[]; total_amount?: number | string };
+
+// The same person may write their number in different ways: compare the last 10 digits
+const phoneKey = (phone: unknown) => String(phone || "").replace(/\D/g, "").slice(-10);
+
+// An item's name without the "(option, option)" added to its title
+const itemName = (item: OrderItem) => (item.product_title || String(item.title || "").replace(/\s*\([^)]*\)\s*$/, "") || "Product").trim();
+
+// The item's choices and typed details (names, dates, notes), one per line
+const itemDetails = (item: OrderItem): { name: string; value: string }[] =>
+  Array.isArray(item.attributes) ? item.attributes.filter((a): a is { name: string; value: string } => !!a?.name && !!a?.value) : [];
+
+const money = (n: unknown) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
+
+// The whole order as plain text, to keep or paste anywhere (when WhatsApp is not working)
+function orderAsText(order: OrderRecord): string {
+  const items = Array.isArray(order.items) ? order.items : [];
+  const lines = [
+    `ORDER #AART-${order.id}`,
+    `Placed: ${new Date(order.created_at || Date.now()).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}`,
+    `Status: ${order.status || "pending"}`,
+    "",
+    "CUSTOMER",
+    `Name: ${order.customer_name || ""}`,
+    `Phone: ${order.customer_phone || ""}`,
+    ...(order.customer_email ? [`Email: ${order.customer_email}`] : []),
+    ...(order.custom_request ? ["", "CUSTOM REQUEST", order.custom_request] : []),
+    ...(order.reference_image ? ["", `Reference image: ${order.reference_image}`] : []),
+    "",
+    "ITEMS",
+  ];
+  items.forEach((item, i) => {
+    lines.push(`${i + 1}. ${itemName(item)}`);
+    itemDetails(item).forEach((d) => lines.push(`   - ${d.name}: ${d.value}`));
+    lines.push(`   - Quantity: ${item.quantity}`);
+    lines.push(`   - Price: ${item.price_on_request ? "On request" : money(Number(item.price) * Number(item.quantity))}`);
+    if (item.image && !String(item.image).startsWith("data:")) lines.push(`   - Photo: ${item.image}`);
+  });
+  lines.push("", `TOTAL: ${money(order.total_amount)}`);
+  return lines.join("\n");
+}
+
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // Older browsers / no permission: copy through a hidden text box
+    const box = document.createElement("textarea");
+    box.value = text;
+    box.style.position = "fixed";
+    box.style.opacity = "0";
+    document.body.appendChild(box);
+    box.select();
+    const ok = document.execCommand("copy");
+    box.remove();
+    return ok;
+  }
+}
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const [copiedOrderId, setCopiedOrderId] = useState<number | null>(null);
+
+  const copyOrder = async (order: OrderRecord) => {
+    if (await copyText(orderAsText(order))) {
+      setCopiedOrderId(order.id);
+      setTimeout(() => setCopiedOrderId((id) => (id === order.id ? null : id)), 2500);
+    } else {
+      alert("Could not copy. Please use Print PDF Invoice instead.");
+    }
+  };
 
   // Sorting & Filtering State
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "amount_high" | "amount_low" | "name_asc" | "status">("newest");
@@ -77,7 +148,7 @@ export default function OrdersPage() {
           const q = searchQuery.toLowerCase().trim();
           const matchId = String(order.id).toLowerCase().includes(q) || `aart-${order.id}`.toLowerCase().includes(q);
           const matchName = (order.customer_name || "").toLowerCase().includes(q);
-          const matchPhone = (order.customer_phone || "").toLowerCase().includes(q);
+          const matchPhone = (order.customer_phone || "").toLowerCase().includes(q) || (phoneKey(q).length === 10 && phoneKey(order.customer_phone) === phoneKey(q));
           const matchEmail = (order.customer_email || "").toLowerCase().includes(q);
           const matchItems = Array.isArray(order.items) && order.items.some((it: any) => (it.title || "").toLowerCase().includes(q));
           if (!matchId && !matchName && !matchPhone && !matchEmail && !matchItems) {
@@ -271,6 +342,8 @@ export default function OrdersPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {filteredAndSortedOrders.map((order) => {
             const items = Array.isArray(order.items) ? order.items : [];
+            // Other orders from the same person (same phone number)
+            const customerOrders = phoneKey(order.customer_phone) ? orders.filter((o) => phoneKey(o.customer_phone) === phoneKey(order.customer_phone)).length : 1;
 
             return (
               <div
@@ -345,7 +418,24 @@ export default function OrdersPage() {
                       <span>👤 <strong>{order.customer_name}</strong></span>
                       <span>📞 {order.customer_phone}</span>
                       {order.customer_email && <span>✉️ {order.customer_email}</span>}
+                      {customerOrders > 1 && phoneKey(searchQuery) !== phoneKey(order.customer_phone) && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery(order.customer_phone || "")}
+                          title="Show every order from this customer together"
+                          style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 10px", borderRadius: "12px", border: "1px solid #8FB9A8", background: "#F2F8F5", color: "#4E8E76", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+                        >
+                          <Users size={13} /> All {customerOrders} orders from this customer
+                        </button>
+                      )}
                     </div>
+
+                    {/* What the customer wrote in the bag */}
+                    {order.custom_request && (
+                      <div style={{ marginTop: "10px", padding: "10px 14px", borderRadius: "10px", backgroundColor: "#FFF8EC", border: "1px solid #F0DDBB", color: "#3F3B38", fontSize: "14px", maxWidth: "640px", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                        <strong style={{ color: "#C88E56" }}>📝 Custom request:</strong> {order.custom_request}
+                      </div>
+                    )}
 
                     {/* Reference photo the customer attached in the bag */}
                     {order.reference_image && (
@@ -363,6 +453,26 @@ export default function OrdersPage() {
 
                   {/* Actions & Status Dropdown */}
                   <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                    <button
+                      onClick={() => copyOrder(order)}
+                      title="Copy every detail of this order, to paste anywhere"
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: "20px",
+                        backgroundColor: copiedOrderId === order.id ? "#E9F5F0" : "#FFF",
+                        border: "1.5px solid #8FB9A8",
+                        color: "#4E8E76",
+                        fontWeight: 600,
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      {copiedOrderId === order.id ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+                      {copiedOrderId === order.id ? "Copied" : "Copy full order"}
+                    </button>
                     <button
                       onClick={() => setSelectedInvoice(order)}
                       style={{
@@ -419,12 +529,18 @@ export default function OrdersPage() {
                       ) : (
                         <div style={{ width: "50px", height: "50px", backgroundColor: "#EBE5DB", borderRadius: "8px" }} />
                       )}
-                      <div style={{ flex: 1 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <p className="font-sans" style={{ fontSize: "15px", color: "#3F3B38", fontWeight: 600, margin: 0 }}>
-                          {item.title}
+                          {itemDetails(item).length > 0 ? itemName(item) : item.title}
                         </p>
+                        {/* Each choice and anything the customer typed, one per line */}
+                        {itemDetails(item).map((d, di) => (
+                          <p key={di} className="font-sans" style={{ fontSize: "13px", color: "#3F3B38", margin: "2px 0 0", overflowWrap: "anywhere" }}>
+                            <span style={{ color: "#8B7E74" }}>{d.name}:</span> {d.value}
+                          </p>
+                        ))}
                         <p className="font-sans" style={{ fontSize: "13px", color: "#6E6E6E", margin: "2px 0 0" }}>
-                          Qty: {item.quantity} × ₹{Number(item.price).toLocaleString("en-IN")}
+                          Qty: {item.quantity} × {item.price_on_request ? "Price on request" : `₹${Number(item.price).toLocaleString("en-IN")}`}
                         </p>
                       </div>
                       <span className="font-sans" style={{ fontSize: "16px", fontWeight: 700, color: "#D9A85C" }}>
@@ -562,6 +678,11 @@ export default function OrdersPage() {
                 Phone: {selectedInvoice.customer_phone}
                 {selectedInvoice.customer_email && ` | Email: ${selectedInvoice.customer_email}`}
               </div>
+              {selectedInvoice.custom_request && (
+                <div style={{ fontSize: "14px", color: "#3F3B38", marginTop: "10px", whiteSpace: "pre-wrap" }}>
+                  <strong>Custom request:</strong> {selectedInvoice.custom_request}
+                </div>
+              )}
             </div>
 
             {/* Itemized Table */}
@@ -578,7 +699,14 @@ export default function OrdersPage() {
                 {Array.isArray(selectedInvoice.items) &&
                   selectedInvoice.items.map((item: any, i: number) => (
                     <tr key={i} style={{ borderBottom: "1px solid #EBE5DB", fontSize: "14px", color: "#3F3B38" }}>
-                      <td style={{ padding: "12px 14px", fontWeight: 600 }}>{item.title}</td>
+                      <td style={{ padding: "12px 14px", fontWeight: 600 }}>
+                        {itemDetails(item).length > 0 ? itemName(item) : item.title}
+                        {itemDetails(item).map((d, di) => (
+                          <div key={di} style={{ fontWeight: 400, fontSize: "13px", color: "#6E6E6E" }}>
+                            {d.name}: {d.value}
+                          </div>
+                        ))}
+                      </td>
                       <td style={{ padding: "12px 14px", textAlign: "center" }}>{item.quantity}</td>
                       <td style={{ padding: "12px 14px", textAlign: "right" }}>₹{Number(item.price).toLocaleString("en-IN")}</td>
                       <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700 }}>

@@ -38,6 +38,12 @@ const COLUMNS: { key: SortKey; label: string }[] = [
 
 const formatRupees = (v: number) => `₹${Number(v || 0).toLocaleString("en-IN")}`;
 
+// "2026-11-04" → "4 Nov 2026"
+const formatDay = (ymd: string) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
+
 export default function ProductAnalytics() {
   const [range, setRange] = useState("month");
   const [rows, setRows] = useState<ProductRow[]>([]);
@@ -46,6 +52,8 @@ export default function ProductAnalytics() {
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("views");
+  // The days counted, as the server reports them (e.g. 1 Nov – 4 Nov)
+  const [period, setPeriod] = useState<{ from: string; to: string } | null>(null);
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
@@ -62,6 +70,7 @@ export default function ProductAnalytics() {
         }
         setRows(data.products);
         setTotals(data.totals);
+        setPeriod(data.range?.from && data.range?.to ? { from: data.range.from, to: data.range.to } : null);
         setError("");
       })
       .catch((err) => setError(err.message))
@@ -119,6 +128,12 @@ export default function ProductAnalytics() {
           })}
         </div>
       </div>
+
+      {period && !error && (
+        <div className="font-sans" style={{ color: "#6E6E6E", fontSize: "14px", marginTop: "-12px" }}>
+          Showing {formatDay(period.from)}{period.from !== period.to ? ` – ${formatDay(period.to)}` : ""}
+        </div>
+      )}
 
       {error && <div style={{ color: "#E05A47", fontSize: "16px", fontWeight: 500 }}>{error}</div>}
 

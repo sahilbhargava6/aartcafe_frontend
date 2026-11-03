@@ -3,6 +3,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Heart, Search } from "lucide-react";
 
+// On the Special Offers page = ticked here (a discount alone does not put a product there)
+type OfferFlags = { is_special_offer?: boolean; base_price?: string; discount_price?: string | null };
+const isTicked = (p: OfferFlags) => !!p.is_special_offer;
+const isDiscounted = (p: OfferFlags) => !!p.discount_price && parseFloat(p.discount_price) > 0 && parseFloat(p.discount_price) < parseFloat(p.base_price || "0");
+
 export default function SpecialOffersDashboard() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -52,15 +57,17 @@ export default function SpecialOffersDashboard() {
 
     // Status filter
     if (filterStatus === "featured") {
-      result = result.filter((p) => p.is_special_offer || (p.discount_price && parseFloat(p.discount_price) < parseFloat(p.base_price)));
+      result = result.filter(isTicked);
     } else if (filterStatus === "unfeatured") {
-      result = result.filter((p) => !p.is_special_offer && (!p.discount_price || parseFloat(p.discount_price) >= parseFloat(p.base_price)));
+      result = result.filter((p) => !isTicked(p));
+    } else if (filterStatus === "discounted") {
+      result = result.filter(isDiscounted);
     }
 
     // Featured items shown on top, then sorted by ID desc
     result.sort((a, b) => {
-      const aFeatured = a.is_special_offer || (a.discount_price && parseFloat(a.discount_price) < parseFloat(a.base_price));
-      const bFeatured = b.is_special_offer || (b.discount_price && parseFloat(b.discount_price) < parseFloat(b.base_price));
+      const aFeatured = isTicked(a);
+      const bFeatured = isTicked(b);
       if (aFeatured && !bFeatured) return -1;
       if (!aFeatured && bFeatured) return 1;
       return b.id - a.id;
@@ -102,7 +109,8 @@ export default function SpecialOffersDashboard() {
       </div>
 
       <p className="font-sans" style={{ color: "#6E6E6E", fontSize: "16px", margin: 0 }}>
-        Quickly toggle which products appear in the "Special Offers" section on the Website. Featured products appear at the top.
+        Choose which products appear on the Website's Special Offers page with Feature / Unfeature. Featured products are listed at the top here.
+        Until you feature any, the page shows the 4 products with the biggest discount. &ldquo;You may also like&rdquo; shows other products.
       </p>
 
       {/* Filter Controls */}
@@ -137,6 +145,7 @@ export default function SpecialOffersDashboard() {
           <option value="all">All Status</option>
           <option value="featured">Featured Only</option>
           <option value="unfeatured">Unfeatured Only</option>
+          <option value="discounted">Discounted Only</option>
         </select>
       </div>
 
@@ -161,7 +170,7 @@ export default function SpecialOffersDashboard() {
             </thead>
             <tbody>
               {filteredProducts.map((prod) => {
-                const isOffer = prod.is_special_offer || (prod.discount_price && parseFloat(prod.discount_price) < parseFloat(prod.base_price));
+                const isOffer = isTicked(prod);
                 return (
                   <tr key={prod.id} style={{ borderBottom: "1px solid #EBE5DB", backgroundColor: isOffer ? "rgba(143,185,168,0.05)" : "transparent" }}>
                     <td style={{ padding: "16px 24px", color: "#6E6E6E" }}>{prod.id}</td>
@@ -182,8 +191,13 @@ export default function SpecialOffersDashboard() {
                           color: isOffer ? "#8FB9A8" : "#BCAEA2",
                         }}
                       >
-                        {isOffer ? "Featured Offer" : "Standard Price"}
+                        {isOffer ? "Featured Offer" : "Not featured"}
                       </span>
+                      {isDiscounted(prod) && (
+                        <span style={{ marginLeft: "8px", padding: "4px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: 500, backgroundColor: "#FFEAEF", color: "#D98A9C", whiteSpace: "nowrap" }}>
+                          ₹{Number(prod.discount_price).toLocaleString("en-IN")} <s style={{ opacity: 0.7 }}>₹{Number(prod.base_price).toLocaleString("en-IN")}</s>
+                        </span>
+                      )}
                     </td>
                     <td style={{ padding: "16px 24px", textAlign: "right" }}>
                       <button

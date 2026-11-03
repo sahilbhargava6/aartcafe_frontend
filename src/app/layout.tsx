@@ -22,7 +22,8 @@ const jost = Jost({
   display: "swap",
 });
 
-const siteTitle = "Aartcafe | Personalized Handmade Frames & Keepsakes";
+// Shown in the browser tab and as the blue headline in Google results
+const siteTitle = "Aartcafe.com | Flower preservation, Resin decor & much more, Delhi.";
 const siteDescription = "Personalized handmade frames, keepsakes, and festive treasures designed to tell your story. Handcrafted with love, meant for the heart.";
 
 export const metadata: Metadata = {

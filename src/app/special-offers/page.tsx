@@ -9,6 +9,9 @@ import QuickCustomizeModal from "@/components/QuickCustomizeModal";
 import { useCart } from "@/context/CartContext";
 import { salePrice, originalPrice, formatRupees } from "@/lib/price";
 
+// The fields the offer lists are picked by
+type OfferProduct = { id: number; base_price?: string | number; discount_price?: string | number | null; is_active?: boolean; is_special_offer?: boolean; is_bestseller?: boolean };
+
 export default function SpecialOffers() {
   const { addToBag } = useCart();
   const [customizingProduct, setCustomizingProduct] = React.useState<any | null>(null);
@@ -34,8 +37,22 @@ export default function SpecialOffers() {
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          setProducts(data.slice(0, 4));
-          setRelatedItems(data.slice(0, 4));
+          const live: OfferProduct[] = data.filter((p: OfferProduct) => p.is_active !== false);
+          // The products ticked in Dashboard → Special Offers; until any are ticked, the 4 biggest discounts
+          const ticked = live.filter((p) => p.is_special_offer);
+          const discountShare = (p: OfferProduct) => 1 - salePrice(p) / (Number(p.base_price) || 1);
+          const discounted = live.filter((p) => originalPrice(p) !== null).sort((a, b) => discountShare(b) - discountShare(a));
+          const offers = ticked.length > 0 ? ticked : discounted.length > 0 ? discounted.slice(0, 4) : live.slice(0, 4);
+          setProducts(offers);
+          // "You may also like": four other products (bestsellers first), a different mix on each visit
+          const shown = new Set(offers.map((p) => p.id));
+          const others = live.filter((p) => !shown.has(p.id));
+          for (let i = others.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [others[i], others[j]] = [others[j], others[i]];
+          }
+          others.sort((a, b) => Number(!!b.is_bestseller) - Number(!!a.is_bestseller));
+          setRelatedItems(others.slice(0, 4));
         } else {
           setProducts(defaultProducts);
           setRelatedItems(defaultRelated);
