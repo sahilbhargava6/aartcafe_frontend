@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Printer, RefreshCw, Eye, X, Phone, Mail, Calendar, CheckCircle2, ArrowUpDown, Filter, Search, Copy, Users } from "lucide-react";
+import { Printer, RefreshCw, Eye, X, Phone, Mail, Calendar, CheckCircle2, ArrowUpDown, Filter, Search, Copy, Users, ImagePlus } from "lucide-react";
+import { shrinkImage } from "@/lib/shrinkImage";
 
 type OrderItem = { title?: string; product_title?: string; attributes?: { name?: string; value?: string }[]; quantity?: number; price?: number | string; price_on_request?: boolean; image?: string };
-type OrderRecord = { id: number; created_at?: string; status?: string; customer_name?: string; customer_phone?: string; customer_email?: string | null; custom_request?: string | null; admin_notes?: string | null; reference_image?: string | null; items?: OrderItem[]; total_amount?: number | string };
+type OrderRecord = { id: number; created_at?: string; status?: string; customer_name?: string; customer_phone?: string; customer_email?: string | null; custom_request?: string | null; admin_notes?: string | null; admin_images?: string[] | null; reference_image?: string | null; items?: OrderItem[]; total_amount?: number | string };
 
 // The same person may write their number in different ways: compare the last 10 digits
 const phoneKey = (phone: unknown) => String(phone || "").replace(/\D/g, "").slice(-10);
@@ -44,6 +45,7 @@ function orderAsText(order: OrderRecord): string {
   });
   lines.push("", `TOTAL: ${money(order.total_amount)}`);
   if (order.admin_notes?.trim()) lines.push("", "MY NOTES", order.admin_notes.trim());
+  if (order.admin_images?.length) lines.push("", "MY PHOTOS", ...order.admin_images);
   return lines.join("\n");
 }
 
@@ -105,6 +107,60 @@ export default function OrdersPage() {
   // which order is saving / was just saved
   const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({});
   const [noteState, setNoteState] = useState<Record<number, "saving" | "saved" | "error" | undefined>>({});
+
+  // The shop's own photos on each order (never shown to the customer): upload progress / problems
+  const [photoBusy, setPhotoBusy] = useState<Record<number, string | undefined>>({});
+  const [photoError, setPhotoError] = useState<Record<number, string | undefined>>({});
+  const authHeaders = (): Record<string, string> => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    return { Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+  };
+  const keepPhotos = (orderId: number, photos: string[] | null | undefined) =>
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, admin_images: photos || [] } : o)));
+
+  const addPhotos = async (order: OrderRecord, files: File[]) => {
+    if (files.length === 0) return;
+    setPhotoError((prev) => ({ ...prev, [order.id]: undefined }));
+    let failed = 0;
+    let lastError = "";
+    for (let i = 0; i < files.length; i++) {
+      setPhotoBusy((prev) => ({ ...prev, [order.id]: files.length > 1 ? `Uploading ${i + 1} of ${files.length}…` : "Uploading…" }));
+      try {
+        // Phone photos are made smaller first, so they upload quickly
+        const body = new FormData();
+        body.append("image", await shrinkImage(files[i], 2000), "photo.jpg");
+        const res = await fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/orders/${order.id}/photos`, { method: "POST", headers: authHeaders(), body });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(data?.errors?.image?.[0] || data?.message || "Upload failed.");
+        keepPhotos(order.id, data?.order?.admin_images);
+      } catch (err) {
+        failed++;
+        lastError = err instanceof Error ? err.message : "Upload failed.";
+      }
+    }
+    setPhotoBusy((prev) => ({ ...prev, [order.id]: undefined }));
+    if (failed) setPhotoError((prev) => ({ ...prev, [order.id]: failed === files.length ? lastError : `${failed} of ${files.length} photos could not be added: ${lastError}` }));
+  };
+
+  const removePhoto = async (order: OrderRecord, url: string) => {
+    if (!window.confirm("Remove this photo from the order?")) return;
+    setPhotoBusy((prev) => ({ ...prev, [order.id]: "Removing…" }));
+    setPhotoError((prev) => ({ ...prev, [order.id]: undefined }));
+    try {
+      const res = await fetch(`https://aartcafe-backend-production-rjudvs.laravel.cloud/api/orders/${order.id}/photos`, {
+        method: "DELETE",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.message || "Could not remove the photo.");
+      keepPhotos(order.id, data?.order?.admin_images);
+    } catch (err) {
+      setPhotoError((prev) => ({ ...prev, [order.id]: err instanceof Error ? err.message : "Could not remove the photo." }));
+    } finally {
+      setPhotoBusy((prev) => ({ ...prev, [order.id]: undefined }));
+    }
+  };
 
   const saveNote = async (order: OrderRecord) => {
     const text = noteDrafts[order.id] ?? order.admin_notes ?? "";
@@ -615,6 +671,58 @@ export default function OrdersPage() {
                         {state === "error" && <span className="font-sans" style={{ fontSize: "13px", color: "#E05A47" }}>Could not save. Please try again.</span>}
                         {changed && state !== "saving" && <span className="font-sans" style={{ fontSize: "12px", color: "#C88E56" }}>Not saved yet</span>}
                       </div>
+                    </div>
+                  );
+                })()}
+
+                {/* My photos: private to the shop, saved with the order */}
+                {(() => {
+                  const photos: string[] = Array.isArray(order.admin_images) ? order.admin_images : [];
+                  const busy = photoBusy[order.id];
+                  return (
+                    <div style={{ marginBottom: "16px" }}>
+                      <div className="font-sans" style={{ fontSize: "13px", fontWeight: 600, color: "#8B7E74", marginBottom: "8px" }}>
+                        📷 My photos <span style={{ fontWeight: 400 }}>(only you can see these)</span>
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+                        {photos.map((url, pi) => (
+                          <div key={url} style={{ position: "relative", width: "84px", height: "84px" }}>
+                            <a href={url} target="_blank" rel="noopener noreferrer" title="Open full size">
+                              <img src={url} alt={`Order photo ${pi + 1}`} style={{ width: "84px", height: "84px", objectFit: "cover", borderRadius: "10px", border: "1px solid #EBE5DB", display: "block" }} />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => removePhoto(order, url)}
+                              disabled={!!busy}
+                              aria-label={`Remove photo ${pi + 1}`}
+                              title="Remove photo"
+                              style={{ position: "absolute", top: "-7px", right: "-7px", width: "24px", height: "24px", borderRadius: "50%", border: "1px solid #EBE5DB", backgroundColor: "#fff", color: "#E05A47", display: "flex", alignItems: "center", justifyContent: "center", cursor: busy ? "default" : "pointer", padding: 0, boxShadow: "0 1px 4px rgba(0,0,0,0.12)" }}
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ))}
+                        <label
+                          style={{ width: "84px", height: "84px", borderRadius: "10px", border: "1.5px dashed #D9A85C", backgroundColor: "#FFFDF9", color: "#C88E56", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "4px", fontSize: "12px", fontWeight: 600, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1, textAlign: "center" }}
+                        >
+                          <ImagePlus size={20} />
+                          Add photos
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            disabled={!!busy}
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              e.target.value = "";
+                              addPhotos(order, files);
+                            }}
+                            style={{ display: "none" }}
+                          />
+                        </label>
+                      </div>
+                      {busy && <div className="font-sans" style={{ fontSize: "13px", color: "#8B7E74", marginTop: "6px" }}>{busy}</div>}
+                      {photoError[order.id] && <div className="font-sans" style={{ fontSize: "13px", color: "#E05A47", marginTop: "6px" }}>{photoError[order.id]}</div>}
                     </div>
                   );
                 })()}
