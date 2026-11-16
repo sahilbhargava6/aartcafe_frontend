@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { Search, User, ShoppingBag, Heart, X, Menu, Package, ArrowRight, History, LayoutGrid } from "lucide-react";
-import { type CategoryNode, normalizeCategories, mainCategoriesOf, pathTo } from "@/lib/categories";
+import { type CategoryNode, normalizeCategories, mainCategoriesOf, pathTo, sameCategoryName } from "@/lib/categories";
 import { buildSearchIndex, searchProducts, searchCategories, searchSuggestions, correctedQuery, highlightParts, productCountIn, normalizeText } from "@/lib/search";
 
 const CATEGORIES_API = "https://aartcafe-backend-production-rjudvs.laravel.cloud/api/categories";
@@ -171,7 +171,15 @@ export default function Navbar({ overlay = false }: NavbarProps = {}) {
   const searchMatches = useMemo(() => (query ? searchProducts(searchIndex, query) : []), [searchIndex, query]);
   const searchProductHits = searchMatches.slice(0, 6);
   const shopCategories = useMemo(() => searchCategoryList.filter((c) => normalizeText(c.name) !== "all"), [searchCategoryList]);
-  const searchCategoryHits = useMemo(() => (query ? searchCategories(shopCategories, query).slice(0, 4) : []), [shopCategories, query]);
+  // Categories sharing a name open the same products, so each name is listed once (as the main category, if one is)
+  const searchCategoryHits = useMemo(() => {
+    if (!query) return [];
+    const hits = searchCategories(shopCategories, query);
+    return hits
+      .filter((c, i) => hits.findIndex((other) => sameCategoryName(other.name, c.name)) === i)
+      .map((c) => shopCategories.find((other) => sameCategoryName(other.name, c.name) && other.parent_ids.length === 0) || c)
+      .slice(0, 4);
+  }, [shopCategories, query]);
   const searchPhrases = useMemo(
     () => [...shopCategories.map((c) => c.name), ...allProducts.map((p) => p.title || "")],
     [shopCategories, allProducts]

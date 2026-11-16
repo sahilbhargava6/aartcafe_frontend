@@ -45,6 +45,24 @@ export function descendantIdsOf(categories: CategoryNode[], id: number): Set<num
   return found;
 }
 
+/** Category names match whatever their capitals or extra spaces ("Clutches" = "clutches "). */
+export const sameCategoryName = (a: string, b: string) =>
+  a.trim().replace(/\s+/g, " ").toLowerCase() === b.trim().replace(/\s+/g, " ").toLowerCase();
+
+/**
+ * Categories that share a name are one place in the shop: a main "Clutches" and a "Clutches" under
+ * another category both show the products of each, and of every category below either of them.
+ */
+export function idsForCategoryName(categories: CategoryNode[], name: string): Set<number> {
+  const ids = new Set<number>();
+  for (const category of categories) {
+    if (!sameCategoryName(category.name, name)) continue;
+    ids.add(category.id);
+    for (const id of descendantIdsOf(categories, category.id)) ids.add(id);
+  }
+  return ids;
+}
+
 /** One way down from a main category to this one (through the first parent A–Z at each step). */
 export function pathTo<C extends CategoryNode>(categories: C[], category: C): C[] {
   const path = [category];

@@ -3,7 +3,7 @@
 // typo ("nameplte" → "Nameplate"). A product also matches the categories above its own, so searching
 // a category finds what is in its sub-categories. Results are ranked, title matches first.
 
-import { type CategoryNode, descendantIdsOf } from "./categories";
+import { type CategoryNode, idsForCategoryName } from "./categories";
 
 export const normalizeText = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
@@ -177,9 +177,10 @@ export function highlightParts(text: string, query: string): { text: string; mat
     .filter((piece) => piece.text);
 }
 
-/** How many products are in a category or anything below it. */
+/** How many products the shop shows for a category: its own, those below it, and those of categories with the same name. */
 export function productCountIn(categories: CategoryNode[], products: SearchableProduct[], categoryId: number): number {
-  const ids = new Set([categoryId, ...descendantIdsOf(categories, categoryId)]);
+  const category = categories.find((c) => c.id === categoryId);
+  const ids = category ? idsForCategoryName(categories, category.name) : new Set([categoryId]);
   return products.filter((p) => p.categoryIds.some((id) => ids.has(id))).length;
 }
 

@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 import PriceSlider from "@/components/PriceSlider";
 import QuickCustomizeModal from "@/components/QuickCustomizeModal";
 import { useCart } from "@/context/CartContext";
-import { type CategoryNode, normalizeCategories, descendantIdsOf, flattenTree, pathTo, childrenOf, mainCategoriesOf } from "@/lib/categories";
+import { type CategoryNode, normalizeCategories, idsForCategoryName, sameCategoryName, flattenTree, pathTo, childrenOf, mainCategoriesOf } from "@/lib/categories";
 import { buildSearchIndex, searchProducts } from "@/lib/search";
 import { useWishlist } from "@/context/WishlistContext";
 import { Heart, ArrowUpDown, ChevronDown, Flower2, Sparkles, SlidersHorizontal, RotateCcw } from "lucide-react";
@@ -88,9 +88,6 @@ export default function Shop() {
       window.history.pushState({}, "", url.toString());
     }
   };
-
-  // Clicking the selected category again clears it
-  const handleCategoryClick = (cat: string, path: number[]) => selectCategory(selectedCategory === cat ? null : cat, path);
 
   const [categories, setCategories] = useState<ShopCategory[]>([]);
   const categoryListRef = useRef<HTMLUListElement>(null);
@@ -205,11 +202,11 @@ export default function Shop() {
     }
 
     if (selectedCategory) {
-      // A category also shows the products of every category below it
-      const chosen = categories.find((c) => c.name === selectedCategory);
-      const ids = chosen ? [chosen.id, ...descendantIdsOf(categories, chosen.id)] : [];
+      // A category also shows the products of every category below it, and categories sharing a
+      // name (a main "Clutches" and a "Clutches" under another category) show each other's products
+      const ids = idsForCategoryName(categories, selectedCategory);
       result = result.filter((p) =>
-        ids.length > 0 ? p.categoryIds.some((id: number) => ids.includes(id)) : p.categories.includes(selectedCategory)
+        ids.size > 0 ? p.categoryIds.some((id: number) => ids.has(id)) : p.categories.includes(selectedCategory)
       );
     }
 
@@ -273,11 +270,23 @@ export default function Shop() {
   // Category tree: main categories A–Z, each with its sub-categories (at any depth) A–Z beneath it
   const categoryRows = flattenTree(categories);
   const byId = (id: number) => categories.find((c) => c.id === id);
+  // The category being shown. Several can share its name: the one clicked, or for a link (which
+  // only has the name) the main category of that name, else the first.
+  const namedLikeSelected = selectedCategory ? categories.filter((c) => sameCategoryName(c.name, selectedCategory)) : [];
+  const trailEnd = trail.length > 0 ? byId(trail[trail.length - 1]) : undefined;
+  const selectedCat = trailEnd && namedLikeSelected.includes(trailEnd)
+    ? trailEnd
+    : namedLikeSelected.find((c) => c.parent_ids.length === 0) || namedLikeSelected[0];
   // The way down to the selected category: the branch clicked, or one worked out from its parents
-  const selectedCat = categories.find((c) => c.name === selectedCategory);
   const trailFits = !!selectedCat && trail[trail.length - 1] === selectedCat.id
     && trail.every((id, i) => byId(id) && (i === 0 ? byId(id)!.parent_ids.length === 0 : byId(id)!.parent_ids.includes(trail[i - 1])));
   const selectedPath = selectedCat ? (trailFits ? trail : pathTo(categories, selectedCat).map((c) => c.id)) : [];
+  // Clicking the category being shown again clears it. A category of the same name somewhere else
+  // is another place in the menu, so clicking that one goes there instead.
+  const handleCategoryClick = (cat: string, path: number[]) => {
+    const again = selectedCategory === cat && (path.length === 0 || path[path.length - 1] === selectedPath[selectedPath.length - 1]);
+    selectCategory(again ? null : cat, path);
+  };
   // Chips above the products: the selected category and what is under it; for a category with
   // nothing under it, its parent and that parent's other sub-categories. "‹" steps back up a level.
   const chipLevel = selectedCat && childrenOf(categories, selectedCat.id).length > 0 ? selectedPath.length - 1 : selectedPath.length - 2;
@@ -421,9 +430,10 @@ export default function Shop() {
     }
 
     categories.forEach((cat) => {
-      const ids = [cat.id, ...descendantIdsOf(categories, cat.id)];
+      // The same products the shop shows for this category (see idsForCategoryName)
+      const ids = idsForCategoryName(categories, cat.name);
       const matchingProds = allProducts.filter((p) =>
-        ids.some((id) => p.categoryIds?.includes(id))
+        p.categoryIds?.some((id: number) => ids.has(id))
       );
       countMap[cat.id] = matchingProds.length;
 
@@ -964,7 +974,7 @@ export default function Shop() {
                       </button>
                     )}
                     {[chipParent, ...chipChildren].map((cat) => {
-                      const isActive = selectedCategory === cat.name;
+                      const isActive = selectedCat?.id === cat.id;
                       const rawLabel =
                         cat.id === chipParent.id && !/^all\b/i.test(cat.name.trim())
                           ? `All ${formatCategoryTitle(cat.name)}`
@@ -1005,7 +1015,7 @@ export default function Shop() {
                     </button>
                   )}
                   {[chipParent, ...chipChildren].map((cat) => {
-                    const isActive = selectedCategory === cat.name;
+                    const isActive = selectedCat?.id === cat.id;
                     const rawLabel = cat.id === chipParent.id && !/^all\b/i.test(cat.name.trim())
                       ? `All ${formatCategoryTitle(cat.name)}`
                       : formatCategoryTitle(cat.name);
