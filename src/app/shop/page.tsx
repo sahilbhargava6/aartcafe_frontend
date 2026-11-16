@@ -218,8 +218,9 @@ export default function Shop() {
       result = searchProducts(buildSearchIndex(result, categories), searchTerm);
     }
 
-    // Apply price filter
-    result = result.filter((p) => p.price >= minPrice && p.price <= maxPrice);
+    // Apply price filter. The slider's top end (shown as "₹10000+") means "and above", so pieces
+    // dearer than ₹10,000 stay listed unless a lower maximum is chosen
+    result = result.filter((p) => p.price >= minPrice && (maxPrice >= 10000 || p.price <= maxPrice));
 
     // Apply sorting
     if (sortBy !== "default" || !searchTerm) {
